@@ -1,0 +1,58 @@
+const Music=(function(){
+'use strict';
+let ctx=null,master=null,bus=null,verb=null,dly=null,timer=null,step=0,next=0,on=false,vol=.5,noise=null,padCut=null;
+const BPM=76,E8=60/BPM/2,LOOP=128;
+const CH=[
+ {b:45,p:[57,60,64,67,71]},{b:41,p:[57,60,64,65,72]},{b:48,p:[55,59,62,64,67]},{b:43,p:[55,59,62,66,69]},
+ {b:45,p:[57,60,64,67,71]},{b:41,p:[53,57,60,64,69]},{b:38,p:[53,57,60,62,65]},{b:40,p:[52,56,59,62,71]}
+];
+const ARP=[0,2,1,3,2,4,3,1,0,2,4,3,1,4,2,3];
+const BASS=[1,0,0,1,0,0,1,0, 1,0,0,1,0,1,0,0];
+const hz=m=>440*Math.pow(2,(m-69)/12);
+function ir(sec){const n=ctx.sampleRate*sec,b=ctx.createBuffer(2,n,ctx.sampleRate);
+ for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.6)}return b}
+function build(){
+ ctx=new (window.AudioContext||window.webkitAudioContext)();
+ master=ctx.createGain();master.gain.value=0;
+ const comp=ctx.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=3;
+ master.connect(comp);comp.connect(ctx.destination);
+ bus=ctx.createGain();bus.connect(master);
+ verb=ctx.createConvolver();verb.buffer=ir(3.4);const wet=ctx.createGain();wet.gain.value=.42;verb.connect(wet);wet.connect(master);
+ dly=ctx.createDelay(2);dly.delayTime.value=E8*3;const fb=ctx.createGain();fb.gain.value=.38;const dlp=ctx.createBiquadFilter();dlp.type='lowpass';dlp.frequency.value=2600;
+ dly.connect(dlp);dlp.connect(fb);fb.connect(dly);dlp.connect(bus);dlp.connect(verb);
+ padCut=ctx.createBiquadFilter();padCut.type='lowpass';padCut.frequency.value=900;padCut.Q.value=2;padCut.connect(bus);padCut.connect(verb);
+ const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=.05;lg.gain.value=500;lfo.connect(lg);lg.connect(padCut.frequency);lfo.start();
+ const n=ctx.sampleRate,buf=ctx.createBuffer(1,n,n),d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;noise=buf;
+}
+function env(g,t,a,peak,hold,rel){g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.setValueAtTime(peak,t+a+hold);g.gain.exponentialRampToValueAtTime(.0001,t+a+hold+rel)}
+function pad(notes,t,dur){notes.forEach((m,i)=>{[-7,7].forEach(det=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type='sawtooth';o.frequency.value=hz(m);o.detune.value=det+(i%2?3:-3);
+ env(g,t,1.6,.022,dur-1.6,2.4);o.connect(g);g.connect(padCut);o.start(t);o.stop(t+dur+2.6)})})}
+function arp(m,t,lvl){const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();o.type='square';o.frequency.value=hz(m);f.type='lowpass';f.frequency.value=1800;
+ env(g,t,.005,lvl,.02,.28);o.connect(f);f.connect(g);g.connect(bus);g.connect(dly);o.start(t);o.stop(t+.4)}
+function bass(m,t){const o=ctx.createOscillator(),o2=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();o.type='triangle';o2.type='sine';o.frequency.value=hz(m);o2.frequency.value=hz(m-12);
+ f.type='lowpass';f.frequency.setValueAtTime(700,t);f.frequency.exponentialRampToValueAtTime(180,t+.35);env(g,t,.01,.16,.08,.45);[o,o2].forEach(x=>{x.connect(f);x.start(t);x.stop(t+.6)});f.connect(g);g.connect(bus)}
+function kick(t){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(42,t+.18);env(g,t,.003,.22,.02,.3);o.connect(g);g.connect(bus);o.start(t);o.stop(t+.4)}
+function hat(t,lvl){const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=noise;f.type='highpass';f.frequency.value=7500;env(g,t,.002,lvl,.005,.06);s.connect(f);f.connect(g);g.connect(bus);s.start(t,Math.random()*.5);s.stop(t+.1)}
+function bell(m,t){const c=ctx.createOscillator(),mo=ctx.createOscillator(),mg=ctx.createGain(),g=ctx.createGain();c.type='sine';c.frequency.value=hz(m);mo.frequency.value=hz(m)*3.5;mg.gain.value=hz(m)*1.2;
+ mo.connect(mg);mg.connect(c.frequency);env(g,t,.004,.05,.0,2.2);c.connect(g);g.connect(verb);g.connect(dly);[c,mo].forEach(x=>{x.start(t);x.stop(t+2.4)})}
+function tick(){
+ while(next<ctx.currentTime+.25){
+  const s=step%LOOP,bar=Math.floor(s/16),ch=CH[bar%8],pos=s%16,t=next,loopN=Math.floor(step/LOOP),drums=loopN>0||s>=64;
+  if(pos===0)pad(ch.p,t,E8*16+.2);
+  if(pos%2===0||loopN>0)arp(ch.p[ARP[pos]]+12,t,pos%4===0?.05:.032);
+  if(BASS[pos])bass(ch.b,t);
+  if(drums){if(pos===0||pos===8)kick(t);if(pos%4===2)hat(t,.05);else if(pos%2===1&&loopN>0)hat(t,.018)}
+  if(pos===6&&(bar%3===1)&&Math.random()<.7)bell(ch.p[4]+12,t);
+  step++;next+=E8;
+ }
+}
+function start(){if(!ctx)build();if(ctx.state!=='running')ctx.resume();
+ if(on)return;on=true;step=0;next=ctx.currentTime+.12;
+ master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(master.gain.value,ctx.currentTime);master.gain.linearRampToValueAtTime(vol*.9,ctx.currentTime+2.5);
+ tick();timer=setInterval(tick,60)}
+function stop(){if(!ctx||!on)return;on=false;clearInterval(timer);timer=null;
+ const t=ctx.currentTime;master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);master.gain.linearRampToValueAtTime(0,t+.8)}
+function setVol(v){vol=v;if(ctx&&on){master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setTargetAtTime(v*.9,ctx.currentTime,.1)}}
+document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hidden)ctx.suspend();else if(on)ctx.resume()});
+return {start,stop,setVol,get on(){return on},get vol(){return vol}};
+})();
