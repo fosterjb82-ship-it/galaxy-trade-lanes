@@ -49,6 +49,8 @@ node preview.cjs                    # art preview sheets into out/
 - Contracts on the shared board need fuel, ore, tech, credits and/or combat, plus cargo space equal to ore + tech. Base cargo space is 1 per turn.
 - One purchase per turn (Brokerage adds one). Bought cards go to the discard pile.
 - Pirate patrol: spend 3 combat + 1 fuel for +5 profit, once per turn.
+- Cash in: trade 4 credits for 1 profit, any time on your turn, as often as you can afford.
+- Trade Charter (costs 8): a resource card worth 2 credits and 2 profit each time it is played.
 - Scrap one card from hand for 1 credit, once per turn.
 - Unspent resources vanish at end of turn. Highest profit after the set rounds wins, or race to a profit target with equal turns for everyone.
 

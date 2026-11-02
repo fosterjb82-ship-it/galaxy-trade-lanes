@@ -21,13 +21,14 @@ render=function(){
   const hasRes=p.hand.some(k=>E.CARDS[k].cat==='res');
   const canPatrol=on&&!p.patrolled&&p.pool.combat>=3&&p.pool.fuel>=1;
   h='<div class="mact"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play all resources</button><button class="mpatrol'+(canPatrol?' primary':'')+'" data-a="patrol"'+(canPatrol?'':' disabled')+'>'+(p.patrolled?'Patrol cleared':'Pirate patrol +5')+'<small>3 combat + 1 fuel · once per turn</small></button></div>'
+   +cashBtn(p,on)
    +(hidden?'<div class="empty">Hand hidden until the captain begins.</div>':p.hand.length?'<div class="grid">'+p.hand.map((k,i)=>cardEl(k,i,false)).join('')+'</div>':'<div class="empty">Hand played out. Deliver, buy, or end your turn.</div>')
    +played(p,hidden)
    +'<p class="eyebrow mnote">Draw pile '+p.deck.length+' · Discard '+p.discard.length+' · '+E.deckSize(p)+' cards total</p>';
  }else if(tab==='board'){
   h='<div class="sechead"><h2>CONTRACT BOARD</h2><span class="eyebrow">First to pay claims it · '+s.done.length+' delivered</span></div><div class="grid">'+s.board.map(ctrCard).join('')+'</div>';
  }else if(tab==='market'){
-  h='<div class="sechead"><h2>CARD MARKET</h2><span class="eyebrow">Bought cards go to your discard pile</span></div><div class="grid">'+E.MARKET.map(k=>cardEl(k,0,true)).join('')+'</div>';
+  h='<div class="sechead"><h2>CARD MARKET</h2><span class="eyebrow">Bought cards go to your discard pile</span></div>'+cashBtn(p,on)+'<div class="grid">'+E.MARKET.map(k=>cardEl(k,0,true)).join('')+'</div>';
  }else{
   h='<section class="panel mpanel notch"><div class="eyebrow">Standings</div>'+standings()+'</section>'
    +'<section class="panel mpanel notch"><div class="eyebrow">Your deck</div><div class="piles"><div><b>'+p.deck.length+'</b><span class="eyebrow">Draw</span></div><div><b>'+p.discard.length+'</b><span class="eyebrow">Discard</span></div><div><b>'+E.deckSize(p)+'</b><span class="eyebrow">Total</span></div></div><div class="links"><button data-a="deck">Deck</button><button data-a="done">Deliveries</button><button data-a="log">Log</button></div></section>';
@@ -38,6 +39,8 @@ render=function(){
  shownTab=tab;document.querySelector('.mbody').scrollTop=tabScroll[tab]||0;
 };
 
+function cashBtn(p,on){const n=Math.floor(p.pool.cr/E.CASH),ok=on&&n>0;
+ return '<button class="mcash'+(ok?' lit':'')+'" data-a="cash"'+(ok?'':' disabled')+'>Cash in '+E.CASH+' credits → +1 profit<small>'+(ok?'You can do this '+n+(n===1?' time':' times')+' now':'Any time, as often as you can afford')+'</small></button>'}
 function menu(){
  modal('<div class="eyebrow">Galaxy Trade Lanes · phone build</div><h2>Menu</h2><div class="mmenu">'
   +'<div class="mvol"><label for="vol2">Music volume</label><input id="vol2" type="range" min="0" max="1" step="0.05" value="'+Music.vol+'"></div>'
