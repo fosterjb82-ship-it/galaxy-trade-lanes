@@ -65,7 +65,10 @@ button:hover:not(:disabled){border-color:var(--line);color:inherit}
 /* hand tab */
 .mact{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .mact button{min-height:50px}
-.mpatrol{width:100%;min-height:44px;font-size:13px}
+.mpatrol{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:4px 6px;font-size:14px}
+.mpatrol small{font:500 9.5px/1.2 var(--body);letter-spacing:.02em;text-transform:none;opacity:.8}
+.mend{margin-left:auto;min-height:44px;padding:4px 14px;font-size:15px;white-space:nowrap}
+.mrow .mprof{flex:0 0 auto}
 .played{flex:none;border:2px solid var(--line);background:#0a1020}
 .played ol{overflow:visible}
 .played p{padding-bottom:10px}

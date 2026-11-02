@@ -9,8 +9,9 @@ render=function(){
  const key=s.round+':'+s.current;if(key!==turnKey){turnKey=key;tab='hand';tabScroll={}}
  $('status').innerHTML=(s.over?'Run complete':'Round <b>'+s.round+(s.winMode==='rounds'?' / '+s.maxRounds:'')+'</b> · <b>'+esc(p.name)+'</b>')+(s.finalRound&&!s.over?' · <b class="acc">final round</b>':'')+(s.winMode==='profit'?' · first to '+s.target:'');
 
- const sum='<div class="msum"><div class="mrow"><div class="mprof">'+icon('star',2.2)+'<b>'+p.profit+'</b><span class="eyebrow">Profit</span></div>'
-  +'<div class="mchip"><span class="eyebrow">Buys</span><b>'+p.buys+'</b></div><div class="mchip"><span class="eyebrow">Actions</span><b>'+(s.actionLimit?p.actions:'∞')+'</b></div></div>'
+ const sum='<div class="msum"><div class="mrow"><div class="mprof">'+icon('star',2.2)+'<b>'+p.profit+'</b></div>'
+  +'<div class="mchip"><span class="eyebrow">Buys</span><b>'+p.buys+'</b></div><div class="mchip"><span class="eyebrow">Act</span><b>'+(s.actionLimit?p.actions:'∞')+'</b></div>'
+  +'<button class="primary mend" data-a="'+(s.over?'new':'endAsk')+'"'+(!s.over&&!on?' disabled':'')+'>'+(s.over?'New run':'End turn')+'</button></div>'
   +'<div class="mpool">'+E.RES.map(r=>'<span class="mp'+(p.pool[r]?'':' zero')+'" style="--rc:var(--c-'+r+')" title="'+E.RLABEL[r]+'">'+icon(r,1.8)+'<b>'+p.pool[r]+'</b><i>'+SHORT[r]+'</i></span>').join('')+'</div></div>';
 
  const ready=on?s.board.filter(c=>E.canComplete(s,c)).length:0;
@@ -18,9 +19,9 @@ render=function(){
  let h='';
  if(tab==='hand'){
   const hasRes=p.hand.some(k=>E.CARDS[k].cat==='res');
-  h='<div class="mact"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play resources</button><button class="primary" data-a="'+(s.over?'new':'endAsk')+'"'+(!s.over&&!on?' disabled':'')+'>'+(s.over?'New run':'End turn')+'</button></div>'
+  const canPatrol=on&&!p.patrolled&&p.pool.combat>=3&&p.pool.fuel>=1;
+  h='<div class="mact"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play all resources</button><button class="mpatrol'+(canPatrol?' primary':'')+'" data-a="patrol"'+(canPatrol?'':' disabled')+'>'+(p.patrolled?'Patrol cleared':'Pirate patrol +5')+'<small>3 combat + 1 fuel · once per turn</small></button></div>'
    +(hidden?'<div class="empty">Hand hidden until the captain begins.</div>':p.hand.length?'<div class="grid">'+p.hand.map((k,i)=>cardEl(k,i,false)).join('')+'</div>':'<div class="empty">Hand played out. Deliver, buy, or end your turn.</div>')
-   +'<button class="mpatrol" data-a="patrol"'+(!on||p.patrolled||p.pool.combat<3||p.pool.fuel<1?' disabled':'')+'>'+(p.patrolled?'Patrol cleared':'Pirate patrol · 3 cbt + 1 fuel → +5')+'</button>'
    +played(p,hidden)
    +'<p class="eyebrow mnote">Draw pile '+p.deck.length+' · Discard '+p.discard.length+' · '+E.deckSize(p)+' cards total</p>';
  }else if(tab==='board'){
