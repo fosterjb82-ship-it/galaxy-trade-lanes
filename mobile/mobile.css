@@ -97,3 +97,5 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 .mvol input{flex:1;min-height:32px;padding:0;border:0;background:transparent;accent-color:var(--amber)}
 .toast{bottom:84px;max-width:calc(100vw - 32px)}
 @media (prefers-reduced-motion:reduce){button:active:not(:disabled){transform:none}}
+.dtabs button{min-height:40px}
+.dlist li span{font-size:12px}

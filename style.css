@@ -169,3 +169,12 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
 .left{list-style:none;margin:4px 0 12px;padding:0;display:flex;flex-direction:column;gap:6px}
 .left li{border:2px solid var(--line);background:var(--panel2);padding:8px 10px 8px 30px;position:relative;font-size:15px}
 .left li::before{content:'';position:absolute;left:11px;top:50%;width:8px;height:8px;margin-top:-4px;background:var(--amber)}
+
+.dtabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.dtabs button.on{border-color:var(--amber);color:var(--amber);background:#1d2a4c}
+.dlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.dlist li{display:flex;align-items:center;gap:10px;padding:4px 10px 4px 4px;border:2px solid var(--line);background:var(--panel2)}
+.dlist li.act{border-color:#5a4a22}.dlist li.res{border-color:#1f5a55}
+.dlist li img{flex:none;border:1px solid #000}
+.dlist li div{flex:1;min-width:0;line-height:1.25}.dlist li b{display:block;font:600 16px var(--disp)}.dlist li span{font-size:12.5px}
+.dlist strong{font:700 22px var(--disp);color:var(--amber);font-variant-numeric:tabular-nums}
