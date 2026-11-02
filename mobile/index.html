@@ -170,6 +170,10 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
 .reqs{gap:3px}
 .tok{font-size:14px;padding:0 5px 0 3px;gap:3px}
 .stand small{white-space:nowrap}
+
+.left{list-style:none;margin:4px 0 12px;padding:0;display:flex;flex-direction:column;gap:6px}
+.left li{border:2px solid var(--line);background:var(--panel2);padding:8px 10px 8px 30px;position:relative;font-size:15px}
+.left li::before{content:'';position:absolute;left:11px;top:50%;width:8px;height:8px;margin-top:-4px;background:var(--amber)}
 /* Phone build. Loaded after style.css and overrides it.
    Layout: compact header, a fixed strip with this turn's pool, one scrolling tab body,
    and a tab bar in thumb reach at the bottom. Single dark look by choice. */
@@ -852,6 +856,22 @@ function viewDone(){modal('<div class="eyebrow">All captains · this run</div><h
 function viewLog(){modal('<div class="eyebrow">Latest 50 events</div><h2>Run log.</h2><div class="log">'+s.log.map(t=>'<div>'+esc(t)+'</div>').join('')+'</div><div class="btns"><button class="primary" data-a="close">Back</button></div>')}
 function closeDlg(){if(screen==='game'&&s&&(s.phase==='handoff'||s.over)){phase()}else hide()}
 
+/* ---------- end-of-turn check ---------- */
+function leftovers(){const p=E.me(s),out=[];
+ s.board.filter(c=>E.canComplete(s,c)).forEach(c=>out.push('Deliver <b>'+esc(c.name)+'</b> for <b class="acc">+'+c.profit+'</b> profit'));
+ const playable=p.hand.filter((k,i)=>E.canPlay(s,i)).length;
+ if(playable)out.push('Play <b>'+playable+'</b> more card'+(playable>1?'s':'')+' from your hand');
+ if(!p.patrolled&&p.pool.combat>=3&&p.pool.fuel>=1)out.push('Run a <b>pirate patrol</b> for <b class="acc">+5</b> profit');
+ const can=p.buys>0?E.MARKET.filter(k=>s.market[k]>0&&p.pool.cr>=E.CARDS[k].cost):[];
+ if(can.length){const best=can.reduce((a,k)=>E.CARDS[k].cost>E.CARDS[a].cost?k:a);out.push('Buy a card with your <b>'+p.pool.cr+'</b> credits (up to <b>'+E.CARDS[best].n+'</b>)')}
+ const n=Math.floor(p.pool.cr/E.CASH);
+ if(n)out.push('Cash in <b>'+n*E.CASH+'</b> credits for <b class="acc">+'+n+'</b> profit');
+ return out}
+function endAsk(){if(!s||screen!=='game'||!E.live(s))return;s.warned=s.warned||{};const left=leftovers();
+ if(left.length){modal('<div class="eyebrow">Before you end your turn</div><h2>You still have moves.</h2><ul class="left">'+left.map(x=>'<li>'+x+'</li>').join('')+'</ul><p class="mute">Unspent resources and credits expire when your turn ends.</p><div class="btns"><button data-a="close">Keep playing</button><button class="primary" data-a="end">End turn anyway</button></div>');return}
+ if(s.warned[s.current]){act(()=>E.end(s));return}
+ modal('<h2>End your turn?</h2><p>Unspent resources expire. Your hand and played cards go to discard, then you draw a new hand of 5. This reminder only appears on your first turn.</p><div class="btns"><button class="primary" data-a="end">End turn</button><button data-a="close">Cancel</button></div>')}
+
 /* ---------- events ---------- */
 document.addEventListener('change',e=>{const k=e.target.id;if(k in cfg&&k!=='names'&&screen==='setup'){collect();cfg[k]=k==='winMode'?e.target.value:Number(e.target.value);
  if(k==='humans'){cfg.bots=Math.min(cfg.bots,6-cfg.humans);if(cfg.humans+cfg.bots<2)cfg.bots=1}renderSetup()}});
@@ -874,7 +894,7 @@ document.addEventListener('click',e=>{
  else if(a==='cash')act(()=>E.cashIn(s));
  else if(a==='scrap')act(()=>E.scrap(s,id));
  else if(a==='end'){s.warned=s.warned||{};s.warned[s.current]=true;act(()=>E.end(s))}
- else if(a==='endAsk'){s.warned=s.warned||{};if(s.warned[s.current])act(()=>E.end(s));else modal('<h2>End your turn?</h2><p>Unspent resources expire. Your hand and played cards go to discard, then you draw a new hand of 5. This reminder only appears on your first turn.</p><div class="btns"><button class="primary" data-a="end">End turn</button><button data-a="close">Cancel</button></div>')}
+ else if(a==='endAsk')endAsk();
  else if(a==='rules')rules();
  else if(a==='records')showRecords();
  else if(a==='deck')viewDeck();

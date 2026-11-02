@@ -165,3 +165,7 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
 .reqs{gap:3px}
 .tok{font-size:14px;padding:0 5px 0 3px;gap:3px}
 .stand small{white-space:nowrap}
+
+.left{list-style:none;margin:4px 0 12px;padding:0;display:flex;flex-direction:column;gap:6px}
+.left li{border:2px solid var(--line);background:var(--panel2);padding:8px 10px 8px 30px;position:relative;font-size:15px}
+.left li::before{content:'';position:absolute;left:11px;top:50%;width:8px;height:8px;margin-top:-4px;background:var(--amber)}
