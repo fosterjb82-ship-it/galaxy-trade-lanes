@@ -24,4 +24,5 @@ p.pool.cr=9;const before=p.profit;assert.equal(E.cashIn(s),true);assert.equal(E.
 assert.equal(p.pool.cr,1);assert.equal(p.profit,before+2);
 p.hand.push('charter');assert.equal(E.play(s,p.hand.indexOf('charter')),true);assert.equal(p.pool.cr,3);assert.equal(p.profit,before+4);
 assert.ok(E.MARKET.includes('charter'));
+p.hand.push('scrip');assert.equal(E.scrap(s,p.hand.length-1),true);assert.deepEqual(p.scrappedCards,['scrip']);
 console.log('ok avg profit',(tot/n).toFixed(1),'zero',zero,'of',n);

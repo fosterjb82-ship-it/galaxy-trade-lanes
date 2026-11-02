@@ -125,7 +125,27 @@ function viewDecks(i){
   +'<div class="dtabs">'+order.map(j=>'<button class="sm'+(j===i?' on':'')+'" data-a="decks" data-id="'+j+'">'+esc(s.players[j].name)+' · '+s.players[j].profit+'</button>').join('')+'</div>'
   +'<p class="mute">#'+rank+' · '+p.profit+' profit · '+p.completed+' deliveries · '+E.deckSize(p)+' cards ('+bought+' bought)</p>'
   +'<ul class="dlist">'+rows.map(([k,n])=>{const d=E.CARDS[k];return '<li class="'+d.cat+'"><img class="px" src="'+SP.cardURL(k)+'" width="66" height="39" alt=""><div><b>'+d.n+'</b><span class="mute">'+d.t+'</span></div><strong>×'+n+'</strong></li>'}).join('')+'</ul>'
+  +scrapList(p)
   +'<div class="btns"><button class="primary" data-a="close">Back</button></div>',true)}
+function scrapList(p){const sc=p.scrappedCards||[],c={};sc.forEach(k=>c[k]=(c[k]||0)+1);
+ const by=sc.filter(k=>k!=='buyout').length,bo=sc.length-by;
+ return '<h3 class="dsub">Scrapped · '+sc.length+'</h3>'+(sc.length?'<p class="mute">'+by+' scrapped from hand for 1 credit each'+(bo?' · '+bo+' Buyout'+(bo>1?'s':'')+' used up when played':'')+'</p><ul class="dlist">'
+  +Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,n])=>'<li class="'+E.CARDS[k].cat+' gone"><img class="px" src="'+SP.cardURL(k)+'" width="66" height="39" alt=""><div><b>'+E.CARDS[k].n+'</b><span class="mute">'+(k==='buyout'?'Used up when played':'Removed from the deck')+'</span></div><strong>×'+n+'</strong></li>').join('')+'</ul>'
+  :'<p class="mute">'+esc(p.name)+' never scrapped a card.</p>')}
+function encyclopedia(sec){sec=sec||'cards';
+ const card=k=>{const c=E.CARDS[k];return '<li class="'+c.cat+'"><img class="px" src="'+SP.cardURL(k)+'" width="88" height="52" alt=""><div><div class="kind">'+(c.cat==='res'?'Resource':'Action')+' · '+c.kind+'</div><b>'+c.n+'</b><span>'+c.t+'</span><small class="mute">'+(c.cat==='res'?'Free to play: does not use an action.':'Uses 1 action (2 per turn by default).')+'</small></div><strong>'+(c.cost?icon('cr',1.6)+c.cost:'Start')+'</strong></li>'};
+ const req=t=>Object.entries(t.req).map(([r,n])=>'<span class="tok met" style="--rc:var(--c-'+r+')">'+icon(r,1.6)+n+'</span>').join('')+(E.need(t)?'<span class="tok met" style="--rc:var(--c-cargo)">'+icon('cargo',1.6)+E.need(t)+'</span>':'');
+ const tabs=[['cards','Market cards'],['start','Starter cards'],['contracts','Contracts'],['moves','Other moves']];
+ let h='';
+ if(sec==='cards')h='<p class="mute">Every card you can buy. Bought cards go to your discard pile and show up in later hands.</p><ul class="enc">'+E.MARKET.map(card).join('')+'</ul>';
+ else if(sec==='start')h='<p class="mute">Every captain starts with these 10 cards: 4 Scrip, 3 Fuel Drums, 2 Ore Samples and 1 Hold Rig.</p><ul class="enc">'+['scrip','drum','sample','rig'].map(card).join('')+'</ul>';
+ else if(sec==='contracts')h='<p class="mute">The 16 contract types (each appears 3 times in the contract deck). Pay the listed resources plus cargo space equal to ore + tech. Big contracts only appear after round 4 or 8.</p><ul class="enc">'+E.TEMPLATES.map((t,i)=>'<li><img class="px" src="'+SP.sceneURL(t.dest,i)+'" width="88" height="52" alt=""><div><div class="kind">To '+esc(t.dest)+' · '+(t.req.combat?'Armed':'Freight')+'</div><b>'+esc(t.name)+'</b><div class="reqs">'+req(t)+'</div></div><strong>'+icon('star',1.6)+'+'+t.profit+'</strong></li>').join('')+'</ul>';
+ else h='<ul class="enc moves">'
+  +'<li><img class="px" src="'+SP.iconURL('combat')+'" width="40" height="40" alt=""><div><b>Pirate patrol</b><span>Spend 3 combat and 1 fuel for +5 profit. Once per turn.</span></div><strong>'+icon('star',1.6)+'+5</strong></li>'
+  +'<li><img class="px" src="'+SP.iconURL('cr')+'" width="40" height="40" alt=""><div><b>Cash in</b><span>Trade '+E.CASH+' credits for 1 profit, as often as you can afford, any time on your turn.</span></div><strong>'+icon('star',1.6)+'+1</strong></li>'
+  +'<li><img class="px" src="'+SP.iconURL('cr')+'" width="40" height="40" alt=""><div><b>Scrap a card</b><span>Pay 1 credit to remove one unplayed card in your hand from your deck for good. Once per turn. A smaller deck draws your best cards more often.</span></div><strong>'+icon('cr',1.6)+'1</strong></li>'
+  +'<li><img class="px" src="'+SP.iconURL('cargo')+'" width="40" height="40" alt=""><div><b>Cargo space</b><span>You have 1 space each turn. Ore and tech need space to deliver. Hold Rig, Barge and Process Deck add more.</span></div><strong>'+icon('cargo',1.6)+'1</strong></li></ul>';
+ modal('<div class="eyebrow">Galaxy Trade Lanes</div><h2>Encyclopedia</h2><div class="dtabs">'+tabs.map(([k,l])=>'<button class="sm'+(k===sec?' on':'')+'" data-a="enc" data-sec="'+k+'">'+l+'</button>').join('')+'</div>'+h+'<div class="btns"><button class="primary" data-a="close">Back</button></div>',true)}
 function viewDone(){modal('<div class="eyebrow">All captains · this run</div><h2>Deliveries.</h2>'+(s.done.length?[...s.done].reverse().map(c=>'<div class="done"><div><div class="eyebrow">Round '+c.round+' · '+esc(c.captain)+'</div><b>'+esc(c.name)+'</b> <span class="mute">to '+esc(c.dest)+'</span></div><strong>+'+c.profit+'</strong></div>').join(''):'<p class="mute">No deliveries yet.</p>')+'<div class="btns"><button class="primary" data-a="close">Back</button></div>')}
 function viewLog(){modal('<div class="eyebrow">Latest 50 events</div><h2>Run log.</h2><div class="log">'+s.log.map(t=>'<div>'+esc(t)+'</div>').join('')+'</div><div class="btns"><button class="primary" data-a="close">Back</button></div>')}
 function closeDlg(){if(screen==='game'&&s&&(s.phase==='handoff'||s.over)){phase()}else hide()}
@@ -172,6 +192,7 @@ document.addEventListener('click',e=>{
  else if(a==='rules')rules();
  else if(a==='records')showRecords();
  else if(a==='deck')viewDeck();
+ else if(a==='enc')encyclopedia(b.dataset.sec);
  else if(a==='decks')viewDecks(Number.isInteger(id)?id:null);
  else if(a==='done')viewDone();
  else if(a==='log')viewLog();

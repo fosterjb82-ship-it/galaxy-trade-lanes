@@ -44,7 +44,7 @@ function cashBtn(p,on){const n=Math.floor(p.pool.cr/E.CASH),ok=on&&n>0;
 function menu(){
  modal('<div class="eyebrow">Galaxy Trade Lanes · phone build</div><h2>Menu</h2><div class="mmenu">'
   +'<div class="mvol"><label for="vol2">Music volume</label><input id="vol2" type="range" min="0" max="1" step="0.05" value="'+Music.vol+'"></div>'
-  +'<button data-a="rules">Rules</button><button data-a="records">Records</button>'
+  +'<button data-a="rules">Rules</button><button data-a="enc">Encyclopedia</button><button data-a="records">Records</button>'
   +(screen==='game'?'<button data-a="new">New run</button>':'')
   +'<button class="primary" data-a="close">Back</button></div>');
 }

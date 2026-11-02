@@ -99,3 +99,7 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 @media (prefers-reduced-motion:reduce){button:active:not(:disabled){transform:none}}
 .dtabs button{min-height:40px}
 .dlist li span{font-size:12px}
+.enc li{flex-wrap:wrap;gap:8px 10px;padding-right:8px}
+.enc li>img{width:88px;height:auto}
+.enc li>div{flex:1 1 150px}
+.enc li b{font-size:17px}.enc li span{font-size:13px}

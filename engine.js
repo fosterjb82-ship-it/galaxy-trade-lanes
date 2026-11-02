@@ -72,7 +72,7 @@ function create(o={}){
  const cfg=o.players||[{name:'Captain'},{name:'Nova',bot:true},{name:'Orion',bot:true}];
  cfg.forEach(c=>{
   const p={name:String(c.name||'Captain').slice(0,24),bot:!!c.bot,deck:[],hand:[],played:[],discard:[],pool:fresh(),
-   buys:1,actions:s.actionLimit,patrolled:false,scrapped:false,profit:0,completed:0,turnPlayed:[]};
+   buys:1,actions:s.actionLimit,patrolled:false,scrapped:false,profit:0,completed:0,turnPlayed:[],scrappedCards:[]};
   p.deck=shuffle(s,['scrip','scrip','scrip','scrip','drum','drum','drum','sample','sample','rig']);
   draw(s,p,5);s.players.push(p);
  });
@@ -94,7 +94,7 @@ function play(s,i,target){
  (p.turnPlayed=p.turnPlayed||[]).push(k);
  if(c.cat==='act'&&s.actionLimit)p.actions--;
  if(k==='buyout'){
-  const v=s.players[target],amt=Math.min(2,v.profit);v.profit-=amt;p.profit+=amt;s.trash.push(k);
+  const v=s.players[target],amt=Math.min(2,v.profit);v.profit-=amt;p.profit+=amt;s.trash.push(k);(p.scrappedCards=p.scrappedCards||[]).push(k);
   log(s,p.name+' bought out '+amt+' profit from '+v.name+'.');
  }else p.played.push(k);
  Object.entries(c.g).forEach(([r,n])=>p.pool[r]+=n);
@@ -127,7 +127,7 @@ function patrol(s){const p=me(s);if(!live(s)||p.patrolled||p.pool.combat<3||p.po
 function cashIn(s){const p=me(s);if(!live(s)||p.pool.cr<CASH)return false;
  p.pool.cr-=CASH;p.profit++;log(s,p.name+' cashed in '+CASH+' credits for +1 profit.');checkTarget(s);return true}
 function scrap(s,i){const p=me(s);if(!live(s)||p.scrapped||p.pool.cr<1||!Number.isInteger(i)||i<0||i>=p.hand.length)return false;
- p.pool.cr--;const k=p.hand.splice(i,1)[0];s.trash.push(k);p.scrapped=true;log(s,p.name+' scrapped '+CARDS[k].n+'.');return true}
+ p.pool.cr--;const k=p.hand.splice(i,1)[0];s.trash.push(k);(p.scrappedCards=p.scrappedCards||[]).push(k);p.scrapped=true;log(s,p.name+' scrapped '+CARDS[k].n+'.');return true}
 function end(s){
  if(!live(s))return false;
  const p=me(s);
