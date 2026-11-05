@@ -141,17 +141,21 @@ function spawn(s){if(s.boss||!threatRounds(s).includes(s.round))return false;
  s.boss={name:b.name,hp,max:hp,arrived:s.round,until:s.round+BOSS_ROUNDS-1,dmg:s.players.map(()=>0),no:s.bossNo};
  log(s,b.name+' blockades the trade lanes! No contracts until it is defeated.');return true}
 function hit(s,n){const p=me(s),b=s.boss,d=Math.min(n,b.hp);b.hp-=d;b.dmg[s.current]+=d;p.bossDmg=(p.bossDmg||0)+d;
- if(b.hp<=0){let total=0;s.players.forEach((t,i)=>{if(b.dmg[i]){t.profit+=b.dmg[i];total+=b.dmg[i]}});p.profit+=FINAL_BLOW;
-  s.bossDone.push({name:b.name,won:true,round:s.round,dmg:b.dmg.slice(),final:s.current});
+ if(b.hp<=0){const reward=b.dmg.map((d,i)=>d+(i===s.current?FINAL_BLOW:0));s.players.forEach((t,i)=>{t.profit+=reward[i]});
+  s.bossDone.push({name:b.name,no:b.no,won:true,round:s.round,max:b.max,dmg:b.dmg.slice(),final:s.current,change:reward,profit:s.players.map(t=>t.profit),seen:bots(s)});
   log(s,p.name+' landed the final blow on '+b.name+' (+'+FINAL_BLOW+'). Captains earn +1 profit per damage dealt. Contracts are open again.');
   s.boss=null;s.players.forEach((t,i)=>{if(b.dmg[i]){s.current=i;checkTarget(s)}});s.current=s.players.indexOf(p)}
  return d}
+const bots=s=>s.players.map((t,i)=>t.bot?i:-1).filter(i=>i>=0);
+// boss results a human captain has not confirmed yet
+function unseen(s,i){return (s.bossDone||[]).findIndex(r=>r.seen&&!r.seen.includes(i))}
+function confirmBoss(s,k,i){const r=(s.bossDone||[])[k];if(!r||!r.seen||r.seen.includes(i))return false;r.seen.push(i);return true}
 function attack(s){const p=me(s);if(!live(s)||!s.boss||p.pool.combat<1)return false;
  const c=p.pool.combat;p.pool.combat=0;const d=hit(s,c*(p.dbl?2:1));log(s,p.name+' hit the pirates for '+d+' damage.');return true}
 function mercs(s){const p=me(s);if(!live(s)||!s.boss||p.pool.cr<MERC)return false;
  p.pool.cr-=MERC;hit(s,1);log(s,p.name+' hired mercenaries for 1 damage.');return true}
-function raid(s){const b=s.boss;s.players.forEach(t=>{t.profit=Math.max(0,t.profit-RAID)});
- s.bossDone.push({name:b.name,won:false,round:s.round,dmg:b.dmg.slice()});
+function raid(s){const b=s.boss,lost=s.players.map(t=>-Math.min(RAID,t.profit));s.players.forEach((t,i)=>{t.profit+=lost[i]});
+ s.bossDone.push({name:b.name,no:b.no,won:false,round:s.round,max:b.max,hp:b.hp,dmg:b.dmg.slice(),change:lost,profit:s.players.map(t=>t.profit),seen:bots(s)});
  log(s,b.name+' raided every captain for '+RAID+' profit and left the lanes.');s.boss=null}
 function cashIn(s){const p=me(s);if(!live(s)||p.pool.cr<CASH)return false;
  p.pool.cr-=CASH;p.profit++;log(s,p.name+' cashed in '+CASH+' credits for +1 profit.');checkTarget(s);return true}
@@ -172,7 +176,7 @@ function end(s){
  }
  s.phase='handoff';return true;
 }
-function migrate(s){if(s.threats===undefined){s.threats=false;s.bossNo=0;s.boss=null;s.bossDone=[]}MARKET.forEach(k=>{if(!(k in s.market))s.market[k]=Math.max(10,4+2*s.players.length)});s.players.forEach(p=>{p.scrappedCards=p.scrappedCards||[]});return s}
+function migrate(s){(s.bossDone||[]).forEach(r=>{if(!r.seen)r.seen=s.players.map((t,i)=>i)});if(s.threats===undefined){s.threats=false;s.bossNo=0;s.boss=null;s.bossDone=[]}MARKET.forEach(k=>{if(!(k in s.market))s.market[k]=Math.max(10,4+2*s.players.length)});s.players.forEach(p=>{p.scrappedCards=p.scrappedCards||[]});return s}
 const W={deal:7,house:8,quarter:6,pack:5,borer:4,barge:3.5,vault:4,gunship:3.5,probe:4,deck:4.5,broker:2,wing:4,buyout:2.5,charter:6,salvage:3.5,weapons:3.5};
 function playAll(s){
  if(!live(s))return false;
@@ -208,6 +212,6 @@ function botTurn(s){
  if(s.boss){attack(s);while(s.boss&&mercs(s));}
  if(!s.boss)patrol(s);while(cashIn(s));end(s);return true;
 }
-return {RES,RLABEL,CARDS,MARKET,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,deckSize,need,migrate,attack,mercs,threatRounds,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
+return {RES,RLABEL,CARDS,MARKET,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,deckSize,need,migrate,attack,mercs,unseen,confirmBoss,threatRounds,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;

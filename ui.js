@@ -105,9 +105,24 @@ function render(){
 }
 function table(){return '<table class="t"><thead><tr><th>CAPTAIN</th><th>PROFIT</th><th>DELIVERIES</th></tr></thead><tbody>'+[...s.players].sort((a,b)=>b.profit-a.profit).map(p=>'<tr><td>'+esc(p.name)+'</td><td class="acc">'+p.profit+'</td><td>'+p.completed+'</td></tr>').join('')+'</tbody></table>'}
 let seenBoss=0;
-function bossNews(){const d=s.bossDone||[];while(seenBoss<d.length){const r=d[seenBoss++];if(r.won){Music.sfx('deliver');notify(r.name+' destroyed! '+s.players[r.final].name+' landed the final blow (+'+E.FINAL_BLOW+'). Contracts are open again.')}else{Music.sfx('boss');notify(r.name+' raided every captain for '+E.RAID+' profit.')}}}
+function bossNews(){seenBoss=(s.bossDone||[]).length}
+function bossReport(){
+ // who still has to confirm: the current human captain, or (once the run is over) any human captain
+ const order=s.over?s.players.map((t,i)=>i):[s.current];
+ for(const i of order){if(s.players[i].bot)continue;const k=E.unseen(s,i);if(k<0)continue;
+  const r=s.bossDone[k],multi=s.players.filter(t=>!t.bot).length>1;Music.sfx(r.won?'deliver':'boss');
+  const rows=s.players.map((t,j)=>({t,j})).sort((a,b)=>r.change[b.j]-r.change[a.j]||r.dmg[b.j]-r.dmg[a.j]).map(({t,j})=>'<tr'+(j===i?' class="me"':'')+'><td>'+esc(t.name)+(r.won&&j===r.final?' <span class="tag">final blow</span>':'')+'</td><td>'+r.dmg[j]+'</td><td class="'+(r.change[j]>0?'up':r.change[j]<0?'down':'')+'">'+(r.change[j]>0?'+':'')+r.change[j]+'</td><td>'+r.profit[j]+'</td></tr>').join('');
+  const dealt=r.dmg.reduce((a,b)=>a+b,0);
+  modal('<div class="eyebrow">Round '+r.round+' · pirate threat '+(r.won?'defeated':'report')+(multi?' · for '+esc(s.players[i].name):'')+'</div>'
+   +'<div class="breport '+(r.won?'won':'lost')+'">'+px(SP.bossURL(r.no||1),176,104)+'<div><h2>'+esc(r.name)+(r.won?' destroyed.':' raided the lanes.')+'</h2><p class="mute">'
+   +(r.won?esc(s.players[r.final].name)+' landed the final blow (+'+E.FINAL_BLOW+'). Every captain earns +1 profit per damage dealt. Contracts are open again.'
+     :'The captains dealt '+dealt+' of '+r.max+' damage. It raided every captain for up to '+E.RAID+' profit and left the lanes. Contracts are open again.')+'</p></div></div>'
+   +'<table class="t"><thead><tr><th>CAPTAIN</th><th>DAMAGE</th><th>'+(r.won?'REWARD':'RAIDED')+'</th><th>PROFIT NOW</th></tr></thead><tbody>'+rows+'</tbody></table>'
+   +'<div class="btns"><button class="primary" data-a="bossok" data-id="'+k+'" data-who="'+i+'">'+(multi?'Confirm · '+esc(s.players[i].name):'Confirm')+'</button></div>');
+  return true}
+ return false}
 function phase(){
- if(screen!=='game')return;bossNews();const p=E.me(s);
+ if(screen!=='game')return;bossNews();if(bossReport())return;const p=E.me(s);
  if(s.over){const hi=Math.max(...s.players.map(x=>x.profit)),w=s.players.filter(x=>x.profit===hi);
   modal('<div class="eyebrow">Run complete · Round '+s.round+'</div><h2>'+w.map(x=>esc(x.name)).join(' & ')+(w.length>1?' share the win.':' wins.')+'</h2>'+table()+'<p class="mute" style="margin-top:10px">Only profit counts. Unspent credits and deck size do not.</p><div class="btns"><button class="primary" data-a="setup">New run</button><button data-a="decks">Captains\' decks</button><button data-a="review">Review board</button></div>');return}
  if(s.phase==='handoff'){if(!p.bot){const alarm=s.boss&&!s.boss.alerted;if(alarm)s.boss.alerted=true;Music.sfx(alarm?'boss':'turn')};modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Final round':'Next captain')+'</div><h2>'+esc(p.name)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' profit</p>'+(s.boss?'<div class="threat soon">'+icon('combat',1.6)+'<span><b>'+esc(s.boss.name)+'</b> is blockading the lanes: '+s.boss.hp+' / '+s.boss.max+' hull left, '+(s.boss.until-s.round+1)+' round(s) to beat it.</span></div>':'')+'<div class="btns"><button class="primary" data-a="begin">Begin turn</button></div>');return}
@@ -165,7 +180,7 @@ function encyclopedia(sec){sec=sec||'cards';
  modal('<div class="eyebrow">Galaxy Trade Lanes</div><h2>Encyclopedia</h2><div class="dtabs">'+tabs.map(([k,l])=>'<button class="sm'+(k===sec?' on':'')+'" data-a="enc" data-sec="'+k+'">'+l+'</button>').join('')+'</div>'+h+'<div class="btns"><button class="primary" data-a="close">Back</button></div>',true)}
 function viewDone(){modal('<div class="eyebrow">All captains · this run</div><h2>Deliveries.</h2>'+(s.done.length?[...s.done].reverse().map(c=>'<div class="done"><div><div class="eyebrow">Round '+c.round+' · '+esc(c.captain)+'</div><b>'+esc(c.name)+'</b> <span class="mute">to '+esc(c.dest)+'</span></div><strong>+'+c.profit+'</strong></div>').join(''):'<p class="mute">No deliveries yet.</p>')+'<div class="btns"><button class="primary" data-a="close">Back</button></div>')}
 function viewLog(){modal('<div class="eyebrow">Latest 50 events</div><h2>Run log.</h2><div class="log">'+s.log.map(t=>'<div>'+esc(t)+'</div>').join('')+'</div><div class="btns"><button class="primary" data-a="close">Back</button></div>')}
-function closeDlg(){if(screen==='game'&&s&&(s.phase==='handoff'||s.over)){phase()}else hide()}
+function closeDlg(){if(screen==='game'&&s&&(s.phase==='handoff'||s.over||document.querySelector('#dialog [data-a=bossok]'))){if(document.querySelector('#dialog [data-a=bossok]'))return;phase()}else hide()}
 
 /* ---------- end-of-turn check ---------- */
 function leftovers(){const p=E.me(s),out=[];
@@ -206,6 +221,7 @@ document.addEventListener('click',e=>{
  else if(a==='complete')act(()=>E.complete(s,id),'deliver');
  else if(a==='patrol')act(()=>E.patrol(s),'patrol');
  else if(a==='cash')act(()=>E.cashIn(s),'cash');
+ else if(a==='bossok'){if(s&&E.confirmBoss(s,id,Number(b.dataset.who))){save();hide();phase()}}
  else if(a==='attack')act(()=>E.attack(s),'hit');
  else if(a==='mercs')act(()=>E.mercs(s),'hit');
  else if(a==='scrap')act(()=>E.scrap(s,id),'scrap');

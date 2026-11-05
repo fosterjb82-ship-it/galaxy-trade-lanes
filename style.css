@@ -205,3 +205,11 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
 .bbtns{display:flex;flex-wrap:wrap;gap:6px}.bbtns button{flex:1 1 180px}
 .boss.compact{flex-direction:column;gap:6px}.bhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.bhead b{font:700 18px var(--disp);color:var(--coral)}
 .ctr .go.blk{background:#6a1a1acc;color:#ffd6c4}
+
+.breport{display:flex;gap:14px;align-items:center;margin:6px 0 12px}
+.breport img{width:176px;height:auto;border:2px solid #000;flex:none}
+.breport.won img{filter:grayscale(.6) brightness(.8)}
+.breport h2{margin:0 0 6px}.breport.lost h2{color:var(--coral)}
+.breport p{margin:0}
+.t tr.me td{background:#1d2a4c}.t td.up{color:var(--teal);font-weight:600}.t td.down{color:var(--coral);font-weight:600}
+.tag{font:500 9.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#2a1604;background:var(--amber);padding:1px 5px;margin-left:4px;vertical-align:middle}

@@ -13,11 +13,16 @@ assert.equal(E.attack(s),true);assert.equal(s.boss.hp,2);assert.equal(s.boss.dmg
 const p0=a.profit;assert.equal(E.mercs(s),true);assert.equal(E.mercs(s),true);
 assert.equal(s.boss,null);assert.equal(a.profit,p0+6+E.FINAL_BLOW);assert.equal(s.bossDone[0].won,true);
 assert.ok(s.board.some(c=>E.canComplete(s,c)));assert.equal(E.mercs(s),false);
+// each human captain must confirm the result
+const r=s.bossDone[0];assert.deepEqual(r.change,[6+E.FINAL_BLOW,0]);assert.equal(E.unseen(s,0),0);assert.equal(E.unseen(s,1),0);
+assert.equal(E.confirmBoss(s,0,0),true);assert.equal(E.confirmBoss(s,0,0),false);assert.equal(E.unseen(s,0),-1);assert.equal(E.unseen(s,1),0);
+assert.equal(E.confirmBoss(s,0,1),true);assert.equal(E.unseen(s,1),-1);
 // second boss raids if nobody fights it
 E.end(s);while(!s.boss){E.begin(s);E.end(s)}
 assert.equal(s.round,11);const before=s.players.map(p=>p.profit);
 while(s.boss){E.begin(s);E.end(s)}
 assert.deepEqual(s.players.map(p=>p.profit),before.map(v=>Math.max(0,v-E.RAID)));assert.equal(s.bossDone[1].won,false);
+assert.deepEqual(s.bossDone[1].change,before.map(v=>-Math.min(E.RAID,v)));
 // threats off: no bosses
 const q=E.create({seed:3,rounds:16,threats:false,players:[{name:'A',bot:true},{name:'B',bot:true}]});while(!q.over){E.botTurn(q);assert.equal(q.boss,null)}
 console.log('boss ok');

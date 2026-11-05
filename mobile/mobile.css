@@ -108,3 +108,4 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 .boss h3{font-size:22px}.boss p{font-size:13px}
 .bbtns button{flex:1 1 140px;min-height:46px;font-size:13px}
 .threat{font-size:13px}
+.breport{flex-direction:column;align-items:stretch}.breport img{width:100%}
