@@ -173,6 +173,14 @@ const EMB={
   box3d(L,40,28,8,10,PAL.amber);L.rect(43,31,2,4,PAL.amber[1]);
   coin(L,78,12,6);coin(L,82,28,5);coin(L,76,42,6);
   [[70,14],[72,30],[68,42]].forEach(([x,y])=>L.poly([[x,y],[x-5,y-3],[x-5,y+3]],PAL.red[5]));L.line(70,14,58,16,PAL.red[4]);L.line(72,30,70,31,PAL.red[4])},
+ weapons(L){L.poly([[12,50],[16,38],[30,33],[58,33],[72,38],[76,50]],PAL.red[2]);L.poly([[30,33],[44,44],[58,33]],PAL.red[1]);L.poly([[38,33],[44,41],[50,33]],PAL.steel[6]);
+  L.rect(18,40,10,3,PAL.amber[4]);L.rect(18,44,10,1,PAL.amber[4]);L.rect(60,40,10,3,PAL.amber[4]);
+  L.rect(40,27,8,7,PAL.skin[2]);sph(L,44,20,9,PAL.skin,-.5,-.5);L.rect(34,19,2,5,PAL.skin[1]);L.rect(52,19,2,5,PAL.skin[1]);
+  L.rect(35,10,18,5,PAL.steel[2]);L.rect(33,14,22,2,PAL.steel[1]);L.rect(35,10,18,1,PAL.steel[4]);
+  L.rect(38,18,12,3,PAL.space[0]);L.rect(39,19,10,1,PAL.red[5]);L.rect(41,25,6,1,PAL.skin[1]);
+  L.rect(62,14,22,4,PAL.steel[4]);L.rect(62,14,22,1,PAL.steel[6]);L.rect(66,18,6,8,PAL.steel[3]);L.rect(84,15,4,2,PAL.red[5]);
+  [[74,6],[80,9],[86,5]].forEach(([x,y])=>{L.set(x,y,PAL.red[5]);L.set(x-1,y,PAL.red[3]);L.set(x+1,y,PAL.red[3])});
+  [[16,8],[24,16],[10,22]].forEach(([x,y])=>{L.rect(x-3,y,7,1,PAL.red[4]);L.rect(x,y-3,1,7,PAL.red[4]);L.set(x,y,PAL.red[6])})},
  salvage(L){L.poly([[4,50],[14,42],[30,44],[40,40],[56,44],[70,41],[84,50]],PAL.steel[2]);
   [[16,40,8,6,PAL.rust],[30,38,10,7,PAL.steel],[48,39,9,6,PAL.rust],[60,40,10,6,PAL.amber]].forEach(([x,y,w,h,c])=>{L.poly([[x,y+h],[x+2,y],[x+w,y+1],[x+w-1,y+h]],c[3]);L.rect(x+2,y+1,w-3,1,c[5])});
   L.rect(64,4,6,40,PAL.amber[3]);L.rect(64,4,2,40,PAL.amber[5]);for(let y=8;y<42;y+=6)L.line(64,y,69,y+5,PAL.amber[2]);
@@ -191,7 +199,7 @@ const EMB={
   L.poly([[65,30],[66.6,34],[71,34],[67.4,36.6],[68.8,41],[65,38.4],[61.2,41],[62.6,36.6],[59,34],[63.4,34]],PAL.amber[6]);
   [[78,8],[82,20],[76,24]].forEach(([x,y],i)=>{L.set(x,y,PAL.amber[6]);L.set(x-1,y,PAL.amber[5-i%2]);L.set(x+1,y,PAL.amber[5-i%2]);L.set(x,y-1,PAL.amber[5]);L.set(x,y+1,PAL.amber[5])})}
 };
-const TINT={scrip:PAL.amber,drum:PAL.amber,sample:PAL.rust,rig:PAL.teal,deal:PAL.amber,house:PAL.blue,pack:PAL.teal,borer:PAL.rust,vault:PAL.blue,quarter:PAL.teal,barge:PAL.teal,gunship:PAL.red,probe:PAL.violet,broker:PAL.blue,deck:PAL.amber,wing:PAL.red,buyout:PAL.red,salvage:PAL.rust,charter:PAL.violet};
+const TINT={scrip:PAL.amber,drum:PAL.amber,sample:PAL.rust,rig:PAL.teal,deal:PAL.amber,house:PAL.blue,pack:PAL.teal,borer:PAL.rust,vault:PAL.blue,quarter:PAL.teal,barge:PAL.teal,gunship:PAL.red,probe:PAL.violet,broker:PAL.blue,deck:PAL.amber,wing:PAL.red,buyout:PAL.red,salvage:PAL.rust,weapons:PAL.red,charter:PAL.violet};
 function cardArt(k){const s=cardBg(TINT[k]||PAL.teal,k.length*7+k.charCodeAt(0));const L=new S(88,52);EMB[k](L);L.outline(OUT);s.blit(L);return s}
 
 /* ---- hero freighter (144x64) ---- */
@@ -210,6 +218,28 @@ function hero(){const s=new S(144,64);nebula(s,4,PAL.violet);stars(s,9,40);
  L.rect(ox+40,oy+30,2,2,PAL.teal[5]);L.rect(ox+70,oy+30,2,2,PAL.amber[5]);
  L.outline(OUT);s.blit(L);return s}
 
+/* ---- pirate bosses (88x52) ---- */
+function boss(no){const s=new S(88,52),tint=[PAL.red,PAL.violet,PAL.rust][(no-1)%3];nebula(s,no*7+3,tint);stars(s,no*5+1,20);
+ const L=new S(88,52),H=PAL.steel,R=PAL.red;
+ // engine glow
+ [[6,20],[6,30]].forEach(([x,y])=>{L.rect(x-4,y,6,4,R[4]);L.rect(x-6,y+1,3,2,R[5]);L.rect(x-2,y+1,2,2,R[6])});
+ // hull: long jagged wedge
+ L.poly([[8,16],[30,10],[60,12],[84,26],[60,40],[30,42],[8,36]],H[2]);
+ L.poly([[8,16],[30,10],[60,12],[84,26],[60,22],[30,18],[8,22]],H[3]);
+ L.poly([[30,10],[60,12],[70,18],[34,16]],H[4]);L.line(30,10,60,12,H[5]);
+ L.poly([[8,30],[30,34],[60,30],[84,26],[60,40],[30,42],[8,36]],H[1]);
+ // ram prow and spikes
+ L.poly([[72,22],[86,26],[72,30]],R[3]);L.line(74,23,85,26,R[5]);
+ [[22,10,18,2],[40,11,38,3],[52,12,52,4],[26,42,22,50],[44,41,42,49]].forEach(([x,y,x2,y2])=>{L.line(x,y,x2,y2,H[4]);L.line(x+1,y,x2+1,y2,H[2])});
+ // bridge tower and red viewports
+ box3d(L,38,14,12,8,H);L.rect(40,16,8,2,R[5]);L.set(44,13,R[6]);
+ for(let x=14;x<64;x+=6)L.rect(x,27,3,2,R[4]);for(let x=18;x<60;x+=8)L.set(x,35,R[3]);
+ // cannons
+ [[30,24],[50,24],[30,32],[50,32]].forEach(([x,y])=>{L.rect(x,y,10,2,H[5]);L.rect(x+10,y,3,2,R[5])});
+ // skull emblem on the flank
+ L.rect(56,26,7,5,H[6]);L.rect(57,31,5,2,H[6]);L.set(58,28,R[1]);L.set(61,28,R[1]);L.set(58,32,H[2]);L.set(60,32,H[2]);
+ L.outline(OUT);s.blit(L);return s}
+
 /* ---- tiny icons (10x10) ---- */
 const ICON_MAP={
  fuel:{c:{o:'#4a1c06',O:'#d2701a',Y:'#ffd05a',w:'#fff6c8'},m:['....oo....','...oOOo...','..oOYYOo..','.oOYYYYOo.','.oOYwYYOo.','oOYwYYYYOo','oOYYYYYYOo','oOOYYYYOOo','.oOOOOOOo.','..oooooo..']},
@@ -225,8 +255,8 @@ function icon(k){const m=ICON_MAP[k],s=new S(10,10);m.m.forEach((row,y)=>[...row
 const cache={};
 function toURL(s){const c=document.createElement('canvas');c.width=s.w;c.height=s.h;const g=c.getContext('2d'),id=g.createImageData(s.w,s.h);id.data.set(s.d);g.putImageData(id,0,0);return c.toDataURL()}
 function memo(key,fn){return cache[key]||(cache[key]=toURL(fn()))}
-return {S,PAL,scene,cardArt,hero,icon,EMB,SCENES,
+return {S,PAL,scene,cardArt,hero,icon,boss,EMB,SCENES,
  sceneURL:(d,seed)=>memo('s:'+d+':'+(seed%4),()=>scene(d,(seed%4)+1)),
- cardURL:k=>memo('c:'+k,()=>cardArt(k)),heroURL:()=>memo('hero',hero),iconURL:k=>memo('i:'+k,()=>icon(k))};
+ cardURL:k=>memo('c:'+k,()=>cardArt(k)),bossURL:n=>memo('b:'+n,()=>boss(n)),heroURL:()=>memo('hero',hero),iconURL:k=>memo('i:'+k,()=>icon(k))};
 })();
 if(typeof module!=='undefined')module.exports=Sprites;

@@ -20,11 +20,15 @@ const CARDS={
  deck:{n:'Process Deck',cat:'act',kind:'Industry',g:{ore:1,tech:1,cargo:2},cost:4,t:'Gain 1 ore, 1 tech and 2 cargo space.'},
  wing:{n:'Escort Wing',cat:'act',kind:'Combat',g:{combat:2,fuel:1},draw:1,cost:4,t:'Gain 2 combat and 1 fuel. Draw a card.'},
  buyout:{n:'Buyout',cat:'act',kind:'Tactics',g:{},draw:1,cost:6,t:'Take up to 2 profit from another captain. Draw 1 card. Scrap this card.'},
+ weapons:{n:'Weapons Officer',cat:'act',kind:'Crew',g:{combat:2},draw:1,dbl:1,cost:5,t:'Gain 2 combat and draw 1 card. This turn, combat you spend on a pirate boss deals double damage.'},
  salvage:{n:'Salvage Crew',cat:'act',kind:'Crew',g:{},draw:2,junk:1,cost:5,t:'Scrap 1 other card from your hand for free, then draw 2 cards.'},
  charter:{n:'Trade Charter',cat:'res',kind:'Economy',g:{cr:2},vp:2,cost:8,t:'Gain 2 credits and 2 profit.'}
 };
 const CASH=4; // credits per 1 profit when cashing in
-const MARKET=['deal','house','pack','borer','vault','quarter','barge','gunship','probe','broker','deck','wing','buyout','salvage','charter'];
+const MERC=2; // credits per 1 boss damage when hiring mercenaries
+const BOSSES=[{name:'Blackwake Dreadnought',hpPer:3},{name:'Red Maw Marauder',hpPer:4},{name:'Iron Corsair Armada',hpPer:5}];
+const BOSS_ROUNDS=3,RAID=5,FINAL_BLOW=5;
+const MARKET=['deal','house','pack','borer','vault','quarter','barge','gunship','probe','broker','deck','wing','buyout','salvage','weapons','charter'];
 const TEMPLATES=[
  {name:'Seed Stock',dest:'Harrow',req:{fuel:1,ore:1},profit:8},
  {name:'Hull Plating',dest:'Port Calder',req:{fuel:1,ore:2},profit:11},
@@ -67,7 +71,7 @@ function nextContract(s){
 function create(o={}){
  const s={v:1,id:Date.now()+'-'+Math.random().toString(36).slice(2,7),seed:o.seed||(Date.now()%2147483646)+1,
   current:0,round:1,phase:'handoff',over:false,mode:o.mode||'solo',actionLimit:o.actionLimit===0?0:2,
-  winMode:o.winMode||'rounds',maxRounds:o.rounds||16,target:o.target||80,finalRound:null,
+  threats:o.threats!==false,bossNo:0,boss:null,bossDone:[],winMode:o.winMode||'rounds',maxRounds:o.rounds||16,target:o.target||80,finalRound:null,
   boardSize:o.boardSize||4,board:[],cdeck:[],cdisc:[],done:[],
   market:Object.fromEntries(MARKET.map(k=>[k,Math.max(10,4+2*((o.players||[]).length||3))])),trash:[],log:[],players:[]};
  const cfg=o.players||[{name:'Captain'},{name:'Nova',bot:true},{name:'Orion',bot:true}];
@@ -103,13 +107,14 @@ function play(s,i,target){
  }else p.played.push(k);
  Object.entries(c.g).forEach(([r,n])=>p.pool[r]+=n);
  if(c.buys)p.buys+=c.buys;
+ if(c.dbl)p.dbl=true;
  if(c.draw)draw(s,p,c.draw);
  if(c.vp){p.profit+=c.vp;log(s,p.name+' played '+c.n+' for +'+c.vp+' profit.')}
  if(k==='buyout'||c.vp)checkTarget(s);
  return true;
 }
 function playResources(s){if(!live(s))return false;const p=me(s);let i;while((i=p.hand.findIndex(k=>CARDS[k].cat==='res'))>=0)play(s,i);return true}
-function canComplete(s,c){if(!live(s)||!c)return false;const p=me(s);return Object.entries(c.req).every(([r,n])=>p.pool[r]>=n)&&p.pool.cargo>=need(c)}
+function canComplete(s,c){if(!live(s)||!c||s.boss)return false;const p=me(s);return Object.entries(c.req).every(([r,n])=>p.pool[r]>=n)&&p.pool.cargo>=need(c)}
 function complete(s,id){
  const c=s.board.find(x=>x&&x.id===id),p=me(s);
  if(!canComplete(s,c))return false;
@@ -128,6 +133,26 @@ function buy(s,k){
 }
 function patrol(s){const p=me(s);if(!live(s)||p.patrolled||p.pool.combat<3||p.pool.fuel<1)return false;
  p.pool.combat-=3;p.pool.fuel--;p.patrolled=true;p.profit+=5;log(s,p.name+' cleared a pirate patrol for +5.');checkTarget(s);return true}
+/* ---- pirate threats ---- */
+function threatRounds(s){if(!s.threats)return [];const n=s.winMode==='rounds'?s.maxRounds:16;const a=Math.max(5,Math.round(n*.3));return [a,Math.max(a+3,Math.round(n*.7))].filter(r=>r<n)}
+function nextThreat(s){return threatRounds(s).find(r=>r>s.round)||null}
+function spawn(s){if(s.boss||!threatRounds(s).includes(s.round))return false;
+ const b=BOSSES[Math.min(s.bossNo,BOSSES.length-1)],hp=b.hpPer*s.players.length;s.bossNo++;
+ s.boss={name:b.name,hp,max:hp,arrived:s.round,until:s.round+BOSS_ROUNDS-1,dmg:s.players.map(()=>0),no:s.bossNo};
+ log(s,b.name+' blockades the trade lanes! No contracts until it is defeated.');return true}
+function hit(s,n){const p=me(s),b=s.boss,d=Math.min(n,b.hp);b.hp-=d;b.dmg[s.current]+=d;p.bossDmg=(p.bossDmg||0)+d;
+ if(b.hp<=0){let total=0;s.players.forEach((t,i)=>{if(b.dmg[i]){t.profit+=b.dmg[i];total+=b.dmg[i]}});p.profit+=FINAL_BLOW;
+  s.bossDone.push({name:b.name,won:true,round:s.round,dmg:b.dmg.slice(),final:s.current});
+  log(s,p.name+' landed the final blow on '+b.name+' (+'+FINAL_BLOW+'). Captains earn +1 profit per damage dealt. Contracts are open again.');
+  s.boss=null;s.players.forEach((t,i)=>{if(b.dmg[i]){s.current=i;checkTarget(s)}});s.current=s.players.indexOf(p)}
+ return d}
+function attack(s){const p=me(s);if(!live(s)||!s.boss||p.pool.combat<1)return false;
+ const c=p.pool.combat;p.pool.combat=0;const d=hit(s,c*(p.dbl?2:1));log(s,p.name+' hit the pirates for '+d+' damage.');return true}
+function mercs(s){const p=me(s);if(!live(s)||!s.boss||p.pool.cr<MERC)return false;
+ p.pool.cr-=MERC;hit(s,1);log(s,p.name+' hired mercenaries for 1 damage.');return true}
+function raid(s){const b=s.boss;s.players.forEach(t=>{t.profit=Math.max(0,t.profit-RAID)});
+ s.bossDone.push({name:b.name,won:false,round:s.round,dmg:b.dmg.slice()});
+ log(s,b.name+' raided every captain for '+RAID+' profit and left the lanes.');s.boss=null}
 function cashIn(s){const p=me(s);if(!live(s)||p.pool.cr<CASH)return false;
  p.pool.cr-=CASH;p.profit++;log(s,p.name+' cashed in '+CASH+' credits for +1 profit.');checkTarget(s);return true}
 function scrap(s,i){const p=me(s);if(!live(s)||p.scrapped||p.pool.cr<1||!Number.isInteger(i)||i<0||i>=p.hand.length)return false;
@@ -136,17 +161,19 @@ function end(s){
  if(!live(s))return false;
  const p=me(s);
  p.discard.push(...p.hand,...p.played);p.hand=[];p.played=[];p.pool=fresh();
- p.buys=1;p.actions=s.actionLimit;p.patrolled=false;p.scrapped=false;p.turnPlayed=[];draw(s,p,5);
+ p.buys=1;p.actions=s.actionLimit;p.patrolled=false;p.scrapped=false;p.dbl=false;p.turnPlayed=[];draw(s,p,5);
  s.current++;
  if(s.current>=s.players.length){
   s.current=0;
   if(s.winMode==='rounds'?s.round>=s.maxRounds:s.finalRound===s.round){s.over=true;s.phase='over';log(s,'The run is over. Highest profit wins.');return true}
+  if(s.boss&&s.round>=s.boss.until)raid(s);
   s.round++;
+  spawn(s);
  }
  s.phase='handoff';return true;
 }
-function migrate(s){MARKET.forEach(k=>{if(!(k in s.market))s.market[k]=Math.max(10,4+2*s.players.length)});s.players.forEach(p=>{p.scrappedCards=p.scrappedCards||[]});return s}
-const W={deal:7,house:8,quarter:6,pack:5,borer:4,barge:3.5,vault:4,gunship:3.5,probe:4,deck:4.5,broker:2,wing:4,buyout:2.5,charter:6,salvage:3.5};
+function migrate(s){if(s.threats===undefined){s.threats=false;s.bossNo=0;s.boss=null;s.bossDone=[]}MARKET.forEach(k=>{if(!(k in s.market))s.market[k]=Math.max(10,4+2*s.players.length)});s.players.forEach(p=>{p.scrappedCards=p.scrappedCards||[]});return s}
+const W={deal:7,house:8,quarter:6,pack:5,borer:4,barge:3.5,vault:4,gunship:3.5,probe:4,deck:4.5,broker:2,wing:4,buyout:2.5,charter:6,salvage:3.5,weapons:3.5};
 function playAll(s){
  if(!live(s))return false;
  const p=me(s);let si;
@@ -174,11 +201,13 @@ function botTurn(s){
  while(p.buys>0){
   const o=owned(),ch=MARKET.filter(k=>s.market[k]>0&&CARDS[k].cost<=p.pool.cr);
   if(!ch.length)break;
-  const v=k=>W[k]/(o[k]+1)+rnd(s)*.25;
+  const war=s.boss||(nextThreat(s)&&nextThreat(s)-s.round<=2),cb=k=>war&&CARDS[k].g.combat?2:1;
+  const v=k=>W[k]*cb(k)/(o[k]+1)+rnd(s)*.25;
   ch.sort((a,b)=>v(b)-v(a));buy(s,ch[0]);
  }
- patrol(s);while(cashIn(s));end(s);return true;
+ if(s.boss){attack(s);while(s.boss&&mercs(s));}
+ if(!s.boss)patrol(s);while(cashIn(s));end(s);return true;
 }
-return {RES,RLABEL,CARDS,MARKET,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,deckSize,need,migrate};
+return {RES,RLABEL,CARDS,MARKET,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,deckSize,need,migrate,attack,mercs,threatRounds,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;

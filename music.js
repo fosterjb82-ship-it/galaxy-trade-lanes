@@ -66,7 +66,9 @@ const SFX={
  cash:t=>{tone(hz(91),t,.06,'sine',.12);tone(hz(96),t+.05,.3,'sine',.12)},
  patrol:t=>{tone(1400,t,.18,'sawtooth',.06,220);tone(900,t+.12,.2,'sawtooth',.05,160)},
  scrap:t=>{tone(300,t,.16,'triangle',.14,90)},
- tab:t=>{tone(hz(81),t,.045,'sine',.09)}
+ tab:t=>{tone(hz(81),t,.045,'sine',.09)},
+ boss:t=>{tone(hz(40),t,1.1,'sawtooth',.12,hz(38));tone(hz(47),t+.05,1.0,'sawtooth',.08,hz(45));tone(hz(52),t+.5,.9,'square',.05,hz(50))},
+ hit:t=>{tone(180,t,.25,'sawtooth',.14,40);tone(900,t,.08,'square',.05,200)}
 };
 function sfx(name){if(!on||!ctx||!SFX[name])return;if(!fx){fx=ctx.createGain();const c=ctx.createDynamicsCompressor();fx.connect(c);c.connect(ctx.destination);fx.connect(verb)}
  fx.gain.value=Math.min(1,.35+vol*.9);try{SFX[name](ctx.currentTime+.01)}catch(e){}}

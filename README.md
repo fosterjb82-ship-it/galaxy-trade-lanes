@@ -39,6 +39,7 @@ bash build.sh                       # rebuild index.html
 bash build-mobile.sh                # rebuild mobile/index.html (phone build)
 node tests/sim.test.cjs             # 120 simulated 3-player games
 node tests/six-players.test.cjs     # 2–6 player games and played-card tracking
+node tests/boss.test.cjs            # pirate boss rules
 node preview.cjs                    # art preview sheets into out/
 ```
 
@@ -52,6 +53,8 @@ node preview.cjs                    # art preview sheets into out/
 - Cash in: trade 4 credits for 1 profit, any time on your turn, as often as you can afford.
 - Salvage Crew (costs 5): an action card that scraps 1 other card from your hand for free (not limited by the once-per-turn scrap), then draws 2.
 - Trade Charter (costs 8): a resource card worth 2 credits and 2 profit each time it is played.
+- Pirate threats (setup option, on by default): two bosses per run, the first in round 5 and the second about 70% of the way through. While a boss is active no contracts can be delivered. Spend combat (1 damage each) or hire mercenaries (2 credits per damage). Beaten: +1 profit per damage dealt and +5 for the final blow. Not beaten within 3 rounds: it raids every captain for 5 profit and leaves. Boss hull is 3 (then 4) per captain; computer captains beat about 70–78% of bosses in testing.
+- Weapons Officer (costs 5): an action card that gives 2 combat and draws 1; combat spent on a boss that turn deals double damage.
 - Sound effects (your turn, playing and buying cards, deliveries, patrols, cashing in, scrapping, tabs and menus) are synthesized in `music.js` and play only while music is on.
 - Runs saved before a new card was added get that card fully stocked in the market when loaded (`Engine.migrate`).
 - Scrap one card from hand for 1 credit, once per turn.

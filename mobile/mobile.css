@@ -103,3 +103,8 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 .enc li>img{width:88px;height:auto}
 .enc li>div{flex:1 1 150px}
 .enc li b{font-size:17px}.enc li span{font-size:13px}
+.mtabs em.red{background:var(--coral);color:#2a0606}
+.boss{flex-direction:column}.boss .bart img{width:100%}
+.boss h3{font-size:22px}.boss p{font-size:13px}
+.bbtns button{flex:1 1 140px;min-height:46px;font-size:13px}
+.threat{font-size:13px}
