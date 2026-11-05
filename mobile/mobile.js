@@ -20,7 +20,7 @@ render=function(){
  if(tab==='hand'){
   const hasRes=p.hand.some(k=>E.CARDS[k].cat==='res');
   const canPatrol=on&&!p.patrolled&&p.pool.combat>=3&&p.pool.fuel>=1;
-  h='<div class="mact"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play all resources</button><button class="mpatrol'+(canPatrol?' primary':'')+'" data-a="patrol"'+(canPatrol?'':' disabled')+'>'+(p.patrolled?'Patrol cleared':'Pirate patrol +5')+'<small>3 combat + 1 fuel · once per turn</small></button></div>'
+  h='<div class="mact"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play all resources</button><button class="mpatrol'+(canPatrol?' primary':'')+'" data-a="patrol"'+(canPatrol?'':' disabled')+'>'+(p.patrolled?'Patrol cleared':'Pirate patrol +5')+'<small>3 combat + 1 fuel · once per turn'+(E.nextThreat(s)?' · delays boss 1 round':'')+'</small></button></div>'
    +(s.boss?bossPanel(true):'')
    +cashBtn(p,on)
    +(hidden?'<div class="empty">Hand hidden until the captain begins.</div>':p.hand.length?'<div class="grid">'+p.hand.map((k,i)=>cardEl(k,i,false)).join('')+'</div>':'<div class="empty">Hand played out. Deliver, buy, or end your turn.</div>')
@@ -34,7 +34,7 @@ render=function(){
   h='<section class="panel mpanel notch"><div class="eyebrow">Standings</div>'+standings()+'</section>'
    +'<section class="panel mpanel notch"><div class="eyebrow">Your deck</div><div class="piles"><div><b>'+p.deck.length+'</b><span class="eyebrow">Draw</span></div><div><b>'+p.discard.length+'</b><span class="eyebrow">Discard</span></div><div><b>'+E.deckSize(p)+'</b><span class="eyebrow">Total</span></div></div><div class="links"><button data-a="deck">Deck</button><button data-a="done">Deliveries</button><button data-a="log">Log</button></div>'+(s.over?'<button class="primary" data-a="decks">View all captains\' decks</button>':'')+'</section>';
  }
- const T=[['hand','Hand',hidden?'':p.hand.length+(p.hand.length===1?' card':' cards')],['board','Contracts',s.boss?'boss '+s.boss.hp+'/'+s.boss.max:ready?ready+' ready':''],['market','Market',afford?afford+' buyable':''],['crew','Captains','']];
+ const T=[['hand','Hand',hidden?'':p.hand.length+(p.hand.length===1?' card':' cards')],['board','Contracts',s.boss?'boss · '+E.bossClock(s).rounds+' rd'+(E.bossClock(s).rounds>1?'s':''):E.nextThreat(s)?'boss in '+(E.nextThreat(s)-s.round):ready?ready+' ready':''],['market','Market',afford?afford+' buyable':''],['crew','Captains','']];
  const tabs='<nav class="mtabs" role="tablist" aria-label="Game sections">'+T.map(([k,l,n])=>'<button role="tab" data-a="tab" data-t="'+k+'" aria-selected="'+(tab===k)+'"'+(tab===k?' class="on"':'')+'>'+l+'<em'+(k==='board'&&s.boss?' class="hot red"':k==='board'&&ready?' class="hot"':'')+'>'+n+'</em></button>').join('')+'</nav>';
  $('stage').innerHTML='<div class="mgame">'+sum+'<div class="mbody" role="tabpanel">'+h+'</div>'+tabs+'</div>';
  shownTab=tab;document.querySelector('.mbody').scrollTop=tabScroll[tab]||0;

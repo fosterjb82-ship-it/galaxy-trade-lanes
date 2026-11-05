@@ -19,12 +19,20 @@ assert.equal(E.confirmBoss(s,0,0),true);assert.equal(E.confirmBoss(s,0,0),false)
 assert.equal(E.confirmBoss(s,0,1),true);assert.equal(E.unseen(s,1),-1);
 // second boss raids if nobody fights it
 E.end(s);while(!s.boss){E.begin(s);E.end(s)}
-assert.equal(s.round,11);assert.equal(s.boss.key,'maw');const before=s.players.map(p=>p.profit);
+assert.equal(s.round,10);assert.equal(s.boss.key,'maw');assert.deepEqual(E.bossClock(s),{rounds:3,turns:6});const before=s.players.map(p=>p.profit);
 while(s.boss){E.begin(s);E.end(s)}
-assert.deepEqual(s.players.map(p=>p.profit),before.map(v=>Math.max(0,v-8)));assert.equal(s.bossDone[1].won,false);
-assert.deepEqual(s.bossDone[1].change,before.map(v=>-Math.min(8,v)));
+assert.deepEqual(s.players.map(p=>p.profit),before.map(v=>Math.max(0,v-16)));assert.equal(s.bossDone[1].won,false);
+assert.deepEqual(s.bossDone[1].change,before.map(v=>-Math.min(16,v)));
+assert.equal(s.nextBoss,15);
 // threats off: no bosses
 const q=E.create({seed:3,rounds:16,threats:false,players:[{name:'A',bot:true},{name:'B',bot:true}]});while(!q.over){E.botTurn(q);assert.equal(q.boss,null)}
+// patrols push the next boss back one round each, never more than 8 rounds away
+{const z=E.create({seed:2,rounds:20,players:[{name:'A'},{name:'B'}]});E.begin(z);assert.equal(z.nextBoss,5);
+ for(let i=0;i<6;i++){const P=E.me(z);P.patrolled=false;P.pool.combat=3;P.pool.fuel=1;assert.equal(E.patrol(z),true)}assert.equal(z.nextBoss,1+8);}
+// only the least helpful captain(s) lose double
+{const z=E.create({seed:4,rounds:16,bosses:['dread'],players:[{name:'A'},{name:'B'},{name:'C'}]});while(!z.boss){E.begin(z);E.end(z)}
+ z.players.forEach(p=>p.profit=30);E.begin(z);E.me(z).pool.combat=2;E.attack(z);E.end(z);E.begin(z);E.me(z).pool.combat=1;E.attack(z);
+ while(z.boss){if(z.phase==='handoff')E.begin(z);E.end(z)}assert.deepEqual(z.bossDone[0].change,[-5,-5,-10]);assert.deepEqual(z.bossDone[0].least,[false,false,true]);}
 // abilities
 const mk=k=>{const z=E.create({seed:5,rounds:16,bosses:[k],players:[{name:'A'},{name:'B'},{name:'C'}]});while(!z.boss){E.begin(z);E.end(z)}E.begin(z);return z};
 let z=mk('armada');assert.equal(E.mercCost(z),3);E.me(z).pool.cr=3;assert.equal(E.mercs(z),true);assert.equal(E.me(z).pool.cr,0);

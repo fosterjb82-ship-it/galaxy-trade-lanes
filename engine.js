@@ -35,7 +35,8 @@ const BOSSES={
  hive:{name:'Scrap Hive Swarm',hp:.75,regen:1,trait:'Regenerates: repairs 1 hull per captain at the end of every round.'},
  siren:{name:'Siren of Lumen Gate',hp:1.15,bounty:2,trait:'Rich prize: +2 profit per damage dealt, but a tougher hull.'}
 };
-const BOSS_KEYS=Object.keys(BOSSES),STAGE_HP=[2.4,4.6];
+const BOSS_KEYS=Object.keys(BOSSES),STAGE_HP=[2.4,5.2,6.2];
+const BOSS_EVERY=5,PATROL_DELAY=1,MAX_AWAY=8; // a boss every 5 rounds; each pirate patrol pushes the next one back 1 round (never more than 8 rounds away)
 const BOSS_ROUNDS=3,RAID=5,FINAL_BLOW=5;
 const MARKET=['deal','house','pack','borer','vault','quarter','barge','gunship','probe','broker','deck','wing','buyout','salvage','weapons','charter'];
 const TEMPLATES=[
@@ -80,7 +81,7 @@ function nextContract(s){
 function create(o={}){
  const s={v:1,id:Date.now()+'-'+Math.random().toString(36).slice(2,7),seed:o.seed||(Date.now()%2147483646)+1,
   current:0,round:1,phase:'handoff',over:false,mode:o.mode||'solo',actionLimit:o.actionLimit===0?0:2,
-  threats:o.threats!==false,bossNo:0,bossOrder:null,boss:null,bossDone:[],winMode:o.winMode||'rounds',maxRounds:o.rounds||16,target:o.target||80,finalRound:null,
+  threats:o.threats!==false,nextBoss:BOSS_EVERY,bossNo:0,bossOrder:null,boss:null,bossDone:[],winMode:o.winMode||'rounds',maxRounds:o.rounds||16,target:o.target||80,finalRound:null,
   boardSize:o.boardSize||4,board:[],cdeck:[],cdisc:[],done:[],
   market:Object.fromEntries(MARKET.map(k=>[k,Math.max(10,4+2*((o.players||[]).length||3))])),trash:[],log:[],players:[]};
  const cfg=o.players||[{name:'Captain'},{name:'Nova',bot:true},{name:'Orion',bot:true}];
@@ -142,11 +143,15 @@ function buy(s,k){
  log(s,p.name+' bought '+c.n+'.');return true;
 }
 function patrol(s){const p=me(s);if(!live(s)||p.patrolled||p.pool.combat<3||p.pool.fuel<1)return false;
- p.pool.combat-=3;p.pool.fuel--;p.patrolled=true;p.profit+=5;log(s,p.name+' cleared a pirate patrol for +5.');checkTarget(s);return true}
+ p.pool.combat-=3;p.pool.fuel--;p.patrolled=true;p.profit+=5;if(s.threats&&!s.boss&&s.nextBoss){const was=s.nextBoss;s.nextBoss=Math.min(s.round+MAX_AWAY,s.nextBoss+PATROL_DELAY);p.delayed=(p.delayed||0)+(s.nextBoss-was);if(s.nextBoss>was)log(s,p.name+"'s patrol pushed the next pirate boss back to round "+s.nextBoss+'.')}log(s,p.name+' cleared a pirate patrol for +5.');checkTarget(s);return true}
 /* ---- pirate threats ---- */
-function threatRounds(s){if(!s.threats)return [];const n=s.winMode==='rounds'?s.maxRounds:16;const a=Math.max(5,Math.round(n*.3));return [a,Math.max(a+3,Math.round(n*.7))].filter(r=>r<n)}
-function nextThreat(s){return threatRounds(s).find(r=>r>s.round)||null}
-function spawn(s){if(s.boss||!threatRounds(s).includes(s.round))return false;
+const lastRound=s=>s.winMode==='rounds'?s.maxRounds:Infinity;
+// round the next boss arrives (null while one is active, threats are off, or it would land after the run)
+function nextThreat(s){if(!s.threats||s.boss||!s.nextBoss)return null;return s.nextBoss<lastRound(s)?s.nextBoss:null}
+function bossLeft(s,b){s.nextBoss=Math.max(b.arrived+BOSS_EVERY,s.round+2)}
+// rounds and captain turns left before the boss raids (counting the current captain's turn)
+function bossClock(s){const b=s.boss;if(!b)return null;const n=s.players.length;return {rounds:b.until-s.round+1,turns:(b.until-s.round)*n+(n-s.current)}}
+function spawn(s){if(!s.threats||s.boss||!s.nextBoss||s.round<s.nextBoss||s.round>=lastRound(s))return false;
  const order=s.bossOrder||BOSS_KEYS,key=order[s.bossNo%order.length],b=BOSSES[key],n=s.players.length;
  const hp=Math.max(n,Math.round(STAGE_HP[Math.min(s.bossNo,STAGE_HP.length-1)]*b.hp*n));s.bossNo++;
  s.boss={key,name:b.name,trait:b.trait,hp,max:hp,merc:b.merc||MERC,raid:b.raid||RAID,bounty:b.bounty||1,regen:(b.regen||0)*n,
@@ -156,7 +161,7 @@ function hit(s,n){const p=me(s),b=s.boss,d=Math.min(n,b.hp);b.hp-=d;b.dmg[s.curr
  if(b.hp<=0){const bounty=b.bounty||1,reward=b.dmg.map((d,i)=>d*bounty+(i===s.current?FINAL_BLOW:0));s.players.forEach((t,i)=>{t.profit+=reward[i]});
   s.bossDone.push({name:b.name,key:b.key,bounty:b.bounty||1,no:b.no,won:true,round:s.round,max:b.max,dmg:b.dmg.slice(),final:s.current,change:reward,profit:s.players.map(t=>t.profit),seen:bots(s)});
   log(s,p.name+' landed the final blow on '+b.name+' (+'+FINAL_BLOW+'). Captains earn +'+(b.bounty||1)+' profit per damage dealt. Contracts are open again.');
-  s.boss=null;s.players.forEach((t,i)=>{if(b.dmg[i]){s.current=i;checkTarget(s)}});s.current=s.players.indexOf(p)}
+  s.boss=null;bossLeft(s,b);s.players.forEach((t,i)=>{if(b.dmg[i]){s.current=i;checkTarget(s)}});s.current=s.players.indexOf(p)}
  return d}
 const bots=s=>s.players.map((t,i)=>t.bot?i:-1).filter(i=>i>=0);
 // boss results a human captain has not confirmed yet
@@ -167,9 +172,9 @@ function attack(s){const p=me(s);if(!live(s)||!s.boss||p.pool.combat<1)return fa
 const mercCost=s=>s.boss?(s.boss.merc||MERC):MERC;
 function mercs(s){const p=me(s);if(!live(s)||!s.boss||p.pool.cr<mercCost(s))return false;
  p.pool.cr-=mercCost(s);hit(s,1);log(s,p.name+' hired mercenaries for 1 damage.');return true}
-function raid(s){const b=s.boss,amt=b.raid||RAID,lost=s.players.map(t=>-Math.min(amt,t.profit));s.players.forEach((t,i)=>{t.profit+=lost[i]});
- s.bossDone.push({name:b.name,key:b.key,raid:amt,no:b.no,won:false,round:s.round,max:b.max,hp:b.hp,dmg:b.dmg.slice(),change:lost,profit:s.players.map(t=>t.profit),seen:bots(s)});
- log(s,b.name+' raided every captain for '+amt+' profit and left the lanes.');s.boss=null}
+function raid(s){const b=s.boss,amt=b.raid||RAID,low=Math.min(...b.dmg),least=b.dmg.map(d=>d===low),lost=s.players.map((t,i)=>-Math.min(least[i]?amt*2:amt,t.profit));s.players.forEach((t,i)=>{t.profit+=lost[i]});
+ s.bossDone.push({name:b.name,key:b.key,raid:amt,least,no:b.no,won:false,round:s.round,max:b.max,hp:b.hp,dmg:b.dmg.slice(),change:lost,profit:s.players.map(t=>t.profit),seen:bots(s)});
+ log(s,b.name+' raided every captain for '+amt+' profit ('+amt*2+' from the least helpful) and left the lanes.');s.boss=null;bossLeft(s,b)}
 function cashIn(s){const p=me(s);if(!live(s)||p.pool.cr<CASH)return false;
  p.pool.cr-=CASH;p.profit++;log(s,p.name+' cashed in '+CASH+' credits for +1 profit.');checkTarget(s);return true}
 function scrap(s,i){const p=me(s);if(!live(s)||p.scrapped||p.pool.cr<1||!Number.isInteger(i)||i<0||i>=p.hand.length)return false;
@@ -190,7 +195,7 @@ function end(s){
  }
  s.phase='handoff';return true;
 }
-function migrate(s){(s.bossDone||[]).forEach(r=>{if(!r.seen)r.seen=s.players.map((t,i)=>i)});if(!s.bossOrder)s.bossOrder=BOSS_KEYS.slice();if(s.boss&&!s.boss.key){s.boss.key='dread';s.boss.merc=MERC;s.boss.raid=RAID;s.boss.bounty=1;s.boss.regen=0}if(s.threats===undefined){s.threats=false;s.bossNo=0;s.boss=null;s.bossDone=[]}MARKET.forEach(k=>{if(!(k in s.market))s.market[k]=Math.max(10,4+2*s.players.length)});s.players.forEach(p=>{p.scrappedCards=p.scrappedCards||[]});return s}
+function migrate(s){(s.bossDone||[]).forEach(r=>{if(!r.seen)r.seen=s.players.map((t,i)=>i)});if(!s.bossOrder)s.bossOrder=BOSS_KEYS.slice();if(s.threats&&s.nextBoss===undefined)s.nextBoss=s.boss?null:Math.max(s.round+1,BOSS_EVERY);if(s.boss&&!s.boss.key){s.boss.key='dread';s.boss.merc=MERC;s.boss.raid=RAID;s.boss.bounty=1;s.boss.regen=0}if(s.threats===undefined){s.threats=false;s.bossNo=0;s.boss=null;s.bossDone=[]}MARKET.forEach(k=>{if(!(k in s.market))s.market[k]=Math.max(10,4+2*s.players.length)});s.players.forEach(p=>{p.scrappedCards=p.scrappedCards||[]});return s}
 const W={deal:7,house:8,quarter:6,pack:5,borer:4,barge:3.5,vault:4,gunship:3.5,probe:4,deck:4.5,broker:2,wing:4,buyout:2.5,charter:6,salvage:3.5,weapons:3.5};
 function playAll(s){
  if(!live(s))return false;
@@ -226,6 +231,6 @@ function botTurn(s){
  if(s.boss){attack(s);while(s.boss&&mercs(s));}
  if(!s.boss)patrol(s);while(cashIn(s));end(s);return true;
 }
-return {RES,RLABEL,CARDS,MARKET,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,deckSize,need,migrate,attack,mercs,mercCost,BOSSES,BOSS_KEYS,unseen,confirmBoss,threatRounds,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
+return {RES,RLABEL,CARDS,MARKET,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,deckSize,need,migrate,attack,mercs,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,MAX_AWAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;

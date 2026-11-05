@@ -230,3 +230,13 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
 @media (prefers-reduced-motion:reduce){.move.patrol.ready{animation:none}}
 .rail .move{flex:0 0 auto}
 .boss .trait{font:600 13px var(--body);color:var(--amber)}
+
+.bclock{display:flex;align-items:center;gap:8px;font:600 13px var(--body);color:var(--ink)}
+.bclock b{font:700 22px/1 var(--disp);color:var(--amber)}
+.bclock .pips{display:flex;gap:3px}.bclock .pips i{width:14px;height:14px;border:2px solid #000;background:#3a1010}.bclock .pips i.on{background:var(--amber)}
+.bclock.last b,.bclock.last em{color:var(--coral)}.bclock.last .pips i.on{background:var(--coral);animation:alarm 1s ease-in-out infinite}
+.bclock em{font-style:normal;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.tcount{display:flex;flex-direction:column;align-items:center;min-width:44px;font:500 9px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.tcount b{font:700 22px/1 var(--disp);color:var(--coral)}
+.boss b.down,.down{color:var(--coral)}
+.tag.red{background:var(--coral);color:#2a0606}
