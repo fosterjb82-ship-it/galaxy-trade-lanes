@@ -10,7 +10,7 @@ render=function(){
  $('status').innerHTML=(s.over?'Run complete':'Round <b>'+s.round+(s.winMode==='rounds'?' / '+s.maxRounds:'')+'</b> · <b>'+esc(p.name)+'</b>')+(s.finalRound&&!s.over?' · <b class="acc">final round</b>':'')+(s.winMode==='profit'?' · first to '+s.target:'');
 
  const sum='<div class="msum"><div class="mrow"><div class="mprof">'+icon('star',2.2)+'<b>'+p.profit+'</b></div>'
-  +'<div class="mchip"><span class="eyebrow">Buys</span><b>'+p.buys+'</b></div><div class="mchip"><span class="eyebrow">Act</span><b>'+(s.actionLimit?p.actions:'∞')+'</b></div>'
+  +'<div class="mchip"><span class="eyebrow">Deals</span><b>'+p.buys+'</b></div><div class="mchip"><span class="eyebrow">Orders</span><b>'+(s.actionLimit?p.actions:'∞')+'</b></div>'
   +'<button class="primary mend" data-a="'+(s.over?'new':'endAsk')+'"'+(!s.over&&!on?' disabled':'')+'>'+(s.over?'New run':'End turn')+'</button></div>'
   +'<div class="mpool">'+E.RES.map(r=>'<span class="mp'+(p.pool[r]?'':' zero')+'" style="--rc:var(--c-'+r+')" title="'+E.RLABEL[r]+'">'+icon(r,1.8)+'<b>'+p.pool[r]+'</b><i>'+SHORT[r]+'</i></span>').join('')+'</div></div>';
 
@@ -29,7 +29,7 @@ render=function(){
  }else if(tab==='board'){
   h='<div class="sechead"><h2>CONTRACT BOARD</h2><span class="eyebrow">First to pay claims it · '+s.done.length+' delivered</span></div>'+bossPanel()+'<div class="grid">'+s.board.map(ctrCard).join('')+'</div>';
  }else if(tab==='market'){
-  h='<div class="sechead"><h2>CARD MARKET</h2><span class="eyebrow">Bought cards go to your discard pile</span></div>'+cashBtn(p,on)+'<div class="grid">'+E.MARKET.map(k=>cardEl(k,0,true)).join('')+'</div>';
+  h='<div class="sechead"><h2>CARD MARKET</h2><span class="eyebrow">Bought cards go to your discard pile</span></div>'+cashBtn(p,on)+'<div class="grid">'+marketList().map(k=>cardEl(k,0,true)).join('')+'</div>';
  }else{
   h='<section class="panel mpanel notch"><div class="eyebrow">Standings</div>'+standings()+'</section>'
    +'<section class="panel mpanel notch"><div class="eyebrow">Your deck</div><div class="piles"><div><b>'+p.deck.length+'</b><span class="eyebrow">Draw</span></div><div><b>'+p.discard.length+'</b><span class="eyebrow">Discard</span></div><div><b>'+E.deckSize(p)+'</b><span class="eyebrow">Total</span></div></div><div class="links"><button data-a="deck">Deck</button><button data-a="done">Deliveries</button><button data-a="log">Log</button></div>'+(s.over?'<button class="primary" data-a="decks">View all captains\' decks</button>':'')+'</section>';

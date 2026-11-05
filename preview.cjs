@@ -14,4 +14,4 @@ sheet(Object.keys(Sp.SCENES).map(d=>Sp.scene(d,2)),3,4,10,88,52,'out/scenes.png'
 sheet([Sp.hero()],1,5,10,144,64,'out/hero.png');
 sheet(['fuel','ore','tech','cr','combat','cargo','star'].map(Sp.icon),7,10,10,10,10,'out/icons.png');
 console.log('done');
-sheet([1,2,3].map(n=>Sp.boss(n)).concat([Sp.cardArt('weapons')]),2,4,10,88,52,'out/bosses.png');
+sheet(['dread','maw','armada','wraith','hive','siren'].map(k=>Sp.boss(k)).concat([Sp.patrolArt(),Sp.cashArt()]),2,4,10,88,52,'out/bosses.png');

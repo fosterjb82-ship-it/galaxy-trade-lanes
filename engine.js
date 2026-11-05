@@ -16,7 +16,7 @@ const CARDS={
  barge:{n:'Barge',cat:'act',kind:'Storage',g:{cargo:4},cost:2,t:'Gain 4 cargo space this turn.'},
  gunship:{n:'Gunship',cat:'act',kind:'Combat',g:{combat:3},cost:3,t:'Gain 3 combat for escorts or a patrol.'},
  probe:{n:'Scout Probe',cat:'act',kind:'Recon',g:{fuel:1,tech:1},draw:1,cost:4,t:'Gain 1 fuel and 1 tech. Draw a card.'},
- broker:{n:'Brokerage',cat:'act',kind:'Economy',g:{cr:2},buys:1,cost:4,t:'Gain 2 credits and 1 extra purchase.'},
+ broker:{n:'Brokerage',cat:'act',kind:'Economy',g:{cr:2},buys:1,cost:4,t:'Gain 2 credits and 1 extra deal.'},
  deck:{n:'Process Deck',cat:'act',kind:'Industry',g:{ore:1,tech:1,cargo:2},cost:4,t:'Gain 1 ore, 1 tech and 2 cargo space.'},
  wing:{n:'Escort Wing',cat:'act',kind:'Combat',g:{combat:2,fuel:1},draw:1,cost:4,t:'Gain 2 combat and 1 fuel. Draw a card.'},
  buyout:{n:'Buyout',cat:'act',kind:'Tactics',g:{},draw:1,cost:6,t:'Take up to 2 profit from another captain. Draw 1 card. Scrap this card.'},
@@ -26,7 +26,16 @@ const CARDS={
 };
 const CASH=4; // credits per 1 profit when cashing in
 const MERC=2; // credits per 1 boss damage when hiring mercenaries
-const BOSSES=[{name:'Blackwake Dreadnought',hpPer:3},{name:'Red Maw Marauder',hpPer:4},{name:'Iron Corsair Armada',hpPer:5}];
+// pirate bosses: one is drawn at random for each threat (no repeats in a run). hp = stage base (3, then 4) x mult x captains
+const BOSSES={
+ dread:{name:'Blackwake Dreadnought',hp:1,trait:'No tricks. A straight fight.'},
+ maw:{name:'Red Maw Marauder',hp:1,raid:8,trait:'Ruthless: if it survives, its raid takes 8 profit instead of 5.'},
+ armada:{name:'Iron Corsair Armada',hp:1,merc:3,trait:'Armored: mercenaries cost 3 credits per damage instead of 2.'},
+ wraith:{name:'Void Wraith',hp:.62,rounds:2,trait:'Fast: only 2 rounds to beat it, but its hull is thin.'},
+ hive:{name:'Scrap Hive Swarm',hp:.75,regen:1,trait:'Regenerates: repairs 1 hull per captain at the end of every round.'},
+ siren:{name:'Siren of Lumen Gate',hp:1.15,bounty:2,trait:'Rich prize: +2 profit per damage dealt, but a tougher hull.'}
+};
+const BOSS_KEYS=Object.keys(BOSSES),STAGE_HP=[2.4,4.6];
 const BOSS_ROUNDS=3,RAID=5,FINAL_BLOW=5;
 const MARKET=['deal','house','pack','borer','vault','quarter','barge','gunship','probe','broker','deck','wing','buyout','salvage','weapons','charter'];
 const TEMPLATES=[
@@ -71,7 +80,7 @@ function nextContract(s){
 function create(o={}){
  const s={v:1,id:Date.now()+'-'+Math.random().toString(36).slice(2,7),seed:o.seed||(Date.now()%2147483646)+1,
   current:0,round:1,phase:'handoff',over:false,mode:o.mode||'solo',actionLimit:o.actionLimit===0?0:2,
-  threats:o.threats!==false,bossNo:0,boss:null,bossDone:[],winMode:o.winMode||'rounds',maxRounds:o.rounds||16,target:o.target||80,finalRound:null,
+  threats:o.threats!==false,bossNo:0,bossOrder:null,boss:null,bossDone:[],winMode:o.winMode||'rounds',maxRounds:o.rounds||16,target:o.target||80,finalRound:null,
   boardSize:o.boardSize||4,board:[],cdeck:[],cdisc:[],done:[],
   market:Object.fromEntries(MARKET.map(k=>[k,Math.max(10,4+2*((o.players||[]).length||3))])),trash:[],log:[],players:[]};
  const cfg=o.players||[{name:'Captain'},{name:'Nova',bot:true},{name:'Orion',bot:true}];
@@ -85,6 +94,7 @@ function create(o={}){
  const e=s.cdeck.findIndex(c=>c.name==='Seed Stock');
  s.board.push(s.cdeck.splice(e,1)[0]);
  while(s.board.length<s.boardSize)s.board.push(nextContract(s));
+ s.bossOrder=o.bosses||shuffle(s,BOSS_KEYS.slice());
  log(s,'The contract board is open.');
  return s;
 }
@@ -137,13 +147,15 @@ function patrol(s){const p=me(s);if(!live(s)||p.patrolled||p.pool.combat<3||p.po
 function threatRounds(s){if(!s.threats)return [];const n=s.winMode==='rounds'?s.maxRounds:16;const a=Math.max(5,Math.round(n*.3));return [a,Math.max(a+3,Math.round(n*.7))].filter(r=>r<n)}
 function nextThreat(s){return threatRounds(s).find(r=>r>s.round)||null}
 function spawn(s){if(s.boss||!threatRounds(s).includes(s.round))return false;
- const b=BOSSES[Math.min(s.bossNo,BOSSES.length-1)],hp=b.hpPer*s.players.length;s.bossNo++;
- s.boss={name:b.name,hp,max:hp,arrived:s.round,until:s.round+BOSS_ROUNDS-1,dmg:s.players.map(()=>0),no:s.bossNo};
+ const order=s.bossOrder||BOSS_KEYS,key=order[s.bossNo%order.length],b=BOSSES[key],n=s.players.length;
+ const hp=Math.max(n,Math.round(STAGE_HP[Math.min(s.bossNo,STAGE_HP.length-1)]*b.hp*n));s.bossNo++;
+ s.boss={key,name:b.name,trait:b.trait,hp,max:hp,merc:b.merc||MERC,raid:b.raid||RAID,bounty:b.bounty||1,regen:(b.regen||0)*n,
+  arrived:s.round,until:s.round+(b.rounds||BOSS_ROUNDS)-1,dmg:s.players.map(()=>0),no:s.bossNo};
  log(s,b.name+' blockades the trade lanes! No contracts until it is defeated.');return true}
 function hit(s,n){const p=me(s),b=s.boss,d=Math.min(n,b.hp);b.hp-=d;b.dmg[s.current]+=d;p.bossDmg=(p.bossDmg||0)+d;
- if(b.hp<=0){const reward=b.dmg.map((d,i)=>d+(i===s.current?FINAL_BLOW:0));s.players.forEach((t,i)=>{t.profit+=reward[i]});
-  s.bossDone.push({name:b.name,no:b.no,won:true,round:s.round,max:b.max,dmg:b.dmg.slice(),final:s.current,change:reward,profit:s.players.map(t=>t.profit),seen:bots(s)});
-  log(s,p.name+' landed the final blow on '+b.name+' (+'+FINAL_BLOW+'). Captains earn +1 profit per damage dealt. Contracts are open again.');
+ if(b.hp<=0){const bounty=b.bounty||1,reward=b.dmg.map((d,i)=>d*bounty+(i===s.current?FINAL_BLOW:0));s.players.forEach((t,i)=>{t.profit+=reward[i]});
+  s.bossDone.push({name:b.name,key:b.key,bounty:b.bounty||1,no:b.no,won:true,round:s.round,max:b.max,dmg:b.dmg.slice(),final:s.current,change:reward,profit:s.players.map(t=>t.profit),seen:bots(s)});
+  log(s,p.name+' landed the final blow on '+b.name+' (+'+FINAL_BLOW+'). Captains earn +'+(b.bounty||1)+' profit per damage dealt. Contracts are open again.');
   s.boss=null;s.players.forEach((t,i)=>{if(b.dmg[i]){s.current=i;checkTarget(s)}});s.current=s.players.indexOf(p)}
  return d}
 const bots=s=>s.players.map((t,i)=>t.bot?i:-1).filter(i=>i>=0);
@@ -152,11 +164,12 @@ function unseen(s,i){return (s.bossDone||[]).findIndex(r=>r.seen&&!r.seen.includ
 function confirmBoss(s,k,i){const r=(s.bossDone||[])[k];if(!r||!r.seen||r.seen.includes(i))return false;r.seen.push(i);return true}
 function attack(s){const p=me(s);if(!live(s)||!s.boss||p.pool.combat<1)return false;
  const c=p.pool.combat;p.pool.combat=0;const d=hit(s,c*(p.dbl?2:1));log(s,p.name+' hit the pirates for '+d+' damage.');return true}
-function mercs(s){const p=me(s);if(!live(s)||!s.boss||p.pool.cr<MERC)return false;
- p.pool.cr-=MERC;hit(s,1);log(s,p.name+' hired mercenaries for 1 damage.');return true}
-function raid(s){const b=s.boss,lost=s.players.map(t=>-Math.min(RAID,t.profit));s.players.forEach((t,i)=>{t.profit+=lost[i]});
- s.bossDone.push({name:b.name,no:b.no,won:false,round:s.round,max:b.max,hp:b.hp,dmg:b.dmg.slice(),change:lost,profit:s.players.map(t=>t.profit),seen:bots(s)});
- log(s,b.name+' raided every captain for '+RAID+' profit and left the lanes.');s.boss=null}
+const mercCost=s=>s.boss?(s.boss.merc||MERC):MERC;
+function mercs(s){const p=me(s);if(!live(s)||!s.boss||p.pool.cr<mercCost(s))return false;
+ p.pool.cr-=mercCost(s);hit(s,1);log(s,p.name+' hired mercenaries for 1 damage.');return true}
+function raid(s){const b=s.boss,amt=b.raid||RAID,lost=s.players.map(t=>-Math.min(amt,t.profit));s.players.forEach((t,i)=>{t.profit+=lost[i]});
+ s.bossDone.push({name:b.name,key:b.key,raid:amt,no:b.no,won:false,round:s.round,max:b.max,hp:b.hp,dmg:b.dmg.slice(),change:lost,profit:s.players.map(t=>t.profit),seen:bots(s)});
+ log(s,b.name+' raided every captain for '+amt+' profit and left the lanes.');s.boss=null}
 function cashIn(s){const p=me(s);if(!live(s)||p.pool.cr<CASH)return false;
  p.pool.cr-=CASH;p.profit++;log(s,p.name+' cashed in '+CASH+' credits for +1 profit.');checkTarget(s);return true}
 function scrap(s,i){const p=me(s);if(!live(s)||p.scrapped||p.pool.cr<1||!Number.isInteger(i)||i<0||i>=p.hand.length)return false;
@@ -171,12 +184,13 @@ function end(s){
   s.current=0;
   if(s.winMode==='rounds'?s.round>=s.maxRounds:s.finalRound===s.round){s.over=true;s.phase='over';log(s,'The run is over. Highest profit wins.');return true}
   if(s.boss&&s.round>=s.boss.until)raid(s);
+  else if(s.boss&&s.boss.regen&&s.boss.hp<s.boss.max){const r=Math.min(s.boss.regen,s.boss.max-s.boss.hp);s.boss.hp+=r;log(s,s.boss.name+' repaired '+r+' hull.')}
   s.round++;
   spawn(s);
  }
  s.phase='handoff';return true;
 }
-function migrate(s){(s.bossDone||[]).forEach(r=>{if(!r.seen)r.seen=s.players.map((t,i)=>i)});if(s.threats===undefined){s.threats=false;s.bossNo=0;s.boss=null;s.bossDone=[]}MARKET.forEach(k=>{if(!(k in s.market))s.market[k]=Math.max(10,4+2*s.players.length)});s.players.forEach(p=>{p.scrappedCards=p.scrappedCards||[]});return s}
+function migrate(s){(s.bossDone||[]).forEach(r=>{if(!r.seen)r.seen=s.players.map((t,i)=>i)});if(!s.bossOrder)s.bossOrder=BOSS_KEYS.slice();if(s.boss&&!s.boss.key){s.boss.key='dread';s.boss.merc=MERC;s.boss.raid=RAID;s.boss.bounty=1;s.boss.regen=0}if(s.threats===undefined){s.threats=false;s.bossNo=0;s.boss=null;s.bossDone=[]}MARKET.forEach(k=>{if(!(k in s.market))s.market[k]=Math.max(10,4+2*s.players.length)});s.players.forEach(p=>{p.scrappedCards=p.scrappedCards||[]});return s}
 const W={deal:7,house:8,quarter:6,pack:5,borer:4,barge:3.5,vault:4,gunship:3.5,probe:4,deck:4.5,broker:2,wing:4,buyout:2.5,charter:6,salvage:3.5,weapons:3.5};
 function playAll(s){
  if(!live(s))return false;
@@ -212,6 +226,6 @@ function botTurn(s){
  if(s.boss){attack(s);while(s.boss&&mercs(s));}
  if(!s.boss)patrol(s);while(cashIn(s));end(s);return true;
 }
-return {RES,RLABEL,CARDS,MARKET,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,deckSize,need,migrate,attack,mercs,unseen,confirmBoss,threatRounds,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
+return {RES,RLABEL,CARDS,MARKET,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,deckSize,need,migrate,attack,mercs,mercCost,BOSSES,BOSS_KEYS,unseen,confirmBoss,threatRounds,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;

@@ -219,25 +219,60 @@ function hero(){const s=new S(144,64);nebula(s,4,PAL.violet);stars(s,9,40);
  L.outline(OUT);s.blit(L);return s}
 
 /* ---- pirate bosses (88x52) ---- */
-function boss(no){const s=new S(88,52),tint=[PAL.red,PAL.violet,PAL.rust][(no-1)%3];nebula(s,no*7+3,tint);stars(s,no*5+1,20);
- const L=new S(88,52),H=PAL.steel,R=PAL.red;
- // engine glow
+function warship(L,H,R,o){o=o||{};
  [[6,20],[6,30]].forEach(([x,y])=>{L.rect(x-4,y,6,4,R[4]);L.rect(x-6,y+1,3,2,R[5]);L.rect(x-2,y+1,2,2,R[6])});
- // hull: long jagged wedge
  L.poly([[8,16],[30,10],[60,12],[84,26],[60,40],[30,42],[8,36]],H[2]);
  L.poly([[8,16],[30,10],[60,12],[84,26],[60,22],[30,18],[8,22]],H[3]);
  L.poly([[30,10],[60,12],[70,18],[34,16]],H[4]);L.line(30,10,60,12,H[5]);
  L.poly([[8,30],[30,34],[60,30],[84,26],[60,40],[30,42],[8,36]],H[1]);
- // ram prow and spikes
  L.poly([[72,22],[86,26],[72,30]],R[3]);L.line(74,23,85,26,R[5]);
- [[22,10,18,2],[40,11,38,3],[52,12,52,4],[26,42,22,50],[44,41,42,49]].forEach(([x,y,x2,y2])=>{L.line(x,y,x2,y2,H[4]);L.line(x+1,y,x2+1,y2,H[2])});
- // bridge tower and red viewports
+ if(!o.noSpikes)[[22,10,18,2],[40,11,38,3],[52,12,52,4],[26,42,22,50],[44,41,42,49]].forEach(([x,y,x2,y2])=>{L.line(x,y,x2,y2,H[4]);L.line(x+1,y,x2+1,y2,H[2])});
  box3d(L,38,14,12,8,H);L.rect(40,16,8,2,R[5]);L.set(44,13,R[6]);
  for(let x=14;x<64;x+=6)L.rect(x,27,3,2,R[4]);for(let x=18;x<60;x+=8)L.set(x,35,R[3]);
- // cannons
  [[30,24],[50,24],[30,32],[50,32]].forEach(([x,y])=>{L.rect(x,y,10,2,H[5]);L.rect(x+10,y,3,2,R[5])});
- // skull emblem on the flank
- L.rect(56,26,7,5,H[6]);L.rect(57,31,5,2,H[6]);L.set(58,28,R[1]);L.set(61,28,R[1]);L.set(58,32,H[2]);L.set(60,32,H[2]);
+ L.rect(56,26,7,5,H[6]);L.rect(57,31,5,2,H[6]);L.set(58,28,R[1]);L.set(61,28,R[1]);L.set(58,32,H[2]);L.set(60,32,H[2])}
+const BOSS_ART={
+ dread:{bg:PAL.red,draw:L=>warship(L,PAL.steel,PAL.red)},
+ maw:{bg:PAL.rust,draw:L=>{warship(L,PAL.rust,PAL.red);
+  L.poly([[66,14],[88,22],[70,26]],PAL.red[2]);L.poly([[66,38],[88,30],[70,26]],PAL.red[2]);
+  for(let i=0;i<5;i++){L.poly([[70+i*3,24-i*.5],[71.5+i*3,27],[73+i*3,24-i*.5]],PAL.steel[6]);L.poly([[70+i*3,28+i*.5],[71.5+i*3,25],[73+i*3,28+i*.5]],PAL.steel[6])}}},
+ armada:{bg:PAL.blue,draw:L=>{warship(L,PAL.steel,PAL.amber,{noSpikes:1});
+  for(let x=12;x<66;x+=9){box3d(L,x,12,8,4,PAL.steel);box3d(L,x,36,8,4,PAL.steel)}
+  const f=(x,y)=>{L.poly([[x,y],[x+10,y-2],[x+14,y],[x+10,y+2]],PAL.steel[4]);L.rect(x-2,y-1,2,2,PAL.amber[5])};f(4,6);f(16,2);f(4,46);f(18,49)}},
+ wraith:{bg:PAL.violet,draw:L=>{const V=PAL.violet;warship(L,V,PAL.teal,{noSpikes:1});
+  for(let y=8;y<46;y++)for(let x=6;x<88;x++)if(L.has(x,y)&&(x+y)%3===0)L.set(x,y,V[5]);
+  for(let i=0;i<6;i++){L.line(4-i,18+i*3,16,18+i*3,V[4])}}},
+ hive:{bg:PAL.green,draw:L=>{sph(L,44,26,13,PAL.rust,-.4,-.5);for(let a=0;a<10;a++){const t=a/10*Math.PI*2;L.rect(44+Math.cos(t)*12-2,26+Math.sin(t)*12-2,4,4,PAL.steel[3])}
+  L.circle(44,26,4,PAL.green[5]);L.circle(44,26,2,PAL.green[6]);
+  [[8,6],[66,4],[4,38],[70,40],[20,22],[62,22]].forEach(([x,y])=>fighter(L,x,y));}},
+ siren:{bg:PAL.teal,draw:L=>{const T=PAL.teal,A=PAL.amber;
+  L.poly([[10,26],[30,8],[56,6],[80,20],[86,26],[80,32],[56,46],[30,44]],T[2]);L.poly([[30,8],[56,6],[80,20],[50,18],[28,20]],T[4]);L.poly([[28,32],[50,34],[80,32],[56,46],[30,44]],T[1]);
+  L.circle(52,26,7,A[3]);L.circle(52,26,5,A[5]);L.circle(52,26,2,A[6]);
+  for(let r=10;r<=22;r+=6)for(let a=-60;a<=60;a+=10){const t=a*Math.PI/180;L.set(52+Math.cos(t)*r+10,26+Math.sin(t)*r,A[r>15?3:5])}
+  L.rect(4,24,8,4,T[5]);L.rect(0,25,4,2,T[6])}}
+};
+function boss(key){if(typeof key==='number')key=['dread','maw','armada','wraith','hive','siren'][(key-1)%6];
+ const a=BOSS_ART[key]||BOSS_ART.dread,s=new S(88,52),seed=key.length*7+key.charCodeAt(0);nebula(s,seed,a.bg);stars(s,seed,20);
+ const L=new S(88,52);a.draw(L);L.outline(OUT);s.blit(L);return s}
+
+/* ---- move panels (88x52): pirate patrol, cash in ---- */
+function patrolArt(){const s=cardBg(PAL.red,41),L=new S(88,52);
+ // pirate raider on the right, taking hits
+ L.poly([[60,18],[80,14],[86,24],[80,34],[60,30]],PAL.steel[2]);L.poly([[60,18],[80,14],[86,24],[70,22]],PAL.steel[3]);L.rect(74,22,6,3,PAL.red[5]);
+ L.rect(66,24,5,4,PAL.steel[6]);L.set(67,25,PAL.red[1]);L.set(69,25,PAL.red[1]);
+ fighter(L,10,8);fighter(L,4,34);
+ // lasers
+ [[32,12,64,20],[26,38,62,28],[34,14,70,22]].forEach(([x,y,x2,y2])=>{L.line(x,y,x2,y2,PAL.red[5]);L.line(x,y+1,x2,y2+1,PAL.red[3])});
+ // explosion
+ L.circle(64,22,6,PAL.amber[4]);L.circle(64,22,4,PAL.amber[5]);L.circle(64,22,2,PAL.amber[6]);
+ [[56,14],[72,30],[58,30],[70,12]].forEach(([x,y])=>{L.rect(x,y,2,2,PAL.amber[5])});
+ L.outline(OUT);s.blit(L);return s}
+function cashArt(){const s=cardBg(PAL.amber,29),L=new S(88,52);
+ coins(L,22,46,6,10);coins(L,10,46,3,8);coin(L,32,14,6);
+ L.rect(38,24,14,4,PAL.steel[5]);L.poly([[50,18],[60,26],[50,34]],PAL.steel[5]);L.rect(38,24,14,1,PAL.steel[6]);
+ const cx=72,cy=26;L.poly([[cx,cy-14],[cx+4,cy-4],[cx+14,cy-4],[cx+6,cy+3],[cx+9,cy+13],[cx,cy+7],[cx-9,cy+13],[cx-6,cy+3],[cx-14,cy-4],[cx-4,cy-4]],PAL.amber[5]);
+ L.poly([[cx,cy-14],[cx+4,cy-4],[cx,cy+2],[cx-4,cy-4]],PAL.amber[6]);
+ [[60,8],[84,10],[84,42],[58,44]].forEach(([x,y])=>{L.set(x,y,PAL.amber[6]);L.set(x-1,y,PAL.amber[4]);L.set(x+1,y,PAL.amber[4]);L.set(x,y-1,PAL.amber[4]);L.set(x,y+1,PAL.amber[4])});
  L.outline(OUT);s.blit(L);return s}
 
 /* ---- tiny icons (10x10) ---- */
@@ -255,8 +290,8 @@ function icon(k){const m=ICON_MAP[k],s=new S(10,10);m.m.forEach((row,y)=>[...row
 const cache={};
 function toURL(s){const c=document.createElement('canvas');c.width=s.w;c.height=s.h;const g=c.getContext('2d'),id=g.createImageData(s.w,s.h);id.data.set(s.d);g.putImageData(id,0,0);return c.toDataURL()}
 function memo(key,fn){return cache[key]||(cache[key]=toURL(fn()))}
-return {S,PAL,scene,cardArt,hero,icon,boss,EMB,SCENES,
+return {S,PAL,scene,cardArt,hero,icon,boss,patrolArt,cashArt,EMB,SCENES,
  sceneURL:(d,seed)=>memo('s:'+d+':'+(seed%4),()=>scene(d,(seed%4)+1)),
- cardURL:k=>memo('c:'+k,()=>cardArt(k)),bossURL:n=>memo('b:'+n,()=>boss(n)),heroURL:()=>memo('hero',hero),iconURL:k=>memo('i:'+k,()=>icon(k))};
+ cardURL:k=>memo('c:'+k,()=>cardArt(k)),bossURL:n=>memo('b:'+n,()=>boss(n)),moveURL:k=>memo('m:'+k,()=>k==='cash'?cashArt():patrolArt()),heroURL:()=>memo('hero',hero),iconURL:k=>memo('i:'+k,()=>icon(k))};
 })();
 if(typeof module!=='undefined')module.exports=Sprites;

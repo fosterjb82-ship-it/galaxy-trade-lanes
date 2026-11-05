@@ -64,7 +64,9 @@ const SFX={
  action:t=>{tone(hz(64),t,.07,'square',.06);tone(hz(71),t+.05,.12,'triangle',.14,hz(76))},
  buy:t=>{tone(hz(88),t,.08,'square',.06);tone(hz(93),t+.07,.35,'sine',.16)},
  cash:t=>{tone(hz(91),t,.06,'sine',.12);tone(hz(96),t+.05,.3,'sine',.12)},
- patrol:t=>{tone(1400,t,.18,'sawtooth',.06,220);tone(900,t+.12,.2,'sawtooth',.05,160)},
+ patrol:t=>{[0,.11,.22,.33].forEach((d,i)=>{tone(1900-i*120,t+d,.13,'square',.06,260);tone(2600-i*150,t+d,.08,'sawtooth',.03,600)});
+  const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain(),t2=t+.46;s.buffer=noise;f.type='lowpass';f.frequency.setValueAtTime(2400,t2);f.frequency.exponentialRampToValueAtTime(120,t2+.6);
+  env(g,t2,.005,.35,.05,.6);s.connect(f);f.connect(g);g.connect(fx);s.start(t2);s.stop(t2+.8);tone(90,t2,.6,'sine',.25,38)},
  scrap:t=>{tone(300,t,.16,'triangle',.14,90)},
  tab:t=>{tone(hz(81),t,.045,'sine',.09)},
  boss:t=>{tone(hz(40),t,1.1,'sawtooth',.12,hz(38));tone(hz(47),t+.05,1.0,'sawtooth',.08,hz(45));tone(hz(52),t+.5,.9,'square',.05,hz(50))},

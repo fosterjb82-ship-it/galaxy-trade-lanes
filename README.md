@@ -45,15 +45,17 @@ node preview.cjs                    # art preview sheets into out/
 
 ## Rules summary
 
+- Turn counters are called **Deals** (purchases left) and **Orders** (order cards you can still play; 2 per turn by default).
+- The card market is sorted by cost, then resource cards before order cards.
 - Everyone starts with 10 cards (4 Scrip, 3 Fuel Drums, 2 Ore Samples, 1 Hold Rig) and draws 5 each turn.
-- Resource cards are unlimited per turn. Action cards use an action (2 per turn by default, or unlimited).
+- Resource cards are unlimited per turn. Order cards use an order (2 per turn by default, or unlimited).
 - Contracts on the shared board need fuel, ore, tech, credits and/or combat, plus cargo space equal to ore + tech. Base cargo space is 1 per turn.
-- One purchase per turn (Brokerage adds one). Bought cards go to the discard pile.
+- One deal (purchase) per turn (Brokerage adds one). Bought cards go to the discard pile.
 - Pirate patrol: spend 3 combat + 1 fuel for +5 profit, once per turn.
 - Cash in: trade 4 credits for 1 profit, any time on your turn, as often as you can afford.
 - Salvage Crew (costs 5): an action card that scraps 1 other card from your hand for free (not limited by the once-per-turn scrap), then draws 2.
 - Trade Charter (costs 8): a resource card worth 2 credits and 2 profit each time it is played.
-- Pirate threats (setup option, on by default): two bosses per run, the first in round 5 and the second about 70% of the way through. While a boss is active no contracts can be delivered. Spend combat (1 damage each) or hire mercenaries (2 credits per damage). Beaten: +1 profit per damage dealt and +5 for the final blow. Not beaten within 3 rounds: it raids every captain for 5 profit and leaves. Boss hull is 3 (then 4) per captain; computer captains beat about 70–78% of bosses in testing.
+- Pirate threats (setup option, on by default): two bosses per run, the first in round 5 and the second about 70% of the way through, each drawn at random (no repeats) from six bosses with their own ability: Blackwake Dreadnought (no tricks), Red Maw Marauder (raid takes 8), Iron Corsair Armada (mercenaries cost 3), Void Wraith (only 2 rounds, thin hull), Scrap Hive Swarm (repairs 1 hull per captain each round), Siren of Lumen Gate (+2 profit per damage, tougher hull). While a boss is active no contracts can be delivered. Spend combat (1 damage each) or hire mercenaries (usually 2 credits per damage). Beaten: +1 profit per damage dealt (Siren: +2) and +5 for the final blow. Not beaten in time: it raids every captain and leaves. In testing, computer captains beat each boss 61–83% of the time. Each human captain confirms a results screen afterwards.
 - Weapons Officer (costs 5): an action card that gives 2 combat and draws 1; combat spent on a boss that turn deals double damage.
 - Sound effects (your turn, playing and buying cards, deliveries, patrols, cashing in, scrapping, tabs and menus) are synthesized in `music.js` and play only while music is on.
 - Runs saved before a new card was added get that card fully stocked in the market when loaded (`Engine.migrate`).
