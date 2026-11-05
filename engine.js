@@ -20,10 +20,11 @@ const CARDS={
  deck:{n:'Process Deck',cat:'act',kind:'Industry',g:{ore:1,tech:1,cargo:2},cost:4,t:'Gain 1 ore, 1 tech and 2 cargo space.'},
  wing:{n:'Escort Wing',cat:'act',kind:'Combat',g:{combat:2,fuel:1},draw:1,cost:4,t:'Gain 2 combat and 1 fuel. Draw a card.'},
  buyout:{n:'Buyout',cat:'act',kind:'Tactics',g:{},draw:1,cost:6,t:'Take up to 2 profit from another captain. Draw 1 card. Scrap this card.'},
+ salvage:{n:'Salvage Crew',cat:'act',kind:'Crew',g:{},draw:2,junk:1,cost:5,t:'Scrap 1 other card from your hand for free, then draw 2 cards.'},
  charter:{n:'Trade Charter',cat:'res',kind:'Economy',g:{cr:2},vp:2,cost:8,t:'Gain 2 credits and 2 profit.'}
 };
 const CASH=4; // credits per 1 profit when cashing in
-const MARKET=['deal','house','pack','borer','vault','quarter','barge','gunship','probe','broker','deck','wing','buyout','charter'];
+const MARKET=['deal','house','pack','borer','vault','quarter','barge','gunship','probe','broker','deck','wing','buyout','salvage','charter'];
 const TEMPLATES=[
  {name:'Seed Stock',dest:'Harrow',req:{fuel:1,ore:1},profit:8},
  {name:'Hull Plating',dest:'Port Calder',req:{fuel:1,ore:2},profit:11},
@@ -90,7 +91,10 @@ function play(s,i,target){
  if(!canPlay(s,i))return false;
  const p=me(s),k=p.hand[i],c=CARDS[k];
  if(k==='buyout'&&(!Number.isInteger(target)||target===s.current||!s.players[target]))return false;
+ let junk=null;
+ if(c.junk&&Number.isInteger(target)&&target>=0&&target!==i&&target<p.hand.length)junk=target>i?target-1:target;
  p.hand.splice(i,1);
+ if(junk!==null){const j=p.hand.splice(junk,1)[0];s.trash.push(j);(p.scrappedCards=p.scrappedCards||[]).push(j);log(s,p.name+' salvaged '+CARDS[j].n+' out of the deck.')}
  (p.turnPlayed=p.turnPlayed||[]).push(k);
  if(c.cat==='act'&&s.actionLimit)p.actions--;
  if(k==='buyout'){
@@ -141,10 +145,13 @@ function end(s){
  }
  s.phase='handoff';return true;
 }
-const W={deal:7,house:8,quarter:6,pack:5,borer:4,barge:3.5,vault:4,gunship:3.5,probe:4,deck:4.5,broker:2,wing:4,buyout:2.5,charter:6};
+function migrate(s){MARKET.forEach(k=>{if(!(k in s.market))s.market[k]=Math.max(10,4+2*s.players.length)});s.players.forEach(p=>{p.scrappedCards=p.scrappedCards||[]});return s}
+const W={deal:7,house:8,quarter:6,pack:5,borer:4,barge:3.5,vault:4,gunship:3.5,probe:4,deck:4.5,broker:2,wing:4,buyout:2.5,charter:6,salvage:3.5};
 function playAll(s){
  if(!live(s))return false;
- playResources(s);const p=me(s);let g=0;
+ const p=me(s);let si;
+ while((si=p.hand.indexOf('salvage'))>=0&&canPlay(s,si)){const t=['scrip','drum','sample'].map(k=>p.hand.indexOf(k)).find(x=>x>=0);play(s,si,t===undefined?-1:t)}
+ playResources(s);let g=0;
  while(g++<150){
   const cand=p.hand.map((k,i)=>({k,i})).filter(x=>canPlay(s,x.i));
   if(!cand.length)break;
@@ -172,6 +179,6 @@ function botTurn(s){
  }
  patrol(s);while(cashIn(s));end(s);return true;
 }
-return {RES,RLABEL,CARDS,MARKET,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,deckSize,need};
+return {RES,RLABEL,CARDS,MARKET,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,deckSize,need,migrate};
 })();
 if(typeof module!=='undefined')module.exports=Engine;

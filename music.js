@@ -53,6 +53,23 @@ function start(){if(!ctx)build();if(ctx.state!=='running')ctx.resume();
 function stop(){if(!ctx||!on)return;on=false;clearInterval(timer);timer=null;
  const t=ctx.currentTime;master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);master.gain.linearRampToValueAtTime(0,t+.8)}
 function setVol(v){vol=v;if(ctx&&on){master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setTargetAtTime(v*.9,ctx.currentTime,.1)}}
+/* ---- sound effects: short tones, only while music is on ---- */
+let fx=null;
+function tone(f,t,dur,type,lvl,glide){const o=ctx.createOscillator(),g=ctx.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(glide)o.frequency.exponentialRampToValueAtTime(glide,t+dur);
+ env(g,t,.004,lvl,dur*.25,dur*.75);o.connect(g);g.connect(fx);o.start(t);o.stop(t+dur+.05)}
+const SFX={
+ turn:t=>{tone(hz(76),t,.5,'sine',.22);tone(hz(83),t+.14,.7,'sine',.2);tone(hz(88),t+.28,.9,'triangle',.12)},
+ deliver:t=>{[72,76,79,84].forEach((m,i)=>tone(hz(m),t+i*.07,.22,'square',.07));tone(hz(96),t+.3,.5,'sine',.12);tone(hz(91),t+.3,.6,'triangle',.08)},
+ play:t=>{tone(hz(67),t,.09,'triangle',.16,hz(72))},
+ action:t=>{tone(hz(64),t,.07,'square',.06);tone(hz(71),t+.05,.12,'triangle',.14,hz(76))},
+ buy:t=>{tone(hz(88),t,.08,'square',.06);tone(hz(93),t+.07,.35,'sine',.16)},
+ cash:t=>{tone(hz(91),t,.06,'sine',.12);tone(hz(96),t+.05,.3,'sine',.12)},
+ patrol:t=>{tone(1400,t,.18,'sawtooth',.06,220);tone(900,t+.12,.2,'sawtooth',.05,160)},
+ scrap:t=>{tone(300,t,.16,'triangle',.14,90)},
+ tab:t=>{tone(hz(81),t,.045,'sine',.09)}
+};
+function sfx(name){if(!on||!ctx||!SFX[name])return;if(!fx){fx=ctx.createGain();const c=ctx.createDynamicsCompressor();fx.connect(c);c.connect(ctx.destination);fx.connect(verb)}
+ fx.gain.value=Math.min(1,.35+vol*.9);try{SFX[name](ctx.currentTime+.01)}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hidden)ctx.suspend();else if(on)ctx.resume()});
-return {start,stop,setVol,get on(){return on},get vol(){return vol}};
+return {start,stop,setVol,sfx,get on(){return on},get vol(){return vol}};
 })();

@@ -44,7 +44,7 @@ function start(){collect();scrollPos=0;handX=0;
  s=E.create({...cfg,mode:cfg.humans>1?'local':'solo',players});screen='game';settle();
 }
 function settle(){let g=0;while(!s.over&&E.me(s).bot&&g++<s.players.length)E.botTurn(s);if(s.over)record();save();render();phase()}
-function act(fn){if(!s||screen!=='game')return;if(fn()===false){notify('Not enough resources, cargo, credits, actions or purchases for that.');return}settle()}
+function act(fn,snd){if(!s||screen!=='game')return;if(fn()===false){notify('Not enough resources, cargo, credits, actions or purchases for that.');return}if(snd)Music.sfx(snd);settle()}
 
 /* ---------- game view ---------- */
 const tok=(r,n,met)=>'<span class="tok '+(met?'met':'miss')+'" style="--rc:var(--c-'+r+')" title="'+E.RLABEL[r]+'">'+icon(r,1.6)+n+'</span>';
@@ -59,6 +59,7 @@ function cardEl(k,idx,market){const c=E.CARDS[k],p=E.me(s),on=s.phase==='action'
  +'<div class="pb"><div class="kind">'+(c.cat==='res'?'Resource':'Action')+' · '+c.kind+'</div><h3>'+c.n+'</h3><p>'+c.t+'</p>';
  if(market)h+='<button data-a="buy" data-key="'+k+'"'+(!on||p.buys<1||s.market[k]<1||p.pool.cr<c.cost?' disabled':'')+'>Buy · '+c.cost+' cr</button>';
  else{
+  if(k==='salvage')h+='<select id="bt'+idx+'" aria-label="Card to scrap">'+p.hand.map((t,j)=>j!==idx?'<option value="'+j+'">Scrap '+E.CARDS[t].n+'</option>':'').join('')+'<option value="-1">Scrap nothing</option></select>';
   if(k==='buyout')h+='<select id="bt'+idx+'" aria-label="Buyout target">'+s.players.map((t,j)=>j!==s.current?'<option value="'+j+'">'+esc(t.name)+' · '+t.profit+'</option>':'').join('')+'</select>';
   h+='<button class="'+(c.cat==='act'?'primary':'')+'" data-a="play" data-id="'+idx+'"'+(on&&E.canPlay(s,idx)?'':' disabled')+'>'+(c.cat==='res'?'Play':'Play action')+'</button>'
   +'<button class="scr" data-a="scrap" data-id="'+idx+'"'+(!on||p.scrapped||p.pool.cr<1?' disabled':'')+'>Scrap · 1 cr</button>';
@@ -97,7 +98,7 @@ function phase(){
  if(screen!=='game')return;const p=E.me(s);
  if(s.over){const hi=Math.max(...s.players.map(x=>x.profit)),w=s.players.filter(x=>x.profit===hi);
   modal('<div class="eyebrow">Run complete · Round '+s.round+'</div><h2>'+w.map(x=>esc(x.name)).join(' & ')+(w.length>1?' share the win.':' wins.')+'</h2>'+table()+'<p class="mute" style="margin-top:10px">Only profit counts. Unspent credits and deck size do not.</p><div class="btns"><button class="primary" data-a="setup">New run</button><button data-a="decks">Captains\' decks</button><button data-a="review">Review board</button></div>');return}
- if(s.phase==='handoff'){modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Final round':'Next captain')+'</div><h2>'+esc(p.name)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' profit</p><div class="btns"><button class="primary" data-a="begin">Begin turn</button></div>');return}
+ if(s.phase==='handoff'){if(!p.bot)Music.sfx('turn');modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Final round':'Next captain')+'</div><h2>'+esc(p.name)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' profit</p><div class="btns"><button class="primary" data-a="begin">Begin turn</button></div>');return}
  hide();
 }
 function rules(){modal('<div class="eyebrow">How Galaxy Trade Lanes works</div><h2>Every purchase changes your next hand.</h2><div class="cols2">'
@@ -107,6 +108,7 @@ function rules(){modal('<div class="eyebrow">How Galaxy Trade Lanes works</div><
  +'<p><b class="acc">Buying.</b> One purchase per turn (Brokerage adds one). Bought cards go to your discard pile and have no immediate effect.</p>'
  +'<p><b class="acc">Combat.</b> Combat covers escort requirements. Or spend 3 combat and 1 fuel for a pirate patrol worth +5 profit, once per turn. There are no dice.</p>'
  +'<p><b class="acc">Buyout.</b> Costs 6. Take up to 2 profit from a rival, draw a card, and scrap the card.</p>'
+ +'<p><b class="acc">Salvage Crew.</b> Costs 5. An action: scrap 1 other card from your hand for free (this does not use your once-per-turn scrap), then draw 2.</p>'
  +'<p><b class="acc">Trade Charter.</b> Costs 8. A resource card that gives 2 credits and 2 profit every time you play it.</p>'
  +'<p><b class="acc">Cashing in.</b> Any time on your turn, trade 4 credits for 1 profit, as often as you can afford. Leftover credits never have to go to waste.</p>'
  +'<p><b class="acc">Thinning.</b> Once per turn, pay 1 credit to scrap one unplayed card from your hand.</p>'
@@ -177,16 +179,17 @@ $('vol').addEventListener('input',e=>{Music.setVol(Number(e.target.value));music
 document.addEventListener('click',e=>{
  const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
  const a=b.dataset.a,id=Number(b.dataset.id);
+ if(['tab','menu','rules','records','deck','done','log','enc','decks','close','review','new','endAsk'].includes(a))Music.sfx('tab');
  if(a==='music'){try{if(Music.on){Music.stop();musicWanted=false}else{Music.start();musicWanted=true}}catch(x){notify('This browser blocked audio.')}musicPref({on:musicWanted,vol:Music.vol});musicUI();return}
  else if(a==='start')start();
  else if(a==='begin')act(()=>E.begin(s));
- else if(a==='play')act(()=>E.play(s,id,$('bt'+id)?Number($('bt'+id).value):undefined));
- else if(a==='res')act(()=>E.playResources(s));
- else if(a==='buy')act(()=>E.buy(s,b.dataset.key));
- else if(a==='complete')act(()=>E.complete(s,id));
- else if(a==='patrol')act(()=>E.patrol(s));
- else if(a==='cash')act(()=>E.cashIn(s));
- else if(a==='scrap')act(()=>E.scrap(s,id));
+ else if(a==='play'){const k=E.me(s).hand[id];act(()=>E.play(s,id,$('bt'+id)?Number($('bt'+id).value):undefined),k&&E.CARDS[k].cat==='act'?'action':'play')}
+ else if(a==='res')act(()=>E.playResources(s),'play');
+ else if(a==='buy')act(()=>E.buy(s,b.dataset.key),'buy');
+ else if(a==='complete')act(()=>E.complete(s,id),'deliver');
+ else if(a==='patrol')act(()=>E.patrol(s),'patrol');
+ else if(a==='cash')act(()=>E.cashIn(s),'cash');
+ else if(a==='scrap')act(()=>E.scrap(s,id),'scrap');
  else if(a==='end'){s.warned=s.warned||{};s.warned[s.current]=true;act(()=>E.end(s))}
  else if(a==='endAsk')endAsk();
  else if(a==='rules')rules();
@@ -211,5 +214,5 @@ document.addEventListener('keydown',e=>{
 });
 (function boot(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(SAVE))}catch(e){}
- musicUI();if(saved&&saved.v===1&&saved.players&&saved.board){s=saved;screen='game';settle()}else renderSetup();
+ musicUI();if(saved&&saved.v===1&&saved.players&&saved.board){s=E.migrate(saved);screen='game';settle()}else renderSetup();
 })();

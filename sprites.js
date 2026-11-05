@@ -173,6 +173,15 @@ const EMB={
   box3d(L,40,28,8,10,PAL.amber);L.rect(43,31,2,4,PAL.amber[1]);
   coin(L,78,12,6);coin(L,82,28,5);coin(L,76,42,6);
   [[70,14],[72,30],[68,42]].forEach(([x,y])=>L.poly([[x,y],[x-5,y-3],[x-5,y+3]],PAL.red[5]));L.line(70,14,58,16,PAL.red[4]);L.line(72,30,70,31,PAL.red[4])},
+ salvage(L){L.poly([[4,50],[14,42],[30,44],[40,40],[56,44],[70,41],[84,50]],PAL.steel[2]);
+  [[16,40,8,6,PAL.rust],[30,38,10,7,PAL.steel],[48,39,9,6,PAL.rust],[60,40,10,6,PAL.amber]].forEach(([x,y,w,h,c])=>{L.poly([[x,y+h],[x+2,y],[x+w,y+1],[x+w-1,y+h]],c[3]);L.rect(x+2,y+1,w-3,1,c[5])});
+  L.rect(64,4,6,40,PAL.amber[3]);L.rect(64,4,2,40,PAL.amber[5]);for(let y=8;y<42;y+=6)L.line(64,y,69,y+5,PAL.amber[2]);
+  L.rect(30,4,40,5,PAL.amber[3]);L.rect(30,4,40,1,PAL.amber[5]);for(let x=34;x<66;x+=6)L.line(x,4,x+5,8,PAL.amber[2]);
+  box3d(L,66,30,14,12,PAL.steel);L.rect(69,33,8,3,PAL.teal[5]);
+  L.rect(37,9,1,14,PAL.steel[5]);box3d(L,32,22,12,5,PAL.steel);
+  L.poly([[32,27],[29,36],[32,34],[34,28]],PAL.steel[4]);L.poly([[44,27],[47,36],[44,34],[42,28]],PAL.steel[4]);
+  L.poly([[34,30],[37,26],[42,31],[38,35]],PAL.rust[4]);L.set(37,29,PAL.amber[6]);
+  [[24,30],[52,32],[46,26]].forEach(([x,y])=>{L.set(x,y,PAL.amber[6]);L.set(x+1,y,PAL.amber[4])})},
  charter(L){cyl(L,14,4,8,44,PAL.amber);cyl(L,62,4,8,44,PAL.amber);
   L.rect(22,6,40,40,PAL.rust[6]);L.rect(22,6,40,2,PAL.rust[5]);L.rect(22,44,40,2,PAL.rust[5]);
   L.rect(27,11,30,3,PAL.violet[3]);for(let i=0;i<4;i++)L.rect(27,18+i*5,i===3?14:24,2,PAL.steel[3]);
@@ -182,7 +191,7 @@ const EMB={
   L.poly([[65,30],[66.6,34],[71,34],[67.4,36.6],[68.8,41],[65,38.4],[61.2,41],[62.6,36.6],[59,34],[63.4,34]],PAL.amber[6]);
   [[78,8],[82,20],[76,24]].forEach(([x,y],i)=>{L.set(x,y,PAL.amber[6]);L.set(x-1,y,PAL.amber[5-i%2]);L.set(x+1,y,PAL.amber[5-i%2]);L.set(x,y-1,PAL.amber[5]);L.set(x,y+1,PAL.amber[5])})}
 };
-const TINT={scrip:PAL.amber,drum:PAL.amber,sample:PAL.rust,rig:PAL.teal,deal:PAL.amber,house:PAL.blue,pack:PAL.teal,borer:PAL.rust,vault:PAL.blue,quarter:PAL.teal,barge:PAL.teal,gunship:PAL.red,probe:PAL.violet,broker:PAL.blue,deck:PAL.amber,wing:PAL.red,buyout:PAL.red,charter:PAL.violet};
+const TINT={scrip:PAL.amber,drum:PAL.amber,sample:PAL.rust,rig:PAL.teal,deal:PAL.amber,house:PAL.blue,pack:PAL.teal,borer:PAL.rust,vault:PAL.blue,quarter:PAL.teal,barge:PAL.teal,gunship:PAL.red,probe:PAL.violet,broker:PAL.blue,deck:PAL.amber,wing:PAL.red,buyout:PAL.red,salvage:PAL.rust,charter:PAL.violet};
 function cardArt(k){const s=cardBg(TINT[k]||PAL.teal,k.length*7+k.charCodeAt(0));const L=new S(88,52);EMB[k](L);L.outline(OUT);s.blit(L);return s}
 
 /* ---- hero freighter (144x64) ---- */
