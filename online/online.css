@@ -1,0 +1,15 @@
+/* online table additions */
+.roster{display:inline-flex;flex-wrap:wrap;gap:4px 10px;vertical-align:middle}
+.who{position:relative;padding-left:11px;color:var(--mute)}
+.who::before{content:'';position:absolute;left:0;top:50%;width:6px;height:6px;margin-top:-3px;background:#55617a}
+.who.on::before{background:var(--teal)}.who.cur{color:var(--amber)}
+.top .status .sm{min-height:26px;padding:2px 8px;font-size:11px;margin-left:6px}
+.olerr{border:2px solid var(--coral);background:#2a0f18;padding:8px 12px;color:var(--ink);max-width:520px}
+.olval{border:2px solid var(--line);background:var(--panel);padding:8px 12px;min-height:38px}
+.seats{list-style:none;margin:6px 0 4px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;max-width:720px}
+.seats li{display:flex;align-items:center;gap:8px;border:2px solid var(--line);background:var(--panel2);padding:6px 10px;min-height:44px}
+.seats li i{width:8px;height:8px;background:#55617a;flex:none}.seats li.on i{background:var(--teal)}
+.seats li b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seats li.empty{border-style:dashed;color:var(--mute);background:transparent}
+.seats .tag{margin-left:0}.seats .tag.you{background:var(--teal);color:#06231c}
+.seats button{min-height:26px;padding:2px 6px;font-size:10px}

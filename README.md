@@ -15,6 +15,33 @@ https://claude.ai/artifact/QeNrSTmdALXVTgVnza3yir
 
 It uses the same rules, art and music as the browser version, with its own layout: a compact header, an always-visible strip with this turn's pool, and tabs along the bottom for Hand, Contracts, Market and Captains. Its saves and records use separate `gtl-mobile-` storage keys, so they never mix with the browser version.
 
+## Play online (desktop browsers, 2–6 human captains)
+
+You run a small game server on your own computer, and Cloudflare gives it a temporary public link for your friends. The link stops working when you close the server. No Cloudflare account is needed.
+
+**One-time setup**
+1. Install **Node.js** (the LTS version) from nodejs.org.
+2. Install **cloudflared**, Cloudflare's tunnel program:
+   - Mac (with Homebrew): `brew install cloudflared`
+   - Windows: `winget install --id Cloudflare.cloudflared`
+   - Or download it from Cloudflare's "Downloads" page for cloudflared.
+
+**Each game night**
+1. Double-click `start-online.command` (Mac) or `start-online.bat` (Windows), or run `node server/server.js`.
+2. The window prints two links:
+   - **Your link** (`http://localhost:8787/?host=…`): open it yourself; you become the host.
+   - **Link for your friends** (`https://….trycloudflare.com`): send it to them.
+3. Everyone types a name and lands in the lobby. The host picks the rules and clicks **Launch run**.
+4. Keep the window open while you play. Ctrl+C (or closing the window) ends the table.
+
+**Good to know**
+- The server runs the rules; each browser sees only its own hand. Moves out of turn are refused.
+- Closed a tab? Open the same link again in the same browser to get your seat back. The table is also saved to `server/saved-game.json`, so restarting the server resumes it (with a new friends' link).
+- The host can **Skip turn** for a captain who has left, **Remove** captains or **Make host** someone else in the lobby, and **End run** to return everyone to the lobby.
+- Anyone with the friends' link can join until the run starts, so share it only with your group.
+- Rebuild the online page after changing the game: `bash build-online.sh` (the server serves `online/index.html`).
+- Options: `PORT=9000 node server/server.js` picks another port; `NO_TUNNEL=1` skips starting cloudflared.
+
 ## Files
 
 | File | What it does |
@@ -28,6 +55,10 @@ It uses the same rules, art and music as the browser version, with its own layou
 | `build.sh` | Combines everything above into `index.html`. |
 | `index.html` | The built, playable game. Do not edit by hand; edit the sources and rebuild. |
 | `mobile/mobile.css`, `mobile/mobile.js`, `mobile/head.html` | Phone layout, laid over the shared files above. |
+| `server/server.js` | Online game server: runs the rules for one table, serves `online/index.html`, starts the Cloudflare tunnel. |
+| `online/online.js`, `online/online.css` | Online lobby and network play, laid over the desktop layout. |
+| `build-online.sh` | Builds `online/index.html` (the online page). |
+| `start-online.command`, `start-online.bat` | Double-click launchers for the online server (Mac, Windows). |
 | `build-mobile.sh` | Combines the shared files plus `mobile/` into `mobile/index.html` (the phone build). |
 | `tests/` | Automated checks of the rules engine (needs Node.js). |
 | `preview.cjs` | Renders the pixel art to PNG sheets in `out/` for reviewing art (needs Node.js). |
@@ -37,6 +68,7 @@ It uses the same rules, art and music as the browser version, with its own layou
 ```bash
 bash build.sh                       # rebuild index.html
 bash build-mobile.sh                # rebuild mobile/index.html (phone build)
+bash build-online.sh                # rebuild online/index.html (online multiplayer page)
 node tests/sim.test.cjs             # 120 simulated 3-player games
 node tests/six-players.test.cjs     # 2–6 player games and played-card tracking
 node tests/boss.test.cjs            # pirate boss rules
