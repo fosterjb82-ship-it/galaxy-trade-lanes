@@ -240,3 +240,18 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
 .tcount b{font:700 22px/1 var(--disp);color:var(--coral)}
 .boss b.down,.down{color:var(--coral)}
 .tag.red{background:var(--coral);color:#2a0606}
+
+/* card animations */
+.cdeck{position:relative;display:inline-flex;align-items:center;width:34px;height:24px;margin:0 6px 0 2px;align-self:center}
+.cdeck i{position:absolute;left:0;top:0;width:22px;height:16px;border:2px solid #000;background:repeating-linear-gradient(45deg,#1b2a52 0 3px,#24386c 3px 6px);box-shadow:inset 0 0 0 1px var(--amber2)}
+.cdeck i:nth-child(2){left:3px;top:3px}.cdeck i:nth-child(3){left:6px;top:6px}
+.cdeck b{position:absolute;left:32px;top:2px;font:700 14px var(--disp);color:var(--mute)}
+.flyer{position:fixed!important;z-index:45;margin:0!important;pointer-events:none;animation:deal .52s cubic-bezier(.2,.8,.25,1) both}
+.flyer.flip{animation:flipin .7s cubic-bezier(.2,.8,.25,1) both}
+@keyframes deal{from{transform:translate(var(--dx),var(--dy)) rotate(-14deg) scale(.42);opacity:.25}55%{opacity:1}to{transform:none;opacity:1}}
+@keyframes flipin{0%{transform:translate(var(--dx),var(--dy)) rotateY(88deg) scale(.4);opacity:.4}45%{transform:translate(calc(var(--dx)*.15),calc(var(--dy)*.15)) rotateY(88deg) scale(.9);opacity:1}100%{transform:none}}
+.ghost{position:fixed!important;z-index:44;margin:0!important;pointer-events:none;animation:delivered 1.1s ease-in both;border-color:var(--teal)!important}
+.ghost .stamp{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) rotate(-14deg);padding:4px 10px;border:3px solid var(--teal);color:var(--teal);background:#04201dd9;font:700 20px var(--disp);letter-spacing:.12em;animation:stamp .25s ease-out both}
+@keyframes stamp{from{transform:translate(-50%,-50%) rotate(-14deg) scale(2.2);opacity:0}to{transform:translate(-50%,-50%) rotate(-14deg) scale(1);opacity:1}}
+@keyframes delivered{0%,35%{transform:none;opacity:1}100%{transform:translate(var(--gx),var(--gy)) scale(.15);opacity:0}}
+@media (prefers-reduced-motion:reduce){.flyer,.ghost{animation:none!important}}

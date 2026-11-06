@@ -4,6 +4,7 @@ let tab='hand',shownTab=null,turnKey=null,tabScroll={};
 
 render=function(){
  if(screen!=='game'){renderSetup();return}
+ const snap=animBefore();
  const body=document.querySelector('.mbody');if(body&&shownTab)tabScroll[shownTab]=body.scrollTop;
  const p=E.me(s),on=s.phase==='action'&&!s.over,hidden=!on;
  const key=s.round+':'+s.current;if(key!==turnKey){turnKey=key;tab='hand';tabScroll={}}
@@ -27,7 +28,7 @@ render=function(){
    +played(p,hidden)
    +'<p class="eyebrow mnote">Draw pile '+p.deck.length+' · Discard '+p.discard.length+' · '+E.deckSize(p)+' cards total</p>';
  }else if(tab==='board'){
-  h='<div class="sechead"><h2>CONTRACT BOARD</h2><span class="eyebrow">First to pay claims it · '+s.done.length+' delivered</span></div>'+bossPanel()+'<div class="grid">'+s.board.map(ctrCard).join('')+'</div>';
+  h='<div class="sechead"><h2>CONTRACT BOARD</h2>'+cdeckPile()+'<span class="eyebrow">First to pay claims it · '+s.done.length+' delivered</span></div>'+bossPanel()+'<div class="grid">'+s.board.map(ctrCard).join('')+'</div>';
  }else if(tab==='market'){
   h='<div class="sechead"><h2>CARD MARKET</h2><span class="eyebrow">Bought cards go to your discard pile</span></div>'+cashBtn(p,on)+'<div class="grid">'+marketList().map(k=>cardEl(k,0,true)).join('')+'</div>';
  }else{
@@ -38,6 +39,7 @@ render=function(){
  const tabs='<nav class="mtabs" role="tablist" aria-label="Game sections">'+T.map(([k,l,n])=>'<button role="tab" data-a="tab" data-t="'+k+'" aria-selected="'+(tab===k)+'"'+(tab===k?' class="on"':'')+'>'+l+'<em'+(k==='board'&&s.boss?' class="hot red"':k==='board'&&ready?' class="hot"':'')+'>'+n+'</em></button>').join('')+'</nav>';
  $('stage').innerHTML='<div class="mgame">'+sum+'<div class="mbody" role="tabpanel">'+h+'</div>'+tabs+'</div>';
  shownTab=tab;document.querySelector('.mbody').scrollTop=tabScroll[tab]||0;
+ animAfter(snap);
 };
 
 function cashBtn(p,on){const n=Math.floor(p.pool.cr/E.CASH),ok=on&&n>0;

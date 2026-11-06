@@ -69,11 +69,15 @@ const SFX={
   env(g,t2,.005,.35,.05,.6);s.connect(f);f.connect(g);g.connect(fx);s.start(t2);s.stop(t2+.8);tone(90,t2,.6,'sine',.25,38)},
  scrap:t=>{tone(300,t,.16,'triangle',.14,90)},
  tab:t=>{tone(hz(81),t,.045,'sine',.09)},
+ draw:t=>{const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=noise;f.type='bandpass';f.frequency.setValueAtTime(5200,t);f.frequency.exponentialRampToValueAtTime(1800,t+.09);f.Q.value=1.4;
+  env(g,t,.004,.22,.01,.08);s.connect(f);f.connect(g);g.connect(fx);s.start(t,Math.random()*.5);s.stop(t+.14);tone(hz(91),t+.02,.05,'sine',.03)},
+ deal:t=>{const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=noise;f.type='lowpass';f.frequency.setValueAtTime(3200,t);f.frequency.exponentialRampToValueAtTime(400,t+.12);
+  env(g,t,.002,.32,.01,.12);s.connect(f);f.connect(g);g.connect(fx);s.start(t,Math.random()*.5);s.stop(t+.18);tone(150,t,.12,'sine',.12,70);tone(hz(84),t+.05,.18,'triangle',.05)},
  boss:t=>{tone(hz(40),t,1.1,'sawtooth',.12,hz(38));tone(hz(47),t+.05,1.0,'sawtooth',.08,hz(45));tone(hz(52),t+.5,.9,'square',.05,hz(50))},
  hit:t=>{tone(180,t,.25,'sawtooth',.14,40);tone(900,t,.08,'square',.05,200)}
 };
-function sfx(name){if(!on||!ctx||!SFX[name])return;if(!fx){fx=ctx.createGain();const c=ctx.createDynamicsCompressor();fx.connect(c);c.connect(ctx.destination);fx.connect(verb)}
- fx.gain.value=Math.min(1,.35+vol*.9);try{SFX[name](ctx.currentTime+.01)}catch(e){}}
+function sfx(name,delay){if(!on||!ctx||!SFX[name])return;if(!fx){fx=ctx.createGain();const c=ctx.createDynamicsCompressor();fx.connect(c);c.connect(ctx.destination);fx.connect(verb)}
+ fx.gain.value=Math.min(1,.35+vol*.9);try{SFX[name](ctx.currentTime+.01+(delay||0))}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hidden)ctx.suspend();else if(on)ctx.resume()});
 return {start,stop,setVol,sfx,get on(){return on},get vol(){return vol}};
 })();

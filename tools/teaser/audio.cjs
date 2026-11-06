@@ -4,7 +4,7 @@ const [musicSrc,cuesFile,out,dur]=process.argv.slice(2);
 let src=fs.readFileSync(musicSrc,'utf8');
 for(const [a,b] of [["ctx=new (window.AudioContext||window.webkitAudioContext)();","ctx=window.__offline;"],["if(ctx.state!=='running')ctx.resume();",""],
  ["while(next<ctx.currentTime+.25)","while(next<ctx.currentTime+(window.__ahead||.25))"],["linearRampToValueAtTime(vol*.9,ctx.currentTime+2.5)","linearRampToValueAtTime(vol*.9,ctx.currentTime+.8)"],
- ["SFX[name](ctx.currentTime+.01)","SFX[name]((window.__at||0)+.01)"]]){if(!src.includes(a))throw new Error('patch missing: '+a);src=src.replace(a,b)}
+ ["SFX[name](ctx.currentTime+.01+(delay||0))","SFX[name]((window.__at||0)+.01+(delay||0))"]]){if(!src.includes(a))throw new Error('patch missing: '+a);src=src.replace(a,b)}
 (async()=>{const b=await chromium.launch();const p=await b.newPage();
  const cues=JSON.parse(fs.readFileSync(cuesFile,'utf8'));
  const wav=await p.evaluate(async({src,cues,dur})=>{const SR=44100;window.__offline=new OfflineAudioContext(2,Math.ceil(SR*dur),SR);window.__ahead=dur;

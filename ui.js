@@ -54,7 +54,7 @@ function act(fn,snd){if(!s||screen!=='game')return;if(fn()===false){notify('Not 
 /* ---------- game view ---------- */
 const tok=(r,n,met)=>'<span class="tok '+(met?'met':'miss')+'" style="--rc:var(--c-'+r+')" title="'+E.RLABEL[r]+'">'+icon(r,1.6)+n+'</span>';
 function ctrCard(c){const p=E.me(s),ready=E.canComplete(s,c),nd=E.need(c);
- return '<article class="pc ctr notch'+(ready?' ready':'')+'"><div class="art">'+px(SP.sceneURL(c.dest,c.id),AW,AH)+'<span class="badge profit">'+icon('star',1.6)+'+'+c.profit+'</span>'+(ready?'<div class="go">READY TO DELIVER</div>':'')+(s.boss?'<div class="go blk">BLOCKADED</div>':'')+'</div>'
+ return '<article class="pc ctr notch'+(ready?' ready':'')+'" data-cid="'+c.id+'"><div class="art">'+px(SP.sceneURL(c.dest,c.id),AW,AH)+'<span class="badge profit">'+icon('star',1.6)+'+'+c.profit+'</span>'+(ready?'<div class="go">READY TO DELIVER</div>':'')+(s.boss?'<div class="go blk">BLOCKADED</div>':'')+'</div>'
  +'<div class="pb"><h3>'+esc(c.name)+'</h3><div class="dest">To '+esc(c.dest)+' · '+(c.req.combat?'Armed':'Freight')+'</div>'
  +'<div class="reqs">'+Object.entries(c.req).map(([r,n])=>tok(r,n,p.pool[r]>=n)).join('')+(nd?tok('cargo',nd,p.pool.cargo>=nd):'')+'</div>'
  +'<button class="'+(ready?'primary':'')+'" data-a="complete" data-id="'+c.id+'"'+(ready?'':' disabled')+'>'+(s.boss?'Blockaded':'Deliver')+'</button></div></article>'}
@@ -70,7 +70,7 @@ function bossPanel(compact){const b=s.boss,p=E.me(s),on=myTurn();
   +'<p class="mute">Team up: every captain spends combat or credits to damage it. Beaten: <b class="acc">+'+(b.bounty||1)+' profit per damage</b> you dealt, <b class="acc">+'+E.FINAL_BLOW+'</b> for the final blow. Not beaten by the end of round '+b.until+': it raids every captain for '+(b.raid||E.RAID)+' profit, and <b class="down">double ('+2*(b.raid||E.RAID)+')</b> from whoever dealt the least damage.</p>'
   +'<div class="bdmg">'+s.players.map((t,i)=>'<span'+(i===s.current?' class="cur"':'')+'>'+esc(t.name)+' <b>'+b.dmg[i]+'</b></span>').join('')+'</div>'+btns+'</div></section>'}
 function cardEl(k,idx,market){const c=E.CARDS[k],p=E.me(s),on=myTurn();
- let h='<article class="pc '+c.cat+(k==='buyout'&&!market?' bo':'')+' notch"><div class="art">'+px(SP.cardURL(k),AW,AH)
+ let h='<article class="pc '+c.cat+(k==='buyout'&&!market?' bo':'')+' notch"'+(market?'':' data-hand="'+idx+'"')+'><div class="art">'+px(SP.cardURL(k),AW,AH)
  +(market?'<span class="badge tl">'+icon('cr',1.6)+c.cost+'</span><span class="badge tr">×'+s.market[k]+'</span>':'')+'</div>'
  +'<div class="pb"><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><h3>'+c.n+'</h3><p>'+c.t+'</p>';
  if(market)h+='<button data-a="buy" data-key="'+k+'"'+(!on||p.buys<1||s.market[k]<1||p.pool.cr<c.cost?' disabled':'')+'>Buy · '+c.cost+' cr</button>';
@@ -89,6 +89,33 @@ function moveTiles(p,on){const canP=on&&!p.patrolled&&p.pool.combat>=3&&p.pool.f
   +'<button class="'+(canP?'primary':'')+'" data-a="patrol"'+(canP?'':' disabled')+'>'+(p.patrolled?'Patrol cleared':'Launch patrol')+'</button></section>'
   +'<section class="move cash notch'+(canC?' ready':'')+'">'+px(SP.moveURL('cash'),88,52)+'<div class="mv"><b>Cash in</b><span class="mc">'+icon('cr',1.4)+E.CASH+' → '+icon('star',1.4)+'+1</span><small>'+(canC?'You can cash in '+n+'× now':'Any time · as often as you like')+'</small></div>'
   +'<button class="'+(canC?'primary':'')+'" data-a="cash"'+(canC?'':' disabled')+'>Cash in '+E.CASH+' credits</button></section>'}
+/* ---------- animations: cards dealt from your draw pile, contracts from the contract deck ---------- */
+const calm=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){return false}};
+let animPrev=null;
+function cdeckPile(){return '<span class="cdeck" title="Contract deck: '+s.cdeck.length+' left"><i></i><i></i><i></i><b>'+s.cdeck.length+'</b></span>'}
+function animBefore(){const out={};document.querySelectorAll('.ctr[data-cid]').forEach(el=>{const r=el.getBoundingClientRect();if(r.width)out[el.dataset.cid]={html:el.outerHTML,r}});return out}
+const mid=el=>{if(!el)return null;const r=el.getBoundingClientRect();return r.width?{x:r.left+r.width/2,y:r.top+r.height/2}:null};
+function fly(el,from,delay,cls){const r=el.getBoundingClientRect();if(!r.width||!from)return;const g=el.cloneNode(true);g.classList.add('flyer',cls);g.removeAttribute('data-hand');g.removeAttribute('data-cid');
+ g.style.cssText='left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;--dx:'+(from.x-r.left-r.width/2)+'px;--dy:'+(from.y-r.top-r.height/2)+'px;animation-delay:'+delay+'ms';
+ el.style.visibility='hidden';document.body.append(g);setTimeout(()=>{el.style.visibility='';g.remove()},delay+720)}
+function animAfter(snap){if(screen!=='game'||!s)return;
+ const p=E.me(s),show=myTurn(),hand=show?p.hand.slice():null,board=s.board.map(c=>c&&c.id),key=s.id+':'+s.round+':'+s.current;
+ const prev=animPrev;animPrev={id:s.id,key,hand,board};if(!prev||prev.id!==s.id)return;
+ const still=calm();
+ // contracts that left the board, and the ones dealt in their place
+ const gone=prev.board.filter(x=>!board.includes(x)),fresh=board.filter(x=>!prev.board.includes(x));
+ const to=mid(document.querySelector('.plate .profit,.mprof')),deck=mid(document.querySelector('.cdeck'));
+ gone.forEach((cid,i)=>{const o=snap[cid];if(!o||still)return;const g=document.createElement('div');g.className='ghostwrap';g.innerHTML=o.html;const c=g.firstChild;c.classList.add('ghost');
+  c.style.cssText='left:'+o.r.left+'px;top:'+o.r.top+'px;width:'+o.r.width+'px;height:'+o.r.height+'px;--gx:'+(to?to.x-o.r.left-o.r.width/2:0)+'px;--gy:'+(to?to.y-o.r.top-o.r.height/2:-120)+'px;animation-delay:'+(i*120)+'ms';
+  c.insertAdjacentHTML('beforeend','<div class="stamp">DELIVERED</div>');document.body.append(c);setTimeout(()=>c.remove(),1300+i*120)});
+ fresh.forEach((cid,i)=>{const el=document.querySelector('.ctr[data-cid="'+cid+'"]');const d=(gone.length?420:0)+i*160;Music.sfx('deal',d/1000);if(el&&!still)fly(el,deck,d,'flip')});
+ // cards drawn into your hand
+ if(!hand)return;let added=[];
+ if(prev.key!==key||!prev.hand)added=hand.map((k,i)=>i);
+ else{const left={};prev.hand.forEach(k=>left[k]=(left[k]||0)+1);hand.forEach((k,i)=>{if(left[k])left[k]--;else added.push(i)})}
+ if(!added.length)return;
+ const pile=mid(document.querySelector('.piles>div:first-child'))||mid(document.querySelector('.mtabs [data-t=hand]'))||{x:40,y:innerHeight-40};
+ added.forEach((idx,i)=>{const el=document.querySelector('[data-hand="'+idx+'"]');Music.sfx('draw',i*.09);if(el&&!still)fly(el,pile,i*90,'deal')})}
 function standings(){return s.players.map((t,i)=>({t,i})).sort((a,b)=>b.t.profit-a.t.profit).map(({t,i},rank)=>'<div class="stand'+(i===s.current&&!s.over?' cur':'')+'"><i>'+(rank+1)+'</i><div><span>'+esc(t.name)+'</span><small>'+(t.bot?'CPU · ':'')+t.completed+' deliv · '+E.deckSize(t)+' cards</small></div><strong>'+t.profit+'</strong></div>').join('')}
 function gains(k){const c=E.CARDS[k],out=Object.entries(c.g).map(([r,n])=>'<span class="g" style="--rc:var(--c-'+r+')">'+icon(r,1.4)+'+'+n+'</span>');
  if(c.draw)out.push('<span class="g">+'+c.draw+' draw</span>');if(c.buys)out.push('<span class="g">+'+c.buys+' buy</span>');if(k==='buyout')out.push('<span class="g" style="--rc:var(--c-combat)">took profit</span>');if(c.vp)out.push('<span class="g" style="--rc:var(--amber)">'+icon('star',1.4)+'+'+c.vp+' profit</span>');return out.join('')}
@@ -98,6 +125,7 @@ function played(p,hidden){const list=hidden?[]:(p.turnPlayed||[]);
  :'<p class="mute">'+(hidden?'Hidden until the captain begins.':'Cards you play this turn appear here. They go to your discard pile when the turn ends.')+'</p>')+'</aside>'}
 function render(){
  if(screen!=='game'){renderSetup();return}
+ const snap=animBefore();
  const old=$('center');if(old)scrollPos=old.scrollTop;
  const oh=document.querySelector('.hcards');if(oh)handX=oh.scrollLeft;
  const p=E.me(s),on=myTurn(),hidden=!on;
@@ -108,13 +136,14 @@ function render(){
   +'</section>'+moveTiles(p,on)
   +'<section class="panel notch"><div class="eyebrow">Standings</div>'+standings()+'</section>'
   +'<section class="panel notch"><div class="eyebrow">Your deck</div><div class="piles"><div><b>'+p.deck.length+'</b><span class="eyebrow">Draw</span></div><div><b>'+p.discard.length+'</b><span class="eyebrow">Discard</span></div><div><b>'+E.deckSize(p)+'</b><span class="eyebrow">Total</span></div></div><div class="links"><button data-a="deck">Deck</button><button data-a="done">Deliveries</button><button data-a="log">Log</button></div></section></aside>';
- const center='<section class="center" id="center"><div class="sec"><div class="sechead"><h2>CONTRACT BOARD</h2><span class="eyebrow">First to pay claims it · refills at once · '+s.done.length+' delivered</span></div>'+bossPanel()+'<div class="grid">'+s.board.map(ctrCard).join('')+'</div></div>'
+ const center='<section class="center" id="center"><div class="sec"><div class="sechead"><h2>CONTRACT BOARD</h2>'+cdeckPile()+'<span class="eyebrow">First to pay claims it · refills at once · '+s.done.length+' delivered</span></div>'+bossPanel()+'<div class="grid">'+s.board.map(ctrCard).join('')+'</div></div>'
   +'<div class="sec"><div class="sechead"><h2>CARD MARKET</h2><span class="eyebrow">Bought cards go to discard · no immediate effect</span></div><div class="grid">'+marketList().map(k=>cardEl(k,0,true)).join('')+'</div></div></section>';
  const hasRes=p.hand.some(k=>E.CARDS[k]&&E.CARDS[k].cat==='res');
  const hand='<section class="panel hand notch"><div class="hside"><div><h2>HAND</h2><span class="eyebrow">'+(hidden?'hidden':p.hand.length+' cards')+'</span></div><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play resources</button><button class="primary endb" data-a="'+(s.over?'new':'endAsk')+'"'+(!s.over&&!on?' disabled':'')+'>'+(s.over?'New run':'End turn')+'</button></div>'
   +(hidden?'<div class="empty">'+(ME!==null&&!s.over?esc(p.name)+' is taking their turn. Your hand appears when it is your turn.':'Hand hidden until the captain begins.')+'</div>':p.hand.length?'<div class="hcards">'+p.hand.map((k,i)=>cardEl(k,i,false)).join('')+'</div>':'<div class="empty">Hand played out. Deliver, buy, or end your turn.</div>')+played(p,hidden)+'</section>';
  $('stage').innerHTML='<div class="shell">'+rail+center+hand+'</div>';
  $('center').scrollTop=scrollPos;const h=document.querySelector('.hcards');if(h)h.scrollLeft=handX;
+ animAfter(snap);
 }
 function table(){return '<table class="t"><thead><tr><th>CAPTAIN</th><th>PROFIT</th><th>DELIVERIES</th></tr></thead><tbody>'+[...s.players].sort((a,b)=>b.profit-a.profit).map(p=>'<tr><td>'+esc(p.name)+'</td><td class="acc">'+p.profit+'</td><td>'+p.completed+'</td></tr>').join('')+'</tbody></table>'}
 let seenBoss=0;
@@ -264,3 +293,4 @@ document.addEventListener('keydown',e=>{
  let saved=null;try{saved=JSON.parse(localStorage.getItem(SAVE))}catch(e){}
  musicUI();if(saved&&saved.v===1&&saved.players&&saved.board){s=E.migrate(saved);seenBoss=(s.bossDone||[]).length;screen='game';settle()}else renderSetup();
 })();
+
