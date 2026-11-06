@@ -255,3 +255,111 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
 @keyframes stamp{from{transform:translate(-50%,-50%) rotate(-14deg) scale(2.2);opacity:0}to{transform:translate(-50%,-50%) rotate(-14deg) scale(1);opacity:1}}
 @keyframes delivered{0%,35%{transform:none;opacity:1}100%{transform:translate(var(--gx),var(--gy)) scale(.15);opacity:0}}
 @media (prefers-reduced-motion:reduce){.flyer,.ghost{animation:none!important}}
+
+/* =====================================================================
+   Desktop table (2K-first). Layout concept: a slim captain rail on the left;
+   three bands on the right: contract board on top (largest cards), card market
+   in the middle (compact mini cards), your hand at the bottom (large cards).
+   Sizes are for a 2560x1300 canvas; fitDesk() in ui.js scales it to the window.
+   ===================================================================== */
+.pc .fx{display:none}
+.desk-shell{flex:1;min-height:0;display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px}
+.desk-shell .rail{grid-row:auto;overflow:auto}
+.desk-shell .rail .panel{padding:12px}
+.bands{min-height:0;display:grid;grid-template-rows:39fr 20fr 41fr;gap:12px;transition:grid-template-rows .35s ease}
+.desk-shell[data-mode=shop] .bands{grid-template-rows:39fr 49fr 12fr}
+@media (prefers-reduced-motion:reduce){.bands{transition:none}}
+.band{min-height:0;min-width:0;display:flex;flex-direction:column;gap:10px;border:2px solid var(--line);background:var(--panel);padding:10px 16px 14px}
+.bhead2{display:flex;align-items:center;gap:16px;flex:none;min-height:40px;min-width:0}
+.bhead2 h2{font-size:28px;letter-spacing:.12em;color:var(--amber);white-space:nowrap}
+.bhead2 .eyebrow{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bhead2 .threat{margin-left:auto;padding:4px 12px;font-size:15px;flex:0 1 auto;min-width:0}
+.bhead2 .threat span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bhead2 .cdeck{transform:scale(1.4);margin:0 18px 0 8px}
+
+/* contract board: the big cards */
+.cband{border-color:var(--line2);background:linear-gradient(180deg,#121c38,var(--panel))}
+.cbody{flex:1;min-height:0;display:flex;gap:16px}
+.desk #app{max-width:none}
+.cwrap,.hwrap{flex:1;min-width:0;min-height:0;container-type:size}
+.cgrid{height:100%;display:grid;gap:16px;justify-content:center;align-content:start;
+ grid-template-columns:repeat(var(--n),min(calc((100cqw - (var(--n) - 1) * 16px) / var(--n)),calc((100cqh - 178px) * 1.83),420px))}
+.cgrid .pc{width:auto;height:100%;max-height:100cqh}
+.cgrid .pc .art{height:auto;aspect-ratio:88/48}
+.cgrid .pc .art img.px{width:100%;height:100%;object-fit:cover}
+.cgrid .pc .pb{padding:10px 12px 12px;gap:7px}
+.cgrid .pc h3{font-size:27px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cgrid .dest{font-size:13px}
+.cgrid .tok{font-size:20px;padding:1px 7px 1px 4px;gap:4px}.cgrid .tok img{width:22px;height:22px}
+.cgrid .reqs{gap:6px}
+.cgrid .pc button{min-height:46px;font-size:18px;margin-top:auto}
+.cgrid .badge.profit{font-size:30px;padding:2px 10px 2px 6px;top:6px;right:6px}.cgrid .badge.profit img{width:26px;height:26px}
+.cgrid .ctr .go{font-size:13px;padding:4px 0}
+.cgrid .ctr.ready{animation:readyglow 1.6s ease-in-out infinite}
+.cgrid .ctr.ready button.primary{animation:readybtn 1.6s ease-in-out infinite}
+@keyframes readyglow{0%,100%{box-shadow:0 0 0 2px #4cd6ae44}50%{box-shadow:0 0 0 5px #4cd6ae88,0 0 24px #4cd6ae55}}
+@keyframes readybtn{0%,100%{filter:none}50%{filter:brightness(1.18)}}
+@media (prefers-reduced-motion:reduce){.cgrid .ctr.ready,.cgrid .ctr.ready button.primary{animation:none}}
+.cband.boss-on .boss{flex:0 0 min(42%,820px);min-height:0;overflow:auto}
+.cband.boss-on .cwrap{opacity:.55;filter:saturate(.6)}
+.cband .boss .bart img{width:240px}
+.cband .boss h3{font-size:30px}
+
+/* card market: compact mini cards while you hold a hand, full cards once it is played out */
+.mband{background:#0b1222}
+.mgrid{flex:1;min-height:0;display:grid;gap:10px;grid-template-columns:repeat(8,minmax(0,1fr));align-content:start}
+.mband.mini .mgrid{grid-template-columns:repeat(16,minmax(0,1fr))}
+.mgrid .pc{width:auto;min-width:0}
+.mgrid .pc .art{height:auto;aspect-ratio:88/40}
+.mgrid .pc .art img.px{width:100%;height:100%;object-fit:cover}
+.mgrid .pc h3{font-size:20px}
+.mgrid .pc p{font-size:14px}
+.mgrid .pc button{min-height:38px;font-size:15px}
+.mgrid .badge.tl{font-size:18px}
+.mgrid .pc:not(.can){opacity:.55}
+.mgrid .pc.can{border-color:var(--amber2)}
+.mband.mini .pc .art{aspect-ratio:88/34}
+.mband.mini .pc .kind,.mband.mini .pc p{display:none}
+.mband.mini .pc .fx{display:block;font:600 12px/1.25 var(--mono);color:var(--teal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mband.mini .pc.act .fx{color:var(--amber)}
+.mband.mini .pc .pb{padding:5px 6px 6px;gap:3px}
+.mband.mini .pc h3{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mband.mini .pc button{min-height:30px;font-size:12px;padding:2px 4px}
+.mband.mini .badge.tl{font-size:15px}.mband.mini .badge.tr{font-size:11px}
+.mpop{position:fixed;z-index:60;width:300px;pointer-events:none;background:var(--panel2);border:2px solid var(--amber);padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;box-shadow:6px 6px 0 #000a}
+.mpop>img{width:100%;height:auto;border:1px solid #000}
+.mpop b{font:700 24px var(--disp)}.mpop p{margin:0;font-size:15px;line-height:1.35;color:var(--ink)}
+.mpop small{display:flex;align-items:center;gap:4px;font:500 12px var(--mono);color:var(--mute)}
+
+/* your hand: large cards, pool strip and turn buttons */
+.hband{flex-direction:row;gap:16px;border-color:var(--line2);background:linear-gradient(0deg,#121c38,var(--panel))}
+.hmain{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;gap:10px}
+.hgrid{height:100%;display:grid;gap:14px;align-content:start;
+ grid-template-columns:repeat(var(--n),min(calc((100cqw - (var(--n) - 1) * 14px) / var(--n)),calc((100cqh - 214px) * 1.83),400px))}
+.hgrid .pc{width:auto;height:100%;max-height:100cqh}
+.hgrid .pc .art{height:auto;aspect-ratio:88/48}
+.hgrid .pc .art img.px{width:100%;height:100%;object-fit:cover}
+.hgrid .pc .pb{padding:10px 12px 12px;gap:6px;overflow:hidden}
+.hgrid .kind{font-size:12px}
+.hgrid .pc h3{font-size:25px}
+.hgrid .pc p{font-size:15px;line-height:1.3}
+.hgrid .pc button{min-height:44px;font-size:17px}
+.hgrid .pc .scr{min-height:30px;font-size:12px;opacity:.85}
+.hgrid .pc select{min-height:38px;font-size:15px}
+.pstrip{margin-left:auto;display:flex;gap:8px;flex:none}
+.ps{display:flex;align-items:center;gap:6px;border:2px solid var(--line);background:var(--panel2);padding:3px 10px 3px 6px;color:var(--rc)}
+.ps img{width:26px;height:26px}
+.ps b{font:700 28px/1 var(--disp);font-variant-numeric:tabular-nums;min-width:1ch;text-align:right}
+.ps i{font:500 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-style:normal}
+.ps.zero b{opacity:.35}
+.hmsg{font-size:16px;color:var(--mute)}
+.hside3{flex:0 0 330px;min-height:0;display:flex;flex-direction:column;gap:10px}
+.hside3>button{min-height:52px;font-size:18px}
+.hside3 .endb{min-height:64px;font-size:22px}
+.hside3 .played{flex:1;min-height:0;border:2px solid var(--line);border-left-width:2px}
+.hband.slim{align-items:center;padding-block:8px}
+.hband.slim .hmain{justify-content:center}
+.hband.slim .hside3{flex-direction:row;flex-basis:auto;align-items:center}
+.hband.slim .hside3>button{min-height:52px;padding-inline:22px}
+.hband.slim .played{display:none}
+.desk-shell .rail .plate h2{font-size:24px}

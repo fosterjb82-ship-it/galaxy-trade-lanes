@@ -42,6 +42,10 @@ You run a small game server on your own computer, and Cloudflare gives it a temp
 - Rebuild the online page after changing the game: `bash build-online.sh` (the server serves `online/index.html`).
 - Options: `PORT=9000 node server/server.js` picks another port; `NO_TUNNEL=1` skips starting cloudflared.
 
+## Desktop layout
+
+The desktop screen (browser, online and desktop-artifact builds) is laid out for a 2560×1300 browser window (a 2K monitor) and scaled to fit any window: about 73% on 1080p, 100% on 2K or 4K at 150% scaling, 150% on 4K at 100%. A captain rail sits on the left; on the right are three bands: the contract board on top (largest cards), the card market in the middle (compact mini cards with a hover popup while you hold a hand; full cards in two rows once your hand is played out or it is someone else's turn), and your hand at the bottom (large cards, with your pool and turn buttons).
+
 ## Files
 
 | File | What it does |
@@ -69,6 +73,7 @@ You run a small game server on your own computer, and Cloudflare gives it a temp
 bash build.sh                       # rebuild index.html
 bash build-mobile.sh                # rebuild mobile/index.html (phone build)
 bash build-online.sh                # rebuild online/index.html (online multiplayer page)
+bash build-desktop-artifact.sh      # rebuild desktop/index.html (desktop version as a Claude artifact)
 node tests/sim.test.cjs             # 120 simulated 3-player games
 node tests/six-players.test.cjs     # 2–6 player games and played-card tracking
 node tests/boss.test.cjs            # pirate boss rules
