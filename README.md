@@ -42,6 +42,10 @@ You run a small game server on your own computer, and Cloudflare gives it a temp
 - Rebuild the online page after changing the game: `bash build-online.sh` (the server serves `online/index.html`).
 - Options: `PORT=9000 node server/server.js` picks another port; `NO_TUNNEL=1` skips starting cloudflared.
 
+## Tutorial
+
+**Tutorial** on the start screen launches a short guided game (18 steps, about 3 minutes) against one computer captain, in the desktop and phone builds. A coach box explains each step and a spotlight shows where to look; action steps continue once the player has done them. Hands are set up so every lesson works: playing resources, the pool, cargo space, delivering, buying, ending a turn, orders, pirate patrol, cashing in, and a small boss fight with Weapons Officer double damage. At the end the player keeps playing that run (pirate threats switch on) or starts a real run. Code: `tutorial.js`.
+
 ## Desktop layout
 
 The desktop screen (browser, online and desktop-artifact builds) is laid out for a 2560×1300 browser window (a 2K monitor) and scaled to fit any window: about 73% on 1080p, 100% on 2K or 4K at 150% scaling, 150% on 4K at 100%. A captain rail sits on the left; on the right are three bands: the contract board on top (largest cards), the card market in the middle (compact mini cards with a hover popup while you hold a hand; full cards in two rows once your hand is played out or it is someone else's turn), and your hand at the bottom (large cards, with your pool and turn buttons).
@@ -56,6 +60,7 @@ The desktop screen (browser, online and desktop-artifact builds) is laid out for
 | `ui.js` | Screens, buttons, dialogs, setup, saving, records. |
 | `style.css` | Layout and look. |
 | `head.html` | Page title and font links. |
+| `tutorial.js` | The guided tutorial (coach box, spotlight, scripted hands). |
 | `build.sh` | Combines everything above into `index.html`. |
 | `index.html` | The built, playable game. Do not edit by hand; edit the sources and rebuild. |
 | `mobile/mobile.css`, `mobile/mobile.js`, `mobile/head.html` | Phone layout, laid over the shared files above. |
