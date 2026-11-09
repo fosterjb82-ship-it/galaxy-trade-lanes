@@ -275,6 +275,34 @@ function cashArt(){const s=cardBg(PAL.amber,29),L=new S(88,52);
  [[60,8],[84,10],[84,42],[58,44]].forEach(([x,y])=>{L.set(x,y,PAL.amber[6]);L.set(x-1,y,PAL.amber[4]);L.set(x+1,y,PAL.amber[4]);L.set(x,y-1,PAL.amber[4]);L.set(x,y+1,PAL.amber[4])});
  L.outline(OUT);s.blit(L);return s}
 
+/* ---- captain ship avatars (48x48 badges) ---- */
+function engines(L,x,ys,c){ys.forEach(y=>{L.rect(x-4,y,4,3,c[4]);L.rect(x-6,y+1,2,1,c[5]);L.set(x-1,y+1,c[6])})}
+const SHIP_ART={
+ hauler:{tint:PAL.amber,draw:L=>{engines(L,8,[19,26],PAL.amber);L.rect(8,16,6,16,PAL.steel[3]);L.rect(8,16,6,1,PAL.steel[5]);
+  [[14,PAL.rust],[21,PAL.amber],[28,PAL.teal]].forEach(([x,c])=>{box3d(L,x,13,7,8,c);box3d(L,x,27,7,8,c)});L.rect(14,21,21,6,PAL.steel[3]);L.rect(14,21,21,1,PAL.steel[5]);
+  L.poly([[35,18],[42,22],[42,26],[35,30]],PAL.steel[4]);L.rect(38,22,3,2,PAL.teal[5])}},
+ courier:{tint:PAL.teal,draw:L=>{engines(L,10,[22],PAL.teal);L.poly([[10,20],[30,18],[44,24],[30,30],[10,28]],PAL.steel[4]);L.poly([[10,20],[30,18],[44,24],[24,23]],PAL.steel[6]);
+  L.poly([[16,19],[24,10],[28,18]],PAL.teal[3]);L.poly([[16,29],[24,38],[28,30]],PAL.teal[2]);L.rect(30,22,6,3,PAL.teal[5]);L.rect(31,22,3,1,PAL.teal[6])}},
+ corvette:{tint:PAL.red,draw:L=>{engines(L,9,[17,28],PAL.red);L.poly([[9,15],[28,15],[42,22],[42,26],[28,33],[9,33]],PAL.steel[3]);L.poly([[9,15],[28,15],[42,22],[9,22]],PAL.steel[5]);
+  L.rect(16,10,14,3,PAL.steel[4]);L.rect(30,10,10,2,PAL.red[4]);L.rect(16,35,14,3,PAL.steel[2]);L.rect(30,36,10,2,PAL.red[4]);L.rect(30,22,7,4,PAL.red[5]);L.rect(31,22,4,1,PAL.red[6])}},
+ explorer:{tint:PAL.violet,draw:L=>{engines(L,11,[22],PAL.violet);sph(L,24,24,10,PAL.steel,-.5,-.6);L.circle(27,24,4,PAL.violet[2]);L.circle(27,24,2,PAL.violet[5]);
+  L.line(24,14,30,6,PAL.steel[5]);L.poly([[27,4],[35,4],[34,8],[28,8]],PAL.steel[4]);L.rect(31,2,2,2,PAL.red[4]);L.rect(10,23,6,3,PAL.steel[3]);L.rect(34,23,8,2,PAL.violet[4])}},
+ miner:{tint:PAL.rust,draw:L=>{engines(L,8,[18,27],PAL.rust);box3d(L,8,15,22,18,PAL.rust);L.rect(12,19,8,4,PAL.steel[2]);L.rect(13,20,6,2,PAL.amber[5]);
+  L.poly([[30,16],[44,24],[30,32]],PAL.steel[4]);for(let i=0;i<4;i++)L.line(31+i*3,17+i*1.6,31+i*3,31-i*1.6,PAL.steel[6]);L.rect(10,33,18,3,PAL.steel[3])}},
+ clipper:{tint:PAL.blue,draw:L=>{engines(L,12,[22],PAL.blue);L.poly([[12,21],[36,21],[44,24],[36,27],[12,27]],PAL.steel[5]);
+  L.poly([[16,21],[26,5],[30,21]],PAL.blue[4]);L.poly([[16,27],[26,43],[30,27]],PAL.blue[3]);L.line(18,20,26,7,PAL.blue[6]);L.line(18,28,26,41,PAL.blue[5]);L.rect(34,23,5,2,PAL.amber[5])}},
+ tug:{tint:PAL.green,draw:L=>{engines(L,9,[17,28],PAL.green);box3d(L,9,14,22,20,PAL.green);L.rect(13,18,6,5,PAL.steel[1]);L.rect(14,19,4,2,PAL.teal[5]);
+  L.rect(31,17,6,3,PAL.steel[4]);L.rect(31,28,6,3,PAL.steel[4]);L.poly([[37,14],[43,17],[40,20]],PAL.steel[5]);L.poly([[37,34],[43,31],[40,28]],PAL.steel[5]);L.rect(9,34,22,2,PAL.amber[4])}},
+ cruiser:{tint:PAL.steel,draw:L=>{engines(L,6,[18,22,26],PAL.amber);L.poly([[6,16],[30,14],[45,24],[30,34],[6,32]],PAL.steel[3]);L.poly([[6,16],[30,14],[45,24],[6,24]],PAL.steel[5]);
+  L.poly([[14,15],[22,6],[26,15]],PAL.amber[3]);L.poly([[14,33],[22,42],[26,33]],PAL.amber[2]);box3d(L,24,19,8,5,PAL.steel);L.rect(26,21,4,1,PAL.amber[6]);L.rect(34,23,6,2,PAL.amber[5])}}
+};
+function ship(id){const a=SHIP_ART[id]||SHIP_ART.hauler,s=new S(48,48),c=a.tint;
+ for(let y=0;y<48;y++)for(let x=0;x<48;x++){const d=Math.hypot(x-23.5,y-23.5);if(d<=23.5)s.set(x,y,d>21.5?c[3]:pick(PAL.space,.2+d/40,x,y))}
+ for(let i=0;i<14;i++){const x=(i*29+7)%44+2,y=(i*17+11)%44+2;if(Math.hypot(x-23.5,y-23.5)<20)s.set(x,y,PAL.steel[i%3?4:6])}
+ glow(s,24,24,18,c.slice(0,3));const L=new S(48,48);a.draw(L);L.outline(OUT);s.blit(L);
+ for(let y=0;y<48;y++)for(let x=0;x<48;x++){if(Math.hypot(x-23.5,y-23.5)>23.5)s.d[(y*48+x)*4+3]=0}
+ return s}
+
 /* ---- tiny icons (10x10) ---- */
 const ICON_MAP={
  fuel:{c:{o:'#4a1c06',O:'#d2701a',Y:'#ffd05a',w:'#fff6c8'},m:['....oo....','...oOOo...','..oOYYOo..','.oOYYYYOo.','.oOYwYYOo.','oOYwYYYYOo','oOYYYYYYOo','oOOYYYYOOo','.oOOOOOOo.','..oooooo..']},
@@ -290,8 +318,8 @@ function icon(k){const m=ICON_MAP[k],s=new S(10,10);m.m.forEach((row,y)=>[...row
 const cache={};
 function toURL(s){const c=document.createElement('canvas');c.width=s.w;c.height=s.h;const g=c.getContext('2d'),id=g.createImageData(s.w,s.h);id.data.set(s.d);g.putImageData(id,0,0);return c.toDataURL()}
 function memo(key,fn){return cache[key]||(cache[key]=toURL(fn()))}
-return {S,PAL,scene,cardArt,hero,icon,boss,patrolArt,cashArt,EMB,SCENES,
+return {S,PAL,scene,cardArt,hero,icon,boss,ship,SHIP_ART,patrolArt,cashArt,EMB,SCENES,
  sceneURL:(d,seed)=>memo('s:'+d+':'+(seed%4),()=>scene(d,(seed%4)+1)),
- cardURL:k=>memo('c:'+k,()=>cardArt(k)),bossURL:n=>memo('b:'+n,()=>boss(n)),moveURL:k=>memo('m:'+k,()=>k==='cash'?cashArt():patrolArt()),heroURL:()=>memo('hero',hero),iconURL:k=>memo('i:'+k,()=>icon(k))};
+ cardURL:k=>memo('c:'+k,()=>cardArt(k)),bossURL:n=>memo('b:'+n,()=>boss(n)),shipURL:k=>memo('ship:'+k,()=>ship(k)),moveURL:k=>memo('m:'+k,()=>k==='cash'?cashArt():patrolArt()),heroURL:()=>memo('hero',hero),iconURL:k=>memo('i:'+k,()=>icon(k))};
 })();
 if(typeof module!=='undefined')module.exports=Sprites;

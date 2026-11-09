@@ -15,3 +15,4 @@ sheet([Sp.hero()],1,5,10,144,64,'out/hero.png');
 sheet(['fuel','ore','tech','cr','combat','cargo','star'].map(Sp.icon),7,10,10,10,10,'out/icons.png');
 console.log('done');
 sheet(['dread','maw','armada','wraith','hive','siren'].map(k=>Sp.boss(k)).concat([Sp.patrolArt(),Sp.cashArt()]),2,4,10,88,52,'out/bosses.png');
+sheet(['hauler','courier','corvette','explorer','miner','clipper','tug','cruiser'].map(k=>Sp.ship(k)),8,5,10,48,48,'out/ships.png');

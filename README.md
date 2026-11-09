@@ -51,6 +51,10 @@ Every move is recorded by the engine as an event (who, what, how much). The desk
 - **Board effects**: deliveries fly to the captain who made them, profit changes pop beside each captain, bought market cards flash, boss hits shake the boss and show the damage, the active captain's standings row says *playing*.
 - **Computer turns play back one move at a time** (setup option *Computer turns*: normal, slow, fast or instant; Speed and *Skip to my turn* buttons while they play). Online, several moves sent at once (like Play resources) are shown one after another.
 
+## Captain ships
+
+Each captain flies one of eight ships (Longhaul Freighter, Starling Courier, Red Talon Corvette, Wayfarer Explorer, Rockjaw Miner, Solar Clipper, Ironclad Tug, Aurora Cruiser), unique per run. Human captains pick on the setup screen (or in the online lobby, where the server keeps picks unique); computer captains get the free ones. The ship's pixel-art badge shows next to the active captain, in the standings, the captain's log, the "you are up" and "now playing" panels, and on the victory screen. Ships are listed in `engine.js` (`SHIPS`), ready for faction strengths and weaknesses in a later update; art is in `sprites.js` (`SHIP_ART`).
+
 ## Victory screen
 
 When a run ends, a victory screen shows the winner's name and profit, tabs for every captain in finishing order, and for the selected captain: a **score breakdown** (one stacked bar by profit source: contracts, pirate patrols, boss rewards, cash-ins, Trade Charters, buyouts; losses to raids and buyouts in a separate red row; a legend with every amount) and **every contract they delivered** as large cards with the round. The engine tracks each captain's profit sources (`player.score`), which always add up to their final profit. Captains' decks and Review board stay available. Colours come from a palette checked for colour-blind separation on the dark panel.

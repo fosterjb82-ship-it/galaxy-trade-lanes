@@ -45,16 +45,18 @@ function lobbyScreen(p){screen='setup';const host=p.you.host,S=p.settings;
  const fields=SETTINGS.filter(([k])=>!(k==='rounds'&&S.winMode!=='rounds')&&!(k==='target'&&S.winMode!=='profit')).map(([k,label,opts])=>'<div><label for="ol_'+k+'">'+label+'</label>'+(host
   ?'<select id="ol_'+k+'" data-ol="'+k+'">'+opts.map(([v,l])=>'<option value="'+v+'"'+(String(S[k])===String(v)?' selected':'')+'>'+l+'</option>').join('')+'</select>'
   :'<div class="olval">'+(opts.find(([v])=>String(v)===String(S[k]))||['',''])[1]+'</div>')+'</div>').join('');
- const seats=p.players.map(x=>'<li class="'+(x.online?'on':'')+'"><i></i><b>'+esc(x.name)+'</b>'+(x.host?'<span class="tag">host</span>':'')+(x.seat===p.you.seat?'<span class="tag you">you</span>':'')
+ const seats=p.players.map(x=>'<li class="'+(x.online?'on':'')+'"><i></i>'+ava(x,40)+'<b>'+esc(x.name)+'</b>'+(x.host?'<span class="tag">host</span>':'')+(x.seat===p.you.seat?'<span class="tag you">you</span>':'')
   +(host&&x.seat!==p.you.seat?'<button class="sm" data-a="olkick" data-id="'+x.seat+'">Remove</button><button class="sm" data-a="olhost" data-id="'+x.seat+'">Make host</button>':'')+'</li>').join('')
   +Array.from({length:6-p.players.length},()=>'<li class="empty"><i></i>Open seat</li>').join('');
  $('stage').innerHTML='<section class="setup online"><div><div class="eyebrow">Online table · lobby</div><h1>'+(p.players.length)+' of 6<br><span>captains aboard.</span></h1>'
  +'<p class="mute" style="max-width:520px">'+(host?'You are the host. Send the table link to your friends, pick the rules, then launch when everyone is here.':'Waiting for the host to launch the run.')+'</p>'
- +'<ol class="seats">'+seats+'</ol>'
+ +'<ol class="seats">'+seats+'</ol>'+myShip(p)
  +'<div class="fields">'+fields+'</div>'
  +'<div class="btns">'+(host?'<button class="primary" data-a="olstart"'+(p.players.length<2?' disabled':'')+'>'+(p.players.length<2?'Need 2 captains':'Launch run')+'</button>':'')+'<button data-a="olleave">Leave table</button><button data-a="rules">How to play</button></div></div>'
  +'<div class="heroart">'+px(SP.heroURL(),576,256)+'<div class="feat"><div><b>LINK</b> Share the address in your browser bar. Everyone who opens it can join until the run starts.</div><div><b>TURNS</b> Only the captain whose turn it is can act. Everyone else watches the board update.</div><div><b>RECONNECT</b> Closed the tab? Open the link again in the same browser to get your seat back.</div></div></div></section>'}
 
+function myShip(p){const mine=p.players[p.you.seat]||{},taken=new Set(p.players.filter(x=>x.seat!==p.you.seat).map(x=>x.ship));
+ return '<div class="olship"><label>Your ship</label><div class="shippick">'+E.SHIPS.map(x=>'<button type="button" class="'+(x.id===mine.ship?'on':'')+'" data-a="olship" data-ship="'+x.id+'"'+(taken.has(x.id)?' disabled title="Taken"':' title="'+x.name+'"')+'><img class="px" src="'+SP.shipURL(x.id)+'" width="40" height="40" alt="'+x.name+'"></button>').join('')+'<span class="shipname">'+esc(shipName(mine.ship))+'</span></div></div>'}
 /* ---------- applying what the server sends ---------- */
 function apply(p){last=p;
  if(p.server&&serverId&&p.server!==serverId){forget();return joinScreen('That table was closed. Join the new one.')}
@@ -84,6 +86,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
   if(last&&last.you&&last.you.host&&s&&s.over){const r=await post('/api/lobby',{op:'lobby'});if(!r.ok)notify(r.error)}
   else if(last&&last.you&&last.you.host)modal('<h2>Open the lobby?</h2><p>This ends the current run for everyone and returns the table to the lobby.</p><div class="btns"><button class="primary" data-a="ollobby">End run</button><button data-a="close">Cancel</button></div>');
   else notify('Only the host can start a new run.');return}
+ if(a==='olship'){const r=await post('/api/lobby',{op:'ship',ship:b.dataset.ship});if(!r.ok)notify(r.error);return}
  if(a==='oljoin'){const name=($('olname')||{}).value||'';const r=await post('/api/join',{name,hostKey});if(!r.ok)return joinScreen(r.error);token=r.token;serverId=r.server;remember();version=0;poll();return}
  if(a==='olstart'||a==='olleave'||a==='olkick'||a==='olhost'||a==='olskip'||a==='ollobby'){
   const op={olstart:'start',olleave:'leave',olkick:'kick',olhost:'host',olskip:'skip',ollobby:'lobby'}[a];

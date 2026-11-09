@@ -114,3 +114,5 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 .vhead{flex-wrap:wrap;gap:10px}.vhead>img{width:100%}.vhead h2{font-size:32px}.vbig b{font-size:56px}
 .vbody{grid-template-columns:1fr}.vgrid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:none}
 .vleg{font-size:14px}
+.capfields{grid-template-columns:1fr}
+.shippick button img{width:36px;height:36px}

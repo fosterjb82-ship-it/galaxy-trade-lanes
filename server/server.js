@@ -47,7 +47,7 @@ function packet(tok) {
   return {
     version: T.version, server: T.server, notice: T.notice,
     you: me ? { name: me.name, seat: T.players.indexOf(me), host: T.hostToken === me.token } : null,
-    players: T.players.map((p, i) => ({ name: p.name, seat: i, host: T.hostToken === p.token, online: online(p) })),
+    players: T.players.map((p, i) => ({ name: p.name, seat: i, ship: p.ship, host: T.hostToken === p.token, online: online(p) })),
     settings: T.settings, started: !!T.game, game: me && T.game ? viewFor(T.players.indexOf(me)) : null
   };
 }
@@ -82,6 +82,13 @@ function act(tok, fn, args) {
 function lobby(tok, op, body) {
   const me = player(tok); if (!me) return { ok: false, error: 'Join first.' };
   const host = T.hostToken === me.token;
+  if (op === 'ship') {
+    if (T.game && !T.game.over) return { ok: false, error: 'Ships are chosen in the lobby.' };
+    const k = String(body.ship || '');
+    if (!E.SHIP_IDS.includes(k)) return { ok: false, error: 'Unknown ship.' };
+    if (T.players.some(p => p !== me && p.ship === k)) return { ok: false, error: 'Another captain already flies that ship.' };
+    me.ship = k; changed(); return { ok: true };
+  }
   if (op === 'leave') {
     if (T.game) return { ok: false, error: 'You cannot leave a run in progress. The host can skip your turns.' };
     T.players = T.players.filter(p => p !== me); if (host) T.hostToken = T.players[0] ? T.players[0].token : null;
@@ -106,7 +113,7 @@ function lobby(tok, op, body) {
   if (op === 'start') {
     if (T.game && !T.game.over) return { ok: false, error: 'A run is already in progress.' };
     if (T.players.length < 2) return { ok: false, error: 'You need at least 2 captains.' };
-    T.game = E.create({ ...T.settings, mode: 'online', players: T.players.map(p => ({ name: p.name })) });
+    T.game = E.create({ ...T.settings, mode: 'online', players: T.players.map(p => ({ name: p.name, ship: p.ship })) });
     E.begin(T.game); changed('The run has started. ' + T.game.players[0].name + ' goes first.'); return { ok: true };
   }
   if (op === 'skip') {       // move a stuck or absent captain's turn along
@@ -124,7 +131,7 @@ function join(body) {
   if (T.game) return { ok: false, error: 'A run is in progress. Ask the host to open the lobby, or rejoin from the browser you joined with.' };
   if (T.players.length >= MAX_PLAYERS) return { ok: false, error: 'The table is full (6 captains).' };
   if (T.players.some(p => p.name.toLowerCase() === name.toLowerCase())) return { ok: false, error: 'That name is taken.' };
-  const tok = id(16); T.players.push({ token: tok, name });
+  const tok = id(16); T.players.push({ token: tok, name, ship: E.SHIP_IDS.find(k => !T.players.some(p => p.ship === k)) });
   if (!T.hostToken || body.hostKey === T.hostKey) T.hostToken = tok;
   seen[tok] = Date.now(); changed(name + ' joined the table.'); return { ok: true, token: tok, server: T.server };
 }

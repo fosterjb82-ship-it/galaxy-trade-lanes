@@ -476,3 +476,24 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
 
 /* dialogs always sit above card animations */
 .overlay{z-index:48}
+
+/* ---------- captain ships ---------- */
+img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
+.plateid{display:flex;align-items:center;gap:10px;min-width:0}.plateid>div{min-width:0}
+.stand img.ava{margin-right:2px}
+.feed li.sep img.ava{margin-right:4px;vertical-align:middle}
+.watchside .whois img.ava{width:96px;height:96px;margin-bottom:4px}
+.upname{display:flex;align-items:center;gap:12px}
+.capfields{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:14px;margin:4px 0 16px}
+.capf label{display:block;font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:5px}
+.capf input{width:100%}
+.shippick{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:6px}
+.shippick button{min-height:0;padding:2px;border-width:2px;border-radius:50%;background:transparent;box-shadow:none;line-height:0}
+.shippick button img{width:40px;height:40px;display:block}
+.shippick button.on{border-color:var(--amber);box-shadow:0 0 0 2px #f5b93c55}
+.shippick button:disabled{opacity:.25}
+.shippick .shipname{flex-basis:100%;font:600 14px var(--disp);letter-spacing:.04em;color:var(--amber);margin-top:2px}
+.vhead>img.vship{width:144px;height:144px;animation:tzin .6s ease-out both}
+.vtab img.ava{width:30px;height:30px}
+.vsh{display:flex;align-items:center;gap:12px}.vsh .mute{font-size:13px}
+.mprof img.ava{width:34px;height:34px}

@@ -34,4 +34,7 @@ assert.equal(p.hand.length,1+Math.min(2,dk));assert.equal(p.hand[0],'drum');
 p.hand.push('salvage');assert.equal(E.play(s,p.hand.length-1,-1),true);
 // old saves get new market cards
 const old=JSON.parse(JSON.stringify(s));delete old.market.salvage;assert.equal(E.migrate(old).market.salvage>0,true);
+// ships: chosen ones kept, duplicates and blanks get free ones, all unique
+{const z=E.create({seed:1,players:[{name:'A',ship:'tug'},{name:'B',ship:'tug'},{name:'C'},{name:'D',ship:'nope'}]});const ids=z.players.map(p=>p.ship);
+ assert.equal(ids[0],'tug');assert.equal(new Set(ids).size,4);assert.ok(ids.every(i=>E.SHIP_IDS.includes(i)));}
 console.log('ok avg profit',(tot/n).toFixed(1),'zero',zero,'of',n);
