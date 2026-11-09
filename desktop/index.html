@@ -470,7 +470,7 @@ const BOSSES={
  siren:{name:'Siren of Lumen Gate',hp:1.15,bounty:2,trait:'Rich prize: +2 profit per damage dealt, but a tougher hull.'}
 };
 const BOSS_KEYS=Object.keys(BOSSES),STAGE_HP=[2.4,5.2,6.2];
-const BOSS_EVERY=5,PATROL_DELAY=1,MAX_AWAY=8; // a boss every 5 rounds; each pirate patrol pushes the next one back 1 round (never more than 8 rounds away)
+const BOSS_EVERY=5,PATROL_DELAY=1,MAX_DELAY=2; // a boss every 5 rounds; each pirate patrol pushes the next one back 1 round, at most 2 rounds per boss
 const BOSS_ROUNDS=3,RAID=5,FINAL_BLOW=5;
 const MARKET=['deal','house','pack','borer','vault','quarter','barge','gunship','probe','broker','deck','wing','buyout','salvage','weapons','charter'];
 const TEMPLATES=[
@@ -517,7 +517,7 @@ function nextContract(s){
 function create(o={}){
  const s={v:1,id:Date.now()+'-'+Math.random().toString(36).slice(2,7),seed:o.seed||(Date.now()%2147483646)+1,
   current:0,round:1,phase:'handoff',over:false,mode:o.mode||'solo',actionLimit:o.actionLimit===0?0:2,
-  threats:o.threats!==false,nextBoss:BOSS_EVERY,bossNo:0,bossOrder:null,boss:null,bossDone:[],winMode:o.winMode||'rounds',maxRounds:o.rounds||16,target:o.target||80,finalRound:null,
+  threats:o.threats!==false,nextBoss:BOSS_EVERY,bossBase:BOSS_EVERY,bossNo:0,bossOrder:null,boss:null,bossDone:[],winMode:o.winMode||'rounds',maxRounds:o.rounds||16,target:o.target||80,finalRound:null,
   boardSize:o.boardSize||4,board:[],cdeck:[],cdisc:[],done:[],
   market:Object.fromEntries(MARKET.map(k=>[k,Math.max(10,4+2*((o.players||[]).length||3))])),trash:[],log:[],players:[]};
  const cfg=o.players||[{name:'Captain'},{name:'Nova',bot:true},{name:'Orion',bot:true}];
@@ -579,12 +579,16 @@ function buy(s,k){
  log(s,p.name+' bought '+c.n+'.');ev(s,{t:'buy',k});return true;
 }
 function patrol(s){const p=me(s);if(!live(s)||p.patrolled||p.pool.combat<3||p.pool.fuel<1)return false;
- p.pool.combat-=3;p.pool.fuel--;p.patrolled=true;p.profit+=5;if(s.threats&&!s.boss&&s.nextBoss){const was=s.nextBoss;s.nextBoss=Math.min(s.round+MAX_AWAY,s.nextBoss+PATROL_DELAY);p.delayed=(p.delayed||0)+(s.nextBoss-was);if(s.nextBoss>was)log(s,p.name+"'s patrol pushed the next pirate boss back to round "+s.nextBoss+'.')}log(s,p.name+' cleared a pirate patrol for +5.');ev(s,{t:'patrol'});checkTarget(s);return true}
+ p.pool.combat-=3;p.pool.fuel--;p.patrolled=true;p.profit+=5;if(s.threats&&!s.boss&&s.nextBoss){const was=s.nextBoss;s.nextBoss=Math.min(bossBase(s)+MAX_DELAY,s.nextBoss+PATROL_DELAY);p.delayed=(p.delayed||0)+(s.nextBoss-was);if(s.nextBoss>was)log(s,p.name+"'s patrol pushed the next pirate boss back to round "+s.nextBoss+'.')}log(s,p.name+' cleared a pirate patrol for +5.');ev(s,{t:'patrol'});checkTarget(s);return true}
 /* ---- pirate threats ---- */
 const lastRound=s=>s.winMode==='rounds'?s.maxRounds:Infinity;
 // round the next boss arrives (null while one is active, threats are off, or it would land after the run)
 function nextThreat(s){if(!s.threats||s.boss||!s.nextBoss)return null;return s.nextBoss<lastRound(s)?s.nextBoss:null}
-function bossLeft(s,b){s.nextBoss=Math.max(b.arrived+BOSS_EVERY,s.round+2)}
+function bossLeft(s,b){s.nextBoss=s.bossBase=Math.max(b.arrived+BOSS_EVERY,s.round+2)}
+// the round the next boss was due before any patrols pushed it back
+const bossBase=s=>s.bossBase===undefined?s.nextBoss:s.bossBase;
+// how many more rounds patrols can still push the next boss back
+function delayLeft(s){return nextThreat(s)?Math.max(0,bossBase(s)+MAX_DELAY-s.nextBoss):0}
 // rounds and captain turns left before the boss raids (counting the current captain's turn)
 function bossClock(s){const b=s.boss;if(!b)return null;const n=s.players.length;return {rounds:b.until-s.round+1,turns:(b.until-s.round)*n+(n-s.current)}}
 function spawn(s){if(!s.threats||s.boss||!s.nextBoss||s.round<s.nextBoss||s.round>=lastRound(s))return false;
@@ -674,7 +678,7 @@ function* botSteps(s){
  end(s);
 }
 function botTurn(s){if(s.over||!me(s).bot)return false;for(const _ of botSteps(s));return true}
-return {RES,RLABEL,CARDS,MARKET,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,botSteps,deckSize,need,migrate,attack,mercs,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,MAX_AWAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
+return {RES,RLABEL,CARDS,MARKET,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,MAX_DELAY,attack,mercs,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;
 const Sprites=(function(){
@@ -1138,7 +1142,7 @@ function ctrCard(c){const p=E.me(s),ready=myTurn()&&E.canComplete(s,c),nd=E.need
  +'<button class="'+(ready?'primary':'')+'" data-a="complete" data-id="'+c.id+'"'+(ready?'':' disabled')+'>'+(s.boss?'Blockaded':'Deliver')+'</button></div></article>'}
 function bossPanel(compact){const b=s.boss,p=E.me(s),on=myTurn();
  if(!b){const n=E.nextThreat(s);if(!n||s.over)return '';const k=n-s.round;
-  return '<div class="threat'+(k<=1?' soon':'')+'">'+icon('combat',1.6)+'<span class="tcount"><b>'+k+'</b>round'+(k===1?'':'s')+'</span><span>'+(k<=1?'<b>Pirate boss next round!</b> ':'Next pirate boss in round '+n+'. ')+'It blocks all contracts. Each pirate patrol pushes it back '+E.PATROL_DELAY+' round (never more than '+E.MAX_AWAY+' away).</span></div>'}
+  return '<div class="threat'+(k<=1?' soon':'')+'">'+icon('combat',1.6)+'<span class="tcount"><b>'+k+'</b>round'+(k===1?'':'s')+'</span><span>'+(k<=1?'<b>Pirate boss next round!</b> ':'Next pirate boss in round '+n+'. ')+'It blocks all contracts. '+(E.delayLeft(s)?'A pirate patrol can push it back 1 round ('+E.delayLeft(s)+' more possible).':'Patrols cannot delay it any further.')+'</span></div>'}
  const clk=E.bossClock(s),left=clk.rounds,total=b.until-b.arrived+1,dmgN=p.pool.combat*(p.dbl?2:1),pct=Math.round(b.hp/b.max*100);
  const clock='<div class="bclock'+(left<=1?' last':'')+'" title="Raids at the end of round '+b.until+'"><span class="pips">'+Array.from({length:total},(_,i)=>'<i'+(i<left?' class="on"':'')+'></i>').join('')+'</span><b>'+left+'</b> round'+(left===1?'':'s')+' left · '+clk.turns+' captain turn'+(clk.turns===1?'':'s')+(left<=1?' · <em>last round!</em>':'')+'</div>';
  const btns='<div class="bbtns"><button class="primary" data-a="attack"'+(on&&p.pool.combat>0?'':' disabled')+'>Attack · '+dmgN+' damage'+(p.dbl&&p.pool.combat?' (×2)':'')+'</button><button data-a="mercs"'+(on&&p.pool.cr>=b.merc?'':' disabled')+'>Hire mercenaries · '+b.merc+' cr → 1</button></div>';
@@ -1163,7 +1167,7 @@ function cardEl(k,idx,market){const c=E.CARDS[k],p=E.me(s),on=myTurn();
 const marketList=()=>[...E.MARKET].sort((a,b)=>E.CARDS[a].cost-E.CARDS[b].cost||(E.CARDS[a].cat==='res'?0:1)-(E.CARDS[b].cat==='res'?0:1)||E.CARDS[a].n.localeCompare(E.CARDS[b].n));
 function moveTiles(p,on){const canP=on&&!p.patrolled&&p.pool.combat>=3&&p.pool.fuel>=1,n=Math.floor(p.pool.cr/E.CASH),canC=on&&n>0;
  const needP=p.patrolled?'Cleared this turn':canP?'Ready to launch':'Need '+Math.max(0,3-p.pool.combat)+' more combat'+(p.pool.fuel<1?' and 1 fuel':'');
- return '<section class="move patrol notch'+(canP?' ready':'')+(p.patrolled?' done':'')+'">'+px(SP.moveURL('patrol'),88,52)+'<div class="mv"><b>Pirate patrol</b><span class="mc">'+icon('combat',1.4)+'3 '+icon('fuel',1.4)+'1 → '+icon('star',1.4)+'+5</span><small>'+needP+' · once per turn'+(E.nextThreat(s)?' · delays the next boss 1 round':'')+'</small></div>'
+ return '<section class="move patrol notch'+(canP?' ready':'')+(p.patrolled?' done':'')+'">'+px(SP.moveURL('patrol'),88,52)+'<div class="mv"><b>Pirate patrol</b><span class="mc">'+icon('combat',1.4)+'3 '+icon('fuel',1.4)+'1 → '+icon('star',1.4)+'+5</span><small>'+needP+' · once per turn'+(E.delayLeft(s)?' · delays the next boss 1 round':'')+'</small></div>'
   +'<button class="'+(canP?'primary':'')+'" data-a="patrol"'+(canP?'':' disabled')+'>'+(p.patrolled?'Patrol cleared':'Launch patrol')+'</button></section>'
   +'<section class="move cash notch'+(canC?' ready':'')+'">'+px(SP.moveURL('cash'),88,52)+'<div class="mv"><b>Cash in</b><span class="mc">'+icon('cr',1.4)+E.CASH+' → '+icon('star',1.4)+'+1</span><small>'+(canC?'You can cash in '+n+'× now':'Any time · as often as you like')+'</small></div>'
   +'<button class="'+(canC?'primary':'')+'" data-a="cash"'+(canC?'':' disabled')+'>Cash in '+E.CASH+' credits</button></section>'}
@@ -1325,7 +1329,7 @@ function rules(){modal('<div class="eyebrow">How Galaxy Trade Lanes works</div><
  +'<p><b class="acc">Deals.</b> One deal (purchase) per turn; Brokerage adds one. Bought cards go to your discard pile and have no immediate effect.</p>'
  +'<p><b class="acc">Combat.</b> Combat covers escort requirements. Or spend 3 combat and 1 fuel for a pirate patrol worth +5 profit, once per turn. There are no dice.</p>'
  +'<p><b class="acc">Buyout.</b> Costs 6. Take up to 2 profit from a rival, draw a card, and scrap the card.</p>'
- +'<p><b class="acc">Pirate threats.</b> Every '+E.BOSS_EVERY+' rounds a pirate boss blockades the lanes (each pirate patrol pushes the next one back '+E.PATROL_DELAY+' round, never more than '+E.MAX_AWAY+' rounds away): no contracts can be delivered until it is beaten. Spend combat (1 damage each) or hire mercenaries (usually '+E.MERC+' credits per damage) on your turn. When it falls, every captain earns +1 profit per damage dealt (some bosses pay more) and the final blow earns +'+E.FINAL_BLOW+'. If it survives (usually '+E.BOSS_ROUNDS+' rounds) it raids every captain for '+E.RAID+' profit (double for whoever dealt the least damage) and leaves. Each boss is drawn at random and has its own ability.</p>'
+ +'<p><b class="acc">Pirate threats.</b> Every '+E.BOSS_EVERY+' rounds a pirate boss blockades the lanes (each pirate patrol pushes the next one back '+E.PATROL_DELAY+' round, at most '+E.MAX_DELAY+' rounds per boss): no contracts can be delivered until it is beaten. Spend combat (1 damage each) or hire mercenaries (usually '+E.MERC+' credits per damage) on your turn. When it falls, every captain earns +1 profit per damage dealt (some bosses pay more) and the final blow earns +'+E.FINAL_BLOW+'. If it survives (usually '+E.BOSS_ROUNDS+' rounds) it raids every captain for '+E.RAID+' profit (double for whoever dealt the least damage) and leaves. Each boss is drawn at random and has its own ability.</p>'
  +'<p><b class="acc">Weapons Officer.</b> Costs 5. An order card: gain 2 combat and draw a card; combat you spend on a boss that turn deals double damage.</p>'
  +'<p><b class="acc">Salvage Crew.</b> Costs 5. An order card: scrap 1 other card from your hand for free (this does not use your once-per-turn scrap), then draw 2.</p>'
  +'<p><b class="acc">Trade Charter.</b> Costs 8. A resource card that gives 2 credits and 2 profit every time you play it.</p>'
@@ -1361,7 +1365,7 @@ function encyclopedia(sec){sec=sec||'cards';
  if(sec==='cards')h='<p class="mute">Every card you can buy. Bought cards go to your discard pile and show up in later hands.</p><ul class="enc">'+marketList().map(card).join('')+'</ul>';
  else if(sec==='start')h='<p class="mute">Every captain starts with these 10 cards: 4 Scrip, 3 Fuel Drums, 2 Ore Samples and 1 Hold Rig.</p><ul class="enc">'+['scrip','drum','sample','rig'].map(card).join('')+'</ul>';
  else if(sec==='contracts')h='<p class="mute">The 16 contract types (each appears 3 times in the contract deck). Pay the listed resources plus cargo space equal to ore + tech. Big contracts only appear after round 4 or 8.</p><ul class="enc">'+E.TEMPLATES.map((t,i)=>'<li><img class="px" src="'+SP.sceneURL(t.dest,i)+'" width="88" height="52" alt=""><div><div class="kind">To '+esc(t.dest)+' · '+(t.req.combat?'Armed':'Freight')+'</div><b>'+esc(t.name)+'</b><div class="reqs">'+req(t)+'</div></div><strong>'+icon('star',1.6)+'+'+t.profit+'</strong></li>').join('')+'</ul>';
- else if(sec==='threats')h='<p class="mute">With threats on, a boss arrives every '+E.BOSS_EVERY+' rounds, starting in round '+E.BOSS_EVERY+', drawn at random from the six below. Each pirate patrol pushes the next boss back '+E.PATROL_DELAY+' round (never more than '+E.MAX_AWAY+' rounds away). While one is active no contracts can be delivered. Spend combat (1 damage each, double with a Weapons Officer) or hire mercenaries (usually '+E.MERC+' credits per damage). Beaten: +1 profit per damage dealt, +'+E.FINAL_BLOW+' for the final blow. Survives its deadline (usually '+E.BOSS_ROUNDS+' rounds): raids every captain for '+E.RAID+' profit, double for whoever dealt the least damage.</p><ul class="enc">'+E.BOSS_KEYS.map(k=>{const b=E.BOSSES[k];return '<li><img class="px" src="'+SP.bossURL(k)+'" width="88" height="52" alt=""><div><div class="kind">Pirate boss</div><b>'+b.name+'</b><span>'+b.trait+'</span></div></li>'}).join('')+'</ul>';
+ else if(sec==='threats')h='<p class="mute">With threats on, a boss arrives every '+E.BOSS_EVERY+' rounds, starting in round '+E.BOSS_EVERY+', drawn at random from the six below. Each pirate patrol pushes the next boss back '+E.PATROL_DELAY+' round, at most '+E.MAX_DELAY+' rounds per boss. While one is active no contracts can be delivered. Spend combat (1 damage each, double with a Weapons Officer) or hire mercenaries (usually '+E.MERC+' credits per damage). Beaten: +1 profit per damage dealt, +'+E.FINAL_BLOW+' for the final blow. Survives its deadline (usually '+E.BOSS_ROUNDS+' rounds): raids every captain for '+E.RAID+' profit, double for whoever dealt the least damage.</p><ul class="enc">'+E.BOSS_KEYS.map(k=>{const b=E.BOSSES[k];return '<li><img class="px" src="'+SP.bossURL(k)+'" width="88" height="52" alt=""><div><div class="kind">Pirate boss</div><b>'+b.name+'</b><span>'+b.trait+'</span></div></li>'}).join('')+'</ul>';
  else h='<ul class="enc moves">'
   +'<li><img class="px" src="'+SP.iconURL('combat')+'" width="40" height="40" alt=""><div><b>Pirate patrol</b><span>Spend 3 combat and 1 fuel for +5 profit. Once per turn.</span></div><strong>'+icon('star',1.6)+'+5</strong></li>'
   +'<li><img class="px" src="'+SP.iconURL('cr')+'" width="40" height="40" alt=""><div><b>Cash in</b><span>Trade '+E.CASH+' credits for 1 profit, as often as you can afford, any time on your turn.</span></div><strong>'+icon('star',1.6)+'+1</strong></li>'
@@ -1478,7 +1482,7 @@ const STEPS=[
   sel:'[data-a=res]',ph:{sel:'[data-a=res]',tab:'hand'},done:()=>me().pool.cr>=6},
  {t:'Arm up',x:'Give the <b>Gunship</b> order for +3 combat. Combat is used for armed contracts, pirate patrols and boss fights.',
   sel:()=>handSel('gunship'),ph:{sel:()=>handSel('gunship'),tab:'hand'},done:()=>me().pool.combat>=3},
- {t:'Pirate patrol',x:'Spend 3 combat and 1 fuel on a <b>pirate patrol</b> for +5 profit, once per turn. Each patrol also pushes the next pirate boss back a round.',
+ {t:'Pirate patrol',x:'Spend 3 combat and 1 fuel on a <b>pirate patrol</b> for +5 profit, once per turn. Each patrol can also push the next pirate boss back a round (up to 2 rounds per boss).',
   sel:'.move.patrol',ph:{sel:'.mpatrol',tab:'hand'},done:()=>me().patrolled},
  {t:'Cash in',x:'Leftover credits are wasted at the end of your turn. <b>Cash in</b> 4 credits for +1 profit whenever you have spare.',
   sel:'.move.cash',ph:{sel:'.mcash',tab:'hand'},done:()=>me().pool.cr<6},

@@ -26,9 +26,11 @@ assert.deepEqual(s.bossDone[1].change,before.map(v=>-Math.min(16,v)));
 assert.equal(s.nextBoss,15);
 // threats off: no bosses
 const q=E.create({seed:3,rounds:16,threats:false,players:[{name:'A',bot:true},{name:'B',bot:true}]});while(!q.over){E.botTurn(q);assert.equal(q.boss,null)}
-// patrols push the next boss back one round each, never more than 8 rounds away
-{const z=E.create({seed:2,rounds:20,players:[{name:'A'},{name:'B'}]});E.begin(z);assert.equal(z.nextBoss,5);
- for(let i=0;i<6;i++){const P=E.me(z);P.patrolled=false;P.pool.combat=3;P.pool.fuel=1;assert.equal(E.patrol(z),true)}assert.equal(z.nextBoss,1+8);}
+// patrols push the next boss back one round each, at most 2 rounds per boss
+{const z=E.create({seed:2,rounds:20,players:[{name:'A'},{name:'B'}]});E.begin(z);assert.equal(z.nextBoss,5);assert.equal(E.delayLeft(z),2);
+ for(let i=0;i<6;i++){const P=E.me(z);P.patrolled=false;P.pool.combat=3;P.pool.fuel=1;assert.equal(E.patrol(z),true)}assert.equal(z.nextBoss,7);assert.equal(E.delayLeft(z),0);
+ // keep patrolling every round: the boss still arrives in round 7
+ while(!z.boss){if(z.phase==='handoff')E.begin(z);const P=E.me(z);P.patrolled=false;P.pool.combat=3;P.pool.fuel=1;E.patrol(z);E.end(z)}assert.equal(z.round,7);}
 // only the least helpful captain(s) lose double
 {const z=E.create({seed:4,rounds:16,bosses:['dread'],players:[{name:'A'},{name:'B'},{name:'C'}]});while(!z.boss){E.begin(z);E.end(z)}
  z.players.forEach(p=>p.profit=30);E.begin(z);E.me(z).pool.combat=2;E.attack(z);E.end(z);E.begin(z);E.me(z).pool.combat=1;E.attack(z);

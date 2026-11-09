@@ -32,7 +32,7 @@ const STEPS=[
   sel:'[data-a=res]',ph:{sel:'[data-a=res]',tab:'hand'},done:()=>me().pool.cr>=6},
  {t:'Arm up',x:'Give the <b>Gunship</b> order for +3 combat. Combat is used for armed contracts, pirate patrols and boss fights.',
   sel:()=>handSel('gunship'),ph:{sel:()=>handSel('gunship'),tab:'hand'},done:()=>me().pool.combat>=3},
- {t:'Pirate patrol',x:'Spend 3 combat and 1 fuel on a <b>pirate patrol</b> for +5 profit, once per turn. Each patrol also pushes the next pirate boss back a round.',
+ {t:'Pirate patrol',x:'Spend 3 combat and 1 fuel on a <b>pirate patrol</b> for +5 profit, once per turn. Each patrol can also push the next pirate boss back a round (up to 2 rounds per boss).',
   sel:'.move.patrol',ph:{sel:'.mpatrol',tab:'hand'},done:()=>me().patrolled},
  {t:'Cash in',x:'Leftover credits are wasted at the end of your turn. <b>Cash in</b> 4 credits for +1 profit whenever you have spare.',
   sel:'.move.cash',ph:{sel:'.mcash',tab:'hand'},done:()=>me().pool.cr<6},
