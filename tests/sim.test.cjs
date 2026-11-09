@@ -9,6 +9,8 @@ for(let seed=1;seed<=60;seed++)for(const mode of ['rounds','profit']){
   assert.equal(s.players.reduce((a,p)=>a+E.deckSize(p),0)+s.trash.length,30+stock-Object.values(s.market).reduce((a,b)=>a+b,0));
   s.players.forEach(p=>{assert.ok(p.profit>=0);Object.values(p.pool).forEach(v=>assert.ok(v>=0))});}
  assert.ok(s.over,'ends '+seed+mode);
+ // the score breakdown always adds up to the final profit
+ s.players.forEach(p=>assert.equal(Object.values(p.score||{}).reduce((x,y)=>x+y,0),p.profit,'score adds up '+seed));
  if(mode==='rounds')s.players.forEach(p=>{tot+=p.profit;n++;if(!p.completed)zero++});
 }
 // manual turn

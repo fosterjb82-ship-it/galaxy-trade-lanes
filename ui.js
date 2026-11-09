@@ -47,7 +47,7 @@ function renderSetup(){
 function start(){collect();scrollPos=0;handX=0;
  const players=Array.from({length:cfg.humans},(_,i)=>({name:(cfg.names[i]||'').trim()||'Captain '+(i+1)}));
  for(let i=0;i<cfg.bots;i++)players.push({name:BOTS[i],bot:true});
- stopPlayback();s=E.create({...cfg,threats:cfg.threats!==0,mode:cfg.humans>1?'local':'solo',players});s.cpuSpeed=cfg.cpuSpeed;seenBoss=0;screen='game';settle();
+ stopPlayback();vicSeat=null;s=E.create({...cfg,threats:cfg.threats!==0,mode:cfg.humans>1?'local':'solo',players});s.cpuSpeed=cfg.cpuSpeed;seenBoss=0;screen='game';settle();
 }
 const SPEEDS={slow:1100,normal:620,fast:260,instant:0},SPEED_NAMES={slow:'Slow',normal:'Normal',fast:'Fast',instant:'Instant'};
 let playTimer=null,playGen=null;
@@ -127,16 +127,17 @@ function animAfter(snap){if(screen!=='game'||!s)return;
  const p=E.me(s),show=myTurn(),hand=show?p.hand.slice():null,board=s.board.map(c=>c&&c.id),key=s.id+':'+s.round+':'+s.current;
  const cur=E.me(s),tp=(cur.turnPlayed||[]).length,profits=s.players.map(x=>x.profit);
  const prev=animPrev;animPrev={id:s.id,key,hand,board,evn:s.evn||0,profits,tp};if(!prev||prev.id!==s.id)return;
- const still=calm();
+ const evAll=(s.events||[]).filter(e=>e.n>(prev.evn||0)),burst=evAll.length>10||s.over,still=calm()||burst;
  // contracts that left the board, and the ones dealt in their place
  const gone=prev.board.filter(x=>!board.includes(x)),fresh=board.filter(x=>!prev.board.includes(x));
  const to=mid(document.querySelector('.plate .profit,.mprof')),deck=mid(document.querySelector('.cdeck'));
  gone.forEach((cid,i)=>{const o=snap[cid];if(!o||still)return;const g=document.createElement('div');g.className='ghostwrap';g.innerHTML=o.html;const c=g.firstChild;c.classList.add('ghost');
   c.style.cssText='left:'+o.r.left+'px;top:'+o.r.top+'px;width:'+o.r.width+'px;height:'+o.r.height+'px;--gx:'+(to?to.x-o.r.left-o.r.width/2:0)+'px;--gy:'+(to?to.y-o.r.top-o.r.height/2:-120)+'px;animation-delay:'+(i*120)+'ms';
   c.insertAdjacentHTML('beforeend','<div class="stamp">DELIVERED</div>');document.body.append(c);setTimeout(()=>c.remove(),1300+i*120)});
- fresh.forEach((cid,i)=>{const el=document.querySelector('.ctr[data-cid="'+cid+'"]');const d=(gone.length?420:0)+i*160;Music.sfx('deal',d/1000);if(el&&!still)fly(el,deck,d,'flip')});
+ if(!burst)fresh.forEach((cid,i)=>{const el=document.querySelector('.ctr[data-cid="'+cid+'"]');const d=(gone.length?420:0)+i*160;Music.sfx('deal',d/1000);if(el&&!still)fly(el,deck,d,'flip')});
  // ---------- 3: what the active captain just did ----------
- const evNew=(s.events||[]).filter(e=>e.n>(prev.evn||0)),gap=evNew.length>1?280:0;let last=0;
+ // a big batch (instant computer turns, end of a run) just updates the log: no queue of effects
+ const evNew=burst?[]:evAll,gap=evNew.length>1?280:0;let last=0;
  evNew.forEach((e,i)=>{const d=i*gap;last=d;
   const li=document.querySelector('.feed li[data-ev="'+e.n+'"]');if(li&&!still){li.classList.add('new');li.style.animationDelay=d+'ms'}
   if(e.t==='buy'){const m=document.querySelector('.mgrid [data-mk="'+e.k+'"]');if(m&&!still){m.classList.add('flash');m.style.animationDelay=d+'ms';
@@ -148,7 +149,7 @@ function animAfter(snap){if(screen!=='game'||!s)return;
  if(watch&&prev.key===key&&tp>(prev.tp||0)&&!still){const from=mid(watch.querySelector('.pc.back'))||mid(watch.querySelector('.whois'));
   for(let i=prev.tp||0;i<tp;i++){const el=watch.querySelector('[data-tp="'+i+'"]');if(el)fly(el,from,(i-(prev.tp||0))*(gap||0),'deal')}}
  // profit changes pop next to each captain
- s.players.forEach((x,i)=>{const dl=x.profit-((prev.profits||[])[i]??x.profit);if(!dl)return;const t=(dl>0?'+':'')+dl;
+ if(!burst)s.players.forEach((x,i)=>{const dl=x.profit-((prev.profits||[])[i]??x.profit);if(!dl)return;const t=(dl>0?'+':'')+dl;
   const row=document.querySelector('.stand[data-seat="'+i+'"] strong');if(row)pop(row,t,dl>0?'up':'down',last);
   if(i===s.current){const pl=document.querySelector('.plate .profit b,.mprof b');if(pl)pop(pl,t,dl>0?'up':'down',last)}});
  // cards drawn into your hand
@@ -202,6 +203,31 @@ function watchBand(p){const tp=p.turnPlayed||[],backs=p.hand.length,cpu=playingB
   +'<div class="hside3 watchside"><div class="whois"><span class="eyebrow">Now playing</span><b>'+esc(p.name)+'</b><span class="mute">'+(p.bot?'Computer captain':'Watch their moves in the feed on the left.')+'</span></div>'
   +(cpu?'<button data-a="cpuspeed">Speed: '+SPEED_NAMES[s.cpuSpeed||'normal']+'</button><button class="primary" data-a="cpuskip">Skip to my turn</button>':'')+'</div></section>'}
 function poolStrip(p){return '<div class="pstrip" aria-label="Pool">'+E.RES.map(r=>'<span class="ps'+(p.pool[r]?'':' zero')+'" style="--rc:var(--c-'+r+')" title="'+E.RLABEL[r]+'">'+icon(r,2.6)+'<b>'+p.pool[r]+'</b><i>'+E.RLABEL[r]+'</i></span>').join('')+'</div>'}
+/* ---------- victory screen: score breakdown and delivered contracts per captain ---------- */
+// one fixed colour per profit source (validated categorical palette, dark surface); losses use the critical colour with an icon
+const SRC=[['contracts','Contracts','#3987e5','star'],['patrols','Pirate patrols','#d95926','combat'],['boss','Boss rewards','#199e70','combat'],['cash','Cash-ins','#c98500','cr'],['charter','Trade Charters','#d55181','star'],['buyout','Buyouts','#008300','cr']];
+let vicSeat=null,vicShown=null;
+function scoreOf(t,i){const sc={...(t.score||{})};if(!t.score){sc.contracts=s.done.filter(d=>d.player===i).reduce((a,d)=>a+d.profit,0);const other=t.profit-sc.contracts;if(other)sc.other=other}return sc}
+function victory(seat){
+ const order=s.players.map((t,i)=>i).sort((a,b)=>s.players[b].profit-s.players[a].profit),hi=s.players[order[0]].profit,win=order.filter(i=>s.players[i].profit===hi);
+ if(seat===null||!s.players[seat])seat=order[0];vicSeat=seat;
+ const t=s.players[seat],sc=scoreOf(t,seat),pos=SRC.map(([k,l,c,ic])=>({k,l,c,ic,v:Math.max(0,sc[k]||0)})).concat(sc.other>0?[{k:'other',l:'Earlier (not itemised)',c:'#6b7894',ic:'star',v:sc.other}]:[]);
+ const gain=pos.reduce((a,x)=>a+x.v,0),lossItems=[['raided','Raided by pirates'],['stolen','Bought out by rivals']].map(([k,l])=>({k,l,v:-(sc[k]||0)})).filter(x=>x.v>0),loss=lossItems.reduce((a,x)=>a+x.v,0);
+ const scale=Math.max(gain,1),rank=order.indexOf(seat)+1,mine=s.done.filter(d=>d.player===seat);
+ const counts={contracts:mine.length+' delivered',patrols:Math.round((sc.patrols||0)/5)+' × +5',cash:(sc.cash||0)+' × +1',charter:Math.round((sc.charter||0)/2)+' plays',buyout:'',boss:t.bossDmg?t.bossDmg+' damage dealt':''};
+ const bar='<div class="vbar" role="img" aria-label="'+esc(t.name)+' profit by source">'+pos.filter(x=>x.v).map(x=>'<i style="flex:'+x.v+' 1 0;background:'+x.c+'" data-tip="'+x.l+': '+x.v+' ('+Math.round(x.v/scale*100)+'%)"></i>').join('')+(gain?'':'<span class="mute">No profit earned</span>')+'</div>'
+  +(loss?'<div class="vloss"><span class="vlossbar" style="width:'+Math.max(2,Math.min(100,loss/scale*100))+'%" data-tip="Lost: '+loss+'"></span><span>⚠ Lost <b>'+loss+'</b> · '+lossItems.map(x=>x.l.toLowerCase()+' −'+x.v).join(' · ')+'</span></div>':'');
+ const legend='<table class="vleg"><tbody>'+pos.map(x=>'<tr'+(x.v?'':' class="zero"')+'><td><i style="background:'+x.c+'"></i>'+icon(x.ic,1.6)+x.l+'</td><td class="mute">'+(counts[x.k]||'')+'</td><td><b>'+(x.v?'+'+x.v:'0')+'</b></td></tr>').join('')
+  +lossItems.map(x=>'<tr class="neg"><td><i></i>⚠ '+x.l+'</td><td></td><td><b>−'+x.v+'</b></td></tr>').join('')+'<tr class="tot"><td>Final profit</td><td></td><td><b>'+t.profit+'</b></td></tr></tbody></table>';
+ const cards=mine.length?mine.map((d,j)=>'<article class="pc ctr notch vcard" style="animation-delay:'+(j*70)+'ms"><div class="art">'+px(SP.sceneURL(d.dest,d.id),AW,AH)+'<span class="badge profit">'+icon('star',1.6)+'+'+d.profit+'</span><div class="go">ROUND '+d.round+'</div></div><div class="pb"><h3>'+esc(d.name)+'</h3><div class="dest">To '+esc(d.dest)+'</div></div></article>').join(''):'<p class="mute vnone">'+esc(t.name)+' did not deliver a contract this run.</p>';
+ const tabs=order.map((i,r)=>'<button class="vtab'+(i===seat?' on':'')+'" data-a="vic" data-id="'+i+'"><em>#'+(r+1)+'</em>'+esc(s.players[i].name)+'<b>'+s.players[i].profit+'</b></button>').join('');
+ modal('<div class="vic"><div class="vhead">'+px(SP.heroURL(),288,128)+'<div><div class="eyebrow">Run complete · round '+s.round+(s.winMode==='profit'?' · race to '+s.target:'')+'</div><h2>'+win.map(i=>esc(s.players[i].name)).join(' & ')+(win.length>1?' share the win!':' wins!')+'</h2><p class="mute">Only profit counts. Click a captain to see how they earned it.</p></div><div class="vbig">'+icon('star',3.6)+'<b>'+hi+'</b><span class="eyebrow">winning profit</span></div></div>'
+  +'<div class="vtabs">'+tabs+'</div>'
+  +'<div class="vbody"><section class="vscore"><div class="vsh"><h3>'+esc(t.name)+'</h3><span class="eyebrow">'+(rank===1?'Winner':'#'+rank)+' · '+t.profit+' profit · '+t.completed+' deliveries · '+E.deckSize(t)+' cards</span></div><h4>Score breakdown</h4>'+bar+legend+'</section>'
+  +'<section class="vcons"><h4>Contracts delivered · '+mine.length+'</h4><div class="vgrid">'+cards+'</div></section></div>'
+  +'<div class="btns"><button class="primary" data-a="setup">New run</button><button data-a="decks" data-id="'+seat+'">Captains\' decks</button><button data-a="review">Review board</button></div></div>',true);
+ $('dialog').classList.add('vicdlg');
+ if(vicShown!==s.id){vicShown=s.id;Music.sfx('deliver');Music.sfx('turn',.5)}}
 function standings(){return s.players.map((t,i)=>({t,i})).sort((a,b)=>b.t.profit-a.t.profit).map(({t,i},rank)=>'<div class="stand'+(i===s.current&&!s.over?' cur':'')+'" data-seat="'+i+'"><i>'+(rank+1)+'</i><div><span>'+esc(t.name)+'</span><small>'+(t.bot?'CPU · ':'')+t.completed+' deliv · '+E.deckSize(t)+' cards</small>'+(i===s.current&&!s.over?'<em class="playing">playing</em>':'')+'</div><strong>'+t.profit+'</strong></div>').join('')}
 function gains(k){const c=E.CARDS[k],out=Object.entries(c.g).map(([r,n])=>'<span class="g" style="--rc:var(--c-'+r+')">'+icon(r,1.4)+'+'+n+'</span>');
  if(c.draw)out.push('<span class="g">+'+c.draw+' draw</span>');if(c.buys)out.push('<span class="g">+'+c.buys+' buy</span>');if(k==='buyout')out.push('<span class="g" style="--rc:var(--c-combat)">took profit</span>');if(c.vp)out.push('<span class="g" style="--rc:var(--amber)">'+icon('star',1.4)+'+'+c.vp+' profit</span>');return out.join('')}
@@ -254,8 +280,7 @@ function bossReport(){
  return false}
 function phase(){
  if(screen!=='game')return;bossNews();if(bossReport())return;const p=E.me(s);
- if(s.over){const hi=Math.max(...s.players.map(x=>x.profit)),w=s.players.filter(x=>x.profit===hi);
-  modal('<div class="eyebrow">Run complete · Round '+s.round+'</div><h2>'+w.map(x=>esc(x.name)).join(' & ')+(w.length>1?' share the win.':' wins.')+'</h2>'+table()+'<p class="mute" style="margin-top:10px">Only profit counts. Unspent credits and deck size do not.</p><div class="btns"><button class="primary" data-a="setup">New run</button><button data-a="decks">Captains\' decks</button><button data-a="review">Review board</button></div>');return}
+ if(s.over){victory(vicSeat);return}
  if(s.phase==='handoff'){if(!p.bot){const alarm=s.boss&&!s.boss.alerted;if(alarm)s.boss.alerted=true;Music.sfx(alarm?'boss':'turn')};modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Final round':'Next captain')+'</div><h2>'+esc(p.name)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' profit</p>'+(s.boss?'<div class="threat soon">'+icon('combat',1.6)+'<span><b>'+esc(s.boss.name)+'</b> is blockading the lanes: '+s.boss.hp+' / '+s.boss.max+' hull left, '+(s.boss.until-s.round+1)+' round(s) to beat it.</span></div>':'')+'<div class="btns"><button class="primary" data-a="begin">Begin turn</button></div>');return}
  hide();
 }
@@ -363,6 +388,7 @@ document.addEventListener('click',e=>{
  else if(a==='deck')viewDeck();
  else if(a==='enc')encyclopedia(b.dataset.sec);
  else if(a==='decks')viewDecks(Number.isInteger(id)?id:null);
+ else if(a==='vic'){Music.sfx('tab');victory(id)}
  else if(a==='done')viewDone();
  else if(a==='log')viewLog();
  else if(a==='review')hide();

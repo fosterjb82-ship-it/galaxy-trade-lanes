@@ -109,3 +109,8 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 .bbtns button{flex:1 1 140px;min-height:46px;font-size:13px}
 .threat{font-size:13px}
 .breport{flex-direction:column;align-items:stretch}.breport img{width:100%}
+
+.dialog.vicdlg{width:100%;padding:14px}
+.vhead{flex-wrap:wrap;gap:10px}.vhead>img{width:100%}.vhead h2{font-size:32px}.vbig b{font-size:56px}
+.vbody{grid-template-columns:1fr}.vgrid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:none}
+.vleg{font-size:14px}

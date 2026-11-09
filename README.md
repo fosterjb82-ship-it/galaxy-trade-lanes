@@ -51,6 +51,10 @@ Every move is recorded by the engine as an event (who, what, how much). The desk
 - **Board effects**: deliveries fly to the captain who made them, profit changes pop beside each captain, bought market cards flash, boss hits shake the boss and show the damage, the active captain's standings row says *playing*.
 - **Computer turns play back one move at a time** (setup option *Computer turns*: normal, slow, fast or instant; Speed and *Skip to my turn* buttons while they play). Online, several moves sent at once (like Play resources) are shown one after another.
 
+## Victory screen
+
+When a run ends, a victory screen shows the winner's name and profit, tabs for every captain in finishing order, and for the selected captain: a **score breakdown** (one stacked bar by profit source: contracts, pirate patrols, boss rewards, cash-ins, Trade Charters, buyouts; losses to raids and buyouts in a separate red row; a legend with every amount) and **every contract they delivered** as large cards with the round. The engine tracks each captain's profit sources (`player.score`), which always add up to their final profit. Captains' decks and Review board stay available. Colours come from a palette checked for colour-blind separation on the dark panel.
+
 ## Tutorial
 
 **Tutorial** on the start screen launches a short guided game (18 steps, about 3 minutes) against one computer captain, in the desktop and phone builds. A coach box explains each step and a spotlight shows where to look; action steps continue once the player has done them. Hands are set up so every lesson works: playing resources, the pool, cargo space, delivering, buying, ending a turn, orders, pirate patrol, cashing in, and a small boss fight with Weapons Officer double damage. At the end the player keeps playing that run (pirate threats switch on) or starts a real run. Code: `tutorial.js`.

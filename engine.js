@@ -66,6 +66,8 @@ const need=c=>(c.req.ore||0)+(c.req.tech||0);
 const deckSize=p=>p.deck.length+p.discard.length+p.hand.length+p.played.length;
 function log(s,t){s.log.unshift('R'+s.round+' · '+t);if(s.log.length>50)s.log.length=50}
 // structured record of every move, for the turn feed and animations (last 80 kept)
+// where each captain's profit came from (for the victory screen)
+function score(p,k,v){if(!v)return;p.score=p.score||{};p.score[k]=(p.score[k]||0)+v}
 function ev(s,o){s.evn=(s.evn||0)+1;o.n=s.evn;o.who=s.current;o.r=s.round;(s.events=s.events||[]).push(o);if(s.events.length>80)s.events.shift()}
 function draw(s,p,n){for(let i=0;i<n;i++){if(!p.deck.length)p.deck=shuffle(s,p.discard.splice(0));if(!p.deck.length)break;p.hand.push(p.deck.pop())}}
 function isStarter(c){return !c.req.tech&&!c.req.combat&&!c.req.cr&&(c.req.fuel||0)<=2&&(c.req.ore||0)<=2}
@@ -115,14 +117,14 @@ function play(s,i,target){
  (p.turnPlayed=p.turnPlayed||[]).push(k);
  if(c.cat==='act'&&s.actionLimit)p.actions--;
  if(k==='buyout'){
-  const v=s.players[target],amt=Math.min(2,v.profit);v.profit-=amt;p.profit+=amt;s.trash.push(k);(p.scrappedCards=p.scrappedCards||[]).push(k);
+  const v=s.players[target],amt=Math.min(2,v.profit);v.profit-=amt;p.profit+=amt;score(p,'buyout',amt);score(v,'stolen',-amt);s.trash.push(k);(p.scrappedCards=p.scrappedCards||[]).push(k);
   log(s,p.name+' bought out '+amt+' profit from '+v.name+'.');ev(s,{t:'buyout',k,v:target,amt});
  }else{p.played.push(k);ev(s,{t:'play',k})}
  Object.entries(c.g).forEach(([r,n])=>p.pool[r]+=n);
  if(c.buys)p.buys+=c.buys;
  if(c.dbl)p.dbl=true;
  if(c.draw)draw(s,p,c.draw);
- if(c.vp){p.profit+=c.vp;log(s,p.name+' played '+c.n+' for +'+c.vp+' profit.')}
+ if(c.vp){p.profit+=c.vp;score(p,'charter',c.vp);log(s,p.name+' played '+c.n+' for +'+c.vp+' profit.')}
  if(k==='buyout'||c.vp)checkTarget(s);
  return true;
 }
@@ -132,7 +134,7 @@ function complete(s,id){
  const c=s.board.find(x=>x&&x.id===id),p=me(s);
  if(!canComplete(s,c))return false;
  Object.entries(c.req).forEach(([r,n])=>p.pool[r]-=n);
- p.pool.cargo-=need(c);p.profit+=c.profit;p.completed++;
+ p.pool.cargo-=need(c);p.profit+=c.profit;p.completed++;score(p,'contracts',c.profit);
  s.done.push({...c,req:{...c.req},captain:p.name,player:s.current,round:s.round});
  const idx=s.board.indexOf(c);s.cdisc.push(c);s.board[idx]=null;s.board[idx]=nextContract(s);
  log(s,p.name+' delivered '+c.name+' for +'+c.profit+'.');ev(s,{t:'deliver',name:c.name,profit:c.profit,id:c.id});
@@ -145,7 +147,7 @@ function buy(s,k){
  log(s,p.name+' bought '+c.n+'.');ev(s,{t:'buy',k});return true;
 }
 function patrol(s){const p=me(s);if(!live(s)||p.patrolled||p.pool.combat<3||p.pool.fuel<1)return false;
- p.pool.combat-=3;p.pool.fuel--;p.patrolled=true;p.profit+=5;if(s.threats&&!s.boss&&s.nextBoss){const was=s.nextBoss;s.nextBoss=Math.min(bossBase(s)+MAX_DELAY,s.nextBoss+PATROL_DELAY);p.delayed=(p.delayed||0)+(s.nextBoss-was);if(s.nextBoss>was)log(s,p.name+"'s patrol pushed the next pirate boss back to round "+s.nextBoss+'.')}log(s,p.name+' cleared a pirate patrol for +5.');ev(s,{t:'patrol'});checkTarget(s);return true}
+ p.pool.combat-=3;p.pool.fuel--;p.patrolled=true;p.profit+=5;score(p,'patrols',5);if(s.threats&&!s.boss&&s.nextBoss){const was=s.nextBoss;s.nextBoss=Math.min(bossBase(s)+MAX_DELAY,s.nextBoss+PATROL_DELAY);p.delayed=(p.delayed||0)+(s.nextBoss-was);if(s.nextBoss>was)log(s,p.name+"'s patrol pushed the next pirate boss back to round "+s.nextBoss+'.')}log(s,p.name+' cleared a pirate patrol for +5.');ev(s,{t:'patrol'});checkTarget(s);return true}
 /* ---- pirate threats ---- */
 const lastRound=s=>s.winMode==='rounds'?s.maxRounds:Infinity;
 // round the next boss arrives (null while one is active, threats are off, or it would land after the run)
@@ -164,7 +166,7 @@ function spawn(s){if(!s.threats||s.boss||!s.nextBoss||s.round<s.nextBoss||s.roun
   arrived:s.round,until:s.round+(b.rounds||BOSS_ROUNDS)-1,dmg:s.players.map(()=>0),no:s.bossNo};
  log(s,b.name+' blockades the trade lanes! No contracts until it is defeated.');return true}
 function hit(s,n){const p=me(s),b=s.boss,d=Math.min(n,b.hp);b.hp-=d;b.dmg[s.current]+=d;p.bossDmg=(p.bossDmg||0)+d;
- if(b.hp<=0){const bounty=b.bounty||1,reward=b.dmg.map((d,i)=>d*bounty+(i===s.current?FINAL_BLOW:0));s.players.forEach((t,i)=>{t.profit+=reward[i]});
+ if(b.hp<=0){const bounty=b.bounty||1,reward=b.dmg.map((d,i)=>d*bounty+(i===s.current?FINAL_BLOW:0));s.players.forEach((t,i)=>{t.profit+=reward[i];score(t,'boss',reward[i])});
   s.bossDone.push({name:b.name,key:b.key,bounty:b.bounty||1,no:b.no,won:true,round:s.round,max:b.max,dmg:b.dmg.slice(),final:s.current,change:reward,profit:s.players.map(t=>t.profit),seen:bots(s)});
   ev(s,{t:'bossdown',boss:b.name});
   log(s,p.name+' landed the final blow on '+b.name+' (+'+FINAL_BLOW+'). Captains earn +'+(b.bounty||1)+' profit per damage dealt. Contracts are open again.');
@@ -179,11 +181,11 @@ function attack(s){const p=me(s);if(!live(s)||!s.boss||p.pool.combat<1)return fa
 const mercCost=s=>s.boss?(s.boss.merc||MERC):MERC;
 function mercs(s){const p=me(s);if(!live(s)||!s.boss||p.pool.cr<mercCost(s))return false;
  p.pool.cr-=mercCost(s);const bn=s.boss.name;hit(s,1);ev(s,{t:'hit',d:1,via:'mercs',boss:bn});log(s,p.name+' hired mercenaries for 1 damage.');return true}
-function raid(s){const b=s.boss,amt=b.raid||RAID,low=Math.min(...b.dmg),least=b.dmg.map(d=>d===low),lost=s.players.map((t,i)=>-Math.min(least[i]?amt*2:amt,t.profit));s.players.forEach((t,i)=>{t.profit+=lost[i]});
+function raid(s){const b=s.boss,amt=b.raid||RAID,low=Math.min(...b.dmg),least=b.dmg.map(d=>d===low),lost=s.players.map((t,i)=>-Math.min(least[i]?amt*2:amt,t.profit));s.players.forEach((t,i)=>{t.profit+=lost[i];score(t,'raided',lost[i])});
  s.bossDone.push({name:b.name,key:b.key,raid:amt,least,no:b.no,won:false,round:s.round,max:b.max,hp:b.hp,dmg:b.dmg.slice(),change:lost,profit:s.players.map(t=>t.profit),seen:bots(s)});
  ev(s,{t:'raid',boss:b.name,amt});log(s,b.name+' raided every captain for '+amt+' profit ('+amt*2+' from the least helpful) and left the lanes.');s.boss=null;bossLeft(s,b)}
 function cashIn(s){const p=me(s);if(!live(s)||p.pool.cr<CASH)return false;
- p.pool.cr-=CASH;p.profit++;ev(s,{t:'cash'});log(s,p.name+' cashed in '+CASH+' credits for +1 profit.');checkTarget(s);return true}
+ p.pool.cr-=CASH;p.profit++;score(p,'cash',1);ev(s,{t:'cash'});log(s,p.name+' cashed in '+CASH+' credits for +1 profit.');checkTarget(s);return true}
 function scrap(s,i){const p=me(s);if(!live(s)||p.scrapped||p.pool.cr<1||!Number.isInteger(i)||i<0||i>=p.hand.length)return false;
  p.pool.cr--;const k=p.hand.splice(i,1)[0];s.trash.push(k);(p.scrappedCards=p.scrappedCards||[]).push(k);p.scrapped=true;log(s,p.name+' scrapped '+CARDS[k].n+'.');ev(s,{t:'scrap',k});return true}
 function end(s){

@@ -424,3 +424,55 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
 .mband:not(.mini) .mgrid .pc .pb{padding:6px 8px 8px;gap:3px}
 .mband:not(.mini) .mgrid .pc p{font-size:13.5px;line-height:1.3}
 .mband:not(.mini) .mgrid .pc button{min-height:34px}
+
+/* ---------- victory screen ---------- */
+.dialog.vicdlg{max-width:1500px;width:96%;max-height:94%;padding:22px 26px}
+.vic{display:flex;flex-direction:column;gap:14px}
+.vhead{display:flex;align-items:center;gap:22px;padding:12px 16px;border:2px solid var(--amber2);background:radial-gradient(ellipse at 30% 50%,#2a2008,var(--panel) 70%)}
+.vhead>img{width:288px;height:auto;flex:none;animation:tzin .6s ease-out both}
+.vhead h2{font-size:52px;margin:4px 0 6px;color:var(--amber);text-shadow:4px 4px 0 #000}
+.vhead p{margin:0}
+.vhead>div:nth-child(2){flex:1;min-width:0}
+.vbig{display:flex;flex-direction:column;align-items:center;gap:2px;padding:0 10px}
+.vbig b{font:700 84px/0.9 var(--disp);color:var(--amber);text-shadow:4px 4px 0 #000}
+.vbig img{width:46px;height:46px}
+@keyframes tzin{from{transform:translateX(-60px);opacity:0}to{transform:none;opacity:1}}
+.vtabs{display:flex;flex-wrap:wrap;gap:8px}
+.vtab{display:flex;align-items:center;gap:10px;min-height:46px;padding:4px 14px;font-size:17px;text-transform:none;letter-spacing:.02em}
+.vtab em{font:600 12px var(--mono);color:var(--mute);font-style:normal}
+.vtab b{font:700 22px var(--disp);color:var(--amber)}
+.vtab.on{border-color:var(--amber);background:#2a2008}
+.vbody{display:grid;grid-template-columns:minmax(380px,520px) minmax(0,1fr);gap:18px;align-items:start}
+.vscore,.vcons{border:2px solid var(--line);background:var(--panel2);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.vsh h3{font-size:30px;margin:0}
+.vscore h4,.vcons h4{margin:0;font:600 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.vbar{display:flex;gap:2px;height:30px;align-items:stretch}
+.vbar i{position:relative;min-width:6px;animation:vgrow .7s cubic-bezier(.2,.8,.25,1) both;transform-origin:left}
+.vbar i:first-child{border-radius:4px 0 0 4px}.vbar i:last-child{border-radius:0 4px 4px 0}.vbar i:only-child{border-radius:4px}
+@keyframes vgrow{from{transform:scaleX(0)}to{transform:none}}
+[data-tip]{position:relative}
+[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);white-space:nowrap;background:#05080f;color:var(--ink);border:1px solid var(--line2);padding:4px 8px;font:500 13px var(--body);z-index:5;pointer-events:none}
+.vbar i:hover{filter:brightness(1.2)}
+.vloss{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink)}
+.vlossbar{height:14px;background:var(--coral);border-radius:4px;flex:none;animation:vgrow .7s ease both;transform-origin:left}
+.vloss b{color:var(--coral)}
+.vleg{width:100%;border-collapse:collapse;font-size:16px}
+.vleg td{padding:6px 4px;border-bottom:1px solid var(--line)}
+.vleg td:first-child{display:flex;align-items:center;gap:8px}
+.vleg td:first-child i{width:14px;height:14px;border-radius:3px;flex:none}
+.vleg td:nth-child(2){font-size:13px}
+.vleg td:last-child{text-align:right;font:700 20px var(--disp);font-variant-numeric:tabular-nums}
+.vleg tr.zero{opacity:.45}
+.vleg tr.neg td{color:var(--coral)}.vleg tr.neg td:first-child i{background:var(--coral)}
+.vleg tr.tot td{border-bottom:0;border-top:2px solid var(--amber2);font-weight:700}.vleg tr.tot td:last-child{font-size:28px;color:var(--amber)}
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;max-height:560px;overflow:auto;padding:2px}
+.vcard{width:auto!important;animation:vcard .45s cubic-bezier(.2,.8,.25,1) both}
+.vcard .art{height:auto!important}.vcard .art img.px{width:100%;height:auto}
+.vcard h3{font-size:20px}
+.vcard .badge.profit{font-size:22px}
+@keyframes vcard{from{transform:translateY(24px) scale(.92);opacity:0}to{transform:none;opacity:1}}
+.vnone{padding:20px}
+@media (prefers-reduced-motion:reduce){.vhead>img,.vbar i,.vlossbar,.vcard{animation:none}}
+
+/* dialogs always sit above card animations */
+.overlay{z-index:48}
