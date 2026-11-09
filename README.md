@@ -45,7 +45,8 @@ You run a small game server on your own computer, and Cloudflare gives it a temp
 ## Watching other captains
 
 Every move is recorded by the engine as an event (who, what, how much). The desktop screen uses them to show:
-- **Turn feed** under the active captain in the left rail: each card played, delivery, purchase, patrol, cash-in, scrap and boss hit, newest first, for whoever's turn it is (your own too).
+- **Captain's log** in the left rail: a running log of every move by every captain (cards played, deliveries, purchases, patrols, cash-ins, scraps, boss hits), newest first, with a divider per turn. Six entries show at once; scroll for the last 80 moves.
+- **Bigger pool** once your hand is played out (or nothing left in it can be played): the hand band collapses to large resource counters, with any unplayable cards as chips you can still scrap.
 - **Their table** in the hand band while someone else plays: the cards they have played face up, the rest of their hand face down, their live pool.
 - **Board effects**: deliveries fly to the captain who made them, profit changes pop beside each captain, bought market cards flash, boss hits shake the boss and show the damage, the active captain's standings row says *playing*.
 - **Computer turns play back one move at a time** (setup option *Computer turns*: normal, slow, fast or instant; Speed and *Skip to my turn* buttons while they play). Online, several moves sent at once (like Play resources) are shown one after another.
