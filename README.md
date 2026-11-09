@@ -42,6 +42,14 @@ You run a small game server on your own computer, and Cloudflare gives it a temp
 - Rebuild the online page after changing the game: `bash build-online.sh` (the server serves `online/index.html`).
 - Options: `PORT=9000 node server/server.js` picks another port; `NO_TUNNEL=1` skips starting cloudflared.
 
+## Watching other captains
+
+Every move is recorded by the engine as an event (who, what, how much). The desktop screen uses them to show:
+- **Turn feed** under the active captain in the left rail: each card played, delivery, purchase, patrol, cash-in, scrap and boss hit, newest first, for whoever's turn it is (your own too).
+- **Their table** in the hand band while someone else plays: the cards they have played face up, the rest of their hand face down, their live pool.
+- **Board effects**: deliveries fly to the captain who made them, profit changes pop beside each captain, bought market cards flash, boss hits shake the boss and show the damage, the active captain's standings row says *playing*.
+- **Computer turns play back one move at a time** (setup option *Computer turns*: normal, slow, fast or instant; Speed and *Skip to my turn* buttons while they play). Online, several moves sent at once (like Play resources) are shown one after another.
+
 ## Tutorial
 
 **Tutorial** on the start screen launches a short guided game (18 steps, about 3 minutes) against one computer captain, in the desktop and phone builds. A coach box explains each step and a spotlight shows where to look; action steps continue once the player has done them. Hands are set up so every lesson works: playing resources, the pool, cargo space, delivering, buying, ending a turn, orders, pirate patrol, cashing in, and a small boss fight with Weapons Officer double damage. At the end the player keeps playing that run (pirate threats switch on) or starts a real run. Code: `tutorial.js`.

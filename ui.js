@@ -3,9 +3,9 @@ const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 let s=null,screen='setup',scrollPos=0,handX=0;
 // online play: ME is this browser's seat (null = one shared device, the usual mode)
 let ME=null;
-const myTurn=()=>!!s&&s.phase==='action'&&!s.over&&(ME===null||s.current===ME);
+const myTurn=()=>!!s&&s.phase==='action'&&!s.over&&(ME===null?!s.players[s.current].bot&&!(typeof playingBack==='function'&&playingBack()):s.current===ME);
 const viewer=()=>ME===null?s.current:ME;
-const cfg={humans:1,bots:2,threats:1,winMode:'rounds',rounds:16,actionLimit:2,target:80,boardSize:4,names:['Captain 1','Captain 2','Captain 3','Captain 4','Captain 5','Captain 6']};
+const cfg={humans:1,bots:2,threats:1,cpuSpeed:'normal',winMode:'rounds',rounds:16,actionLimit:2,target:80,boardSize:4,names:['Captain 1','Captain 2','Captain 3','Captain 4','Captain 5','Captain 6']};
 const BOTS=['Nova Syndicate','Orion Freight','Vesta Lines','Kestrel Haulage','Pallas Combine'];
 const MUS='lanehaul-music-v1';
 const SCALE=1.5,AW=Math.round(88*SCALE),AH=Math.round(52*SCALE);
@@ -38,7 +38,8 @@ function renderSetup(){
  +field('winMode','Victory',[['rounds','Highest profit after set rounds'],['profit','Race to a profit target']])
  +(cfg.winMode==='rounds'?field('rounds','Run length',[[10,'10 rounds'],[12,'12 rounds'],[16,'16 rounds (recommended)'],[20,'20 rounds']]):field('target','Profit target',[[50,'50 profit'],[80,'80 profit'],[120,'120 profit']]))
  +field('boardSize','Contract board',[[3,'3 contracts'],[4,'4 contracts'],[5,'5 contracts']])
- +field('threats','Pirate threats',[[1,'On: 2 boss battles (recommended)'],[0,'Off']])
+ +field('threats','Pirate threats',[[1,'On: boss battles (recommended)'],[0,'Off']])
+ +(cfg.bots?field('cpuSpeed','Computer turns',[['normal','Watch at normal speed'],['slow','Watch slowly'],['fast','Watch quickly'],['instant','Instant']]):'')
  +'</div><div class="fields">'+Array.from({length:n},(_,i)=>'<div><label for="nm'+i+'">Captain '+(i+1)+'</label><input id="nm'+i+'" data-name="'+i+'" maxlength="24" value="'+esc(cfg.names[i])+'"></div>').join('')+'</div>'
  +'<div class="btns" style="margin-top:4px"><button class="primary" data-a="start">Launch run</button><button data-a="tutorial">Tutorial</button><button data-a="rules">How to play</button></div></div>'
  +'<div class="heroart">'+px(SP.heroURL(),576,256)+'<div class="feat"><div><b>BUILD</b> Bought cards land in your discard pile and arrive in later hands.</div><div><b>LOAD</b> Cargo space is per turn, so play Hold Rigs and Barges before you deliver.</div><div><b>CLAIM</b> The board is shared. First captain to pay a contract takes the profit.</div></div></div></section>';
@@ -46,14 +47,32 @@ function renderSetup(){
 function start(){collect();scrollPos=0;handX=0;
  const players=Array.from({length:cfg.humans},(_,i)=>({name:(cfg.names[i]||'').trim()||'Captain '+(i+1)}));
  for(let i=0;i<cfg.bots;i++)players.push({name:BOTS[i],bot:true});
- s=E.create({...cfg,threats:cfg.threats!==0,mode:cfg.humans>1?'local':'solo',players});seenBoss=0;screen='game';settle();
+ stopPlayback();s=E.create({...cfg,threats:cfg.threats!==0,mode:cfg.humans>1?'local':'solo',players});s.cpuSpeed=cfg.cpuSpeed;seenBoss=0;screen='game';settle();
 }
-function settle(){let g=0;while(!s.over&&E.me(s).bot&&g++<s.players.length)E.botTurn(s);if(s.over)record();save();render();phase()}
+const SPEEDS={slow:1100,normal:620,fast:260,instant:0},SPEED_NAMES={slow:'Slow',normal:'Normal',fast:'Fast',instant:'Instant'};
+let playTimer=null,playGen=null;
+const cpuDelay=()=>{const v=SPEEDS[(s&&s.cpuSpeed)||'normal'];return v===undefined?620:v};
+const playingBack=()=>playTimer!==null;
+function stopPlayback(){if(playTimer)clearTimeout(playTimer);playTimer=null;playGen=null}
+function finishSettle(){if(s.over)record();save();render();phase()}
+function settle(){
+ if(playingBack())return;
+ if(!s.over&&E.me(s).bot&&cpuDelay()>0){save();hide();playTimer=setTimeout(botStep,300);return}
+ let g=0;while(!s.over&&E.me(s).bot&&g++<s.players.length)E.botTurn(s);finishSettle()}
+// one computer move per tick, so everyone can follow it
+function botStep(){
+ if(screen!=='game'||!s){stopPlayback();return}
+ if(!playGen){if(s.over||!E.me(s).bot){stopPlayback();finishSettle();return}playGen=E.botSteps(s)}
+ const r=playGen.next();render();
+ if(r.done){playGen=null;save();playTimer=setTimeout(botStep,Math.max(200,cpuDelay()*.9))}else playTimer=setTimeout(botStep,cpuDelay())}
+function skipPlayback(){if(!playingBack())return;clearTimeout(playTimer);playTimer=null;if(playGen){for(const _ of playGen);playGen=null}
+ let g=0;while(!s.over&&E.me(s).bot&&g++<s.players.length)E.botTurn(s);finishSettle()}
+function cycleSpeed(){const order=['slow','normal','fast','instant'],cur=(s&&s.cpuSpeed)||'normal';s.cpuSpeed=cfg.cpuSpeed=order[(order.indexOf(cur)+1)%order.length];if(s.cpuSpeed==='instant')skipPlayback();else render()}
 function act(fn,snd){if(!s||screen!=='game')return;if(fn()===false){notify('Not enough resources, cargo, credits, orders or deals for that.');return}if(snd)Music.sfx(snd);settle()}
 
 /* ---------- game view ---------- */
 const tok=(r,n,met)=>'<span class="tok '+(met?'met':'miss')+'" style="--rc:var(--c-'+r+')" title="'+E.RLABEL[r]+'">'+icon(r,1.6)+n+'</span>';
-function ctrCard(c){const p=E.me(s),ready=E.canComplete(s,c),nd=E.need(c);
+function ctrCard(c){const p=E.me(s),ready=myTurn()&&E.canComplete(s,c),nd=E.need(c);
  return '<article class="pc ctr notch'+(ready?' ready':'')+'" data-cid="'+c.id+'"><div class="art">'+px(SP.sceneURL(c.dest,c.id),AW,AH)+'<span class="badge profit">'+icon('star',1.6)+'+'+c.profit+'</span>'+(ready?'<div class="go">READY TO DELIVER</div>':'')+(s.boss?'<div class="go blk">BLOCKADED</div>':'')+'</div>'
  +'<div class="pb"><h3>'+esc(c.name)+'</h3><div class="dest">To '+esc(c.dest)+' · '+(c.req.combat?'Armed':'Freight')+'</div>'
  +'<div class="reqs">'+Object.entries(c.req).map(([r,n])=>tok(r,n,p.pool[r]>=n)).join('')+(nd?tok('cargo',nd,p.pool.cargo>=nd):'')+'</div>'
@@ -99,9 +118,15 @@ const rectZ=el=>{const r=el.getBoundingClientRect(),z=zoomK();return {left:r.lef
 function fly(el,from,delay,cls){const r=rectZ(el);if(!r.width||!from)return;const g=el.cloneNode(true);g.classList.add('flyer',cls);g.removeAttribute('data-hand');g.removeAttribute('data-cid');
  g.style.cssText='left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;--dx:'+(from.x-r.left-r.width/2)+'px;--dy:'+(from.y-r.top-r.height/2)+'px;animation-delay:'+delay+'ms';
  el.style.visibility='hidden';document.body.append(g);setTimeout(()=>{el.style.visibility='';g.remove()},delay+720)}
+function pop(el,text,cls,delay){if(calm())return;const r=rectZ(el);if(!r.width)return;const d=document.createElement('div');d.className='fxpop '+(cls||'');d.textContent=text;
+ d.style.cssText='left:'+(r.left+r.width/2)+'px;top:'+(r.top)+'px;animation-delay:'+(delay||0)+'ms';document.body.append(d);setTimeout(()=>d.remove(),1500+(delay||0))}
+function toss(el,to,delay){if(!to||calm())return;const r=rectZ(el),g=el.cloneNode(true);g.removeAttribute('data-mk');g.classList.remove('flash');g.classList.add('ghost','toss');
+ g.style.cssText='left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;--gx:'+(to.x-r.left-r.width/2)+'px;--gy:'+(to.y-r.top-r.height/2)+'px;animation-delay:'+delay+'ms';
+ document.body.append(g);setTimeout(()=>g.remove(),1300+delay)}
 function animAfter(snap){if(screen!=='game'||!s)return;
  const p=E.me(s),show=myTurn(),hand=show?p.hand.slice():null,board=s.board.map(c=>c&&c.id),key=s.id+':'+s.round+':'+s.current;
- const prev=animPrev;animPrev={id:s.id,key,hand,board};if(!prev||prev.id!==s.id)return;
+ const cur=E.me(s),tp=(cur.turnPlayed||[]).length,profits=s.players.map(x=>x.profit);
+ const prev=animPrev;animPrev={id:s.id,key,hand,board,evn:s.evn||0,profits,tp};if(!prev||prev.id!==s.id)return;
  const still=calm();
  // contracts that left the board, and the ones dealt in their place
  const gone=prev.board.filter(x=>!board.includes(x)),fresh=board.filter(x=>!prev.board.includes(x));
@@ -110,6 +135,22 @@ function animAfter(snap){if(screen!=='game'||!s)return;
   c.style.cssText='left:'+o.r.left+'px;top:'+o.r.top+'px;width:'+o.r.width+'px;height:'+o.r.height+'px;--gx:'+(to?to.x-o.r.left-o.r.width/2:0)+'px;--gy:'+(to?to.y-o.r.top-o.r.height/2:-120)+'px;animation-delay:'+(i*120)+'ms';
   c.insertAdjacentHTML('beforeend','<div class="stamp">DELIVERED</div>');document.body.append(c);setTimeout(()=>c.remove(),1300+i*120)});
  fresh.forEach((cid,i)=>{const el=document.querySelector('.ctr[data-cid="'+cid+'"]');const d=(gone.length?420:0)+i*160;Music.sfx('deal',d/1000);if(el&&!still)fly(el,deck,d,'flip')});
+ // ---------- 3: what the active captain just did ----------
+ const evNew=(s.events||[]).filter(e=>e.n>(prev.evn||0)),gap=evNew.length>1?280:0;let last=0;
+ evNew.forEach((e,i)=>{const d=i*gap;last=d;
+  const li=document.querySelector('.feed li[data-ev="'+e.n+'"]');if(li&&!still){li.classList.add('new');li.style.animationDelay=d+'ms'}
+  if(e.t==='buy'){const m=document.querySelector('.mgrid [data-mk="'+e.k+'"]');if(m&&!still){m.classList.add('flash');m.style.animationDelay=d+'ms';
+    if(!myTurn())toss(m,mid(document.querySelector('.plate h2')),d)}}
+  if(e.t==='hit'){const hp=document.querySelector('.boss .hp');if(hp){pop(hp,'−'+e.d+' '+(s.players[e.who]||{}).name,'down',d);const bx=hp.closest('.boss');if(bx&&!still){bx.classList.add('shake');bx.style.animationDelay=d+'ms'}}}
+  if(e.t==='patrol'){const tile=document.querySelector('.move.patrol');if(tile&&!still){tile.classList.add('fired');tile.style.animationDelay=d+'ms'}}});
+ // cards another captain lays on their table
+ const watch=document.querySelector('.hband.watch');
+ if(watch&&prev.key===key&&tp>(prev.tp||0)&&!still){const from=mid(watch.querySelector('.pc.back'))||mid(watch.querySelector('.whois'));
+  for(let i=prev.tp||0;i<tp;i++){const el=watch.querySelector('[data-tp="'+i+'"]');if(el)fly(el,from,(i-(prev.tp||0))*(gap||0),'deal')}}
+ // profit changes pop next to each captain
+ s.players.forEach((x,i)=>{const dl=x.profit-((prev.profits||[])[i]??x.profit);if(!dl)return;const t=(dl>0?'+':'')+dl;
+  const row=document.querySelector('.stand[data-seat="'+i+'"] strong');if(row)pop(row,t,dl>0?'up':'down',last);
+  if(i===s.current){const pl=document.querySelector('.plate .profit b,.mprof b');if(pl)pop(pl,t,dl>0?'up':'down',last)}});
  // cards drawn into your hand
  if(!hand)return;let added=[];
  if(prev.key!==key||!prev.hand)added=hand.map((k,i)=>i);
@@ -133,7 +174,34 @@ if(DESK){let pop=null;
   document.body.append(pop);const z=zoomK(),r=el.getBoundingClientRect(),pw=pop.offsetWidth,ph=pop.offsetHeight;
   pop.style.left=Math.max(8,Math.min(innerWidth/z-pw-8,(r.left+r.width/2)/z-pw/2))+'px';pop.style.top=Math.max(8,r.top/z-ph-10)+'px'});
  document.addEventListener('click',()=>{if(pop){pop.remove();pop=null}},true)}
-function standings(){return s.players.map((t,i)=>({t,i})).sort((a,b)=>b.t.profit-a.t.profit).map(({t,i},rank)=>'<div class="stand'+(i===s.current&&!s.over?' cur':'')+'"><i>'+(rank+1)+'</i><div><span>'+esc(t.name)+'</span><small>'+(t.bot?'CPU · ':'')+t.completed+' deliv · '+E.deckSize(t)+' cards</small></div><strong>'+t.profit+'</strong></div>').join('')}
+const turnEvents=()=>(s.events||[]).filter(e=>e.n>(s.feedFrom||0)&&e.who===s.current&&e.r===s.round);
+function feedLine(e){const c=e.k&&E.CARDS[e.k],nm=c?'<b>'+c.n+'</b>':'';
+ switch(e.t){
+  case 'play':return {i:'<img class="px" src="'+SP.cardURL(e.k)+'" width="36" height="21" alt="">',x:(c.cat==='act'?'Gave order ':'Played ')+nm+'<span class="gs">'+gains(e.k)+'</span>',cls:c.cat};
+  case 'buyout':return {i:icon('combat',1.6),x:'Bought out <b>'+e.amt+'</b> profit from '+esc((s.players[e.v]||{}).name||'a rival'),cls:'act'};
+  case 'salvage':return {i:icon('cargo',1.6),x:'Salvaged '+nm+' out of their deck',cls:'act'};
+  case 'deliver':return {i:icon('star',1.6),x:'Delivered <b>'+esc(e.name)+'</b> <b class="acc">+'+e.profit+'</b>',cls:'big'};
+  case 'buy':return {i:icon('cr',1.6),x:'Bought '+nm,cls:'buy'};
+  case 'patrol':return {i:icon('combat',1.6),x:'Pirate patrol <b class="acc">+5</b>',cls:'big'};
+  case 'cash':return {i:icon('cr',1.6),x:'Cashed in '+E.CASH+' credits <b class="acc">+1</b>',cls:''};
+  case 'scrap':return {i:icon('cr',1.6),x:'Scrapped '+nm,cls:''};
+  case 'hit':return {i:icon('combat',1.6),x:'Hit '+esc(e.boss)+' for <b class="down">'+e.d+'</b>'+(e.via==='mercs'?' with mercenaries':e.dbl?' (double)':''),cls:'hit'};
+  case 'bossdown':return {i:icon('star',1.6),x:'<b class="acc">'+esc(e.boss)+' destroyed!</b>',cls:'big'};
+  case 'raid':return {i:icon('combat',1.6),x:'<b class="down">'+esc(e.boss)+' raided everyone</b>',cls:'hit'};
+ }return {i:'',x:'',cls:''}}
+function feedPanel(){const p=E.me(s),list=turnEvents().slice().reverse();
+ return '<section class="panel feed notch"><div class="eyebrow">'+esc(p.name)+(s.over?' · last turn':' · this turn')+'</div>'
+  +(list.length?'<ol>'+list.map(e=>{const f=feedLine(e);return '<li class="'+f.cls+'" data-ev="'+e.n+'">'+f.i+'<span>'+f.x+'</span></li>'}).join('')+'</ol>'
+   :'<p class="mute">'+(s.over?'No moves.':myTurn()?'Your moves this turn appear here.':esc(p.name)+' has not moved yet.')+'</p>')+'</section>'}
+// ---------- 2: watching another captain's table ----------
+function tableCard(k,i){const c=E.CARDS[k];return '<article class="pc '+c.cat+' notch tcard" data-tp="'+i+'"><div class="art">'+px(SP.cardURL(k),AW,AH)+'</div><div class="pb"><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><h3>'+c.n+'</h3><p>'+c.t+'</p></div></article>'}
+function watchBand(p){const tp=p.turnPlayed||[],backs=p.hand.length,cpu=playingBack();
+ return '<section class="band hband watch"><div class="hmain"><div class="bhead2"><h2>'+esc(p.name).toUpperCase()+'\'S TABLE</h2><span class="eyebrow">'+tp.length+' played · '+backs+' in hand</span>'+poolStrip(p)+'</div>'
+  +'<div class="hwrap"><div class="hgrid" style="--n:'+Math.max(5,tp.length+backs)+'">'+tp.map(tableCard).join('')+Array.from({length:backs},()=>'<div class="pc back notch"><i></i></div>').join('')+'</div></div></div>'
+  +'<div class="hside3 watchside"><div class="whois"><span class="eyebrow">Now playing</span><b>'+esc(p.name)+'</b><span class="mute">'+(p.bot?'Computer captain':'Watch their moves in the feed on the left.')+'</span></div>'
+  +(cpu?'<button data-a="cpuspeed">Speed: '+SPEED_NAMES[s.cpuSpeed||'normal']+'</button><button class="primary" data-a="cpuskip">Skip to my turn</button>':'')+'</div></section>'}
+function poolStrip(p){return '<div class="pstrip" aria-label="Pool">'+E.RES.map(r=>'<span class="ps'+(p.pool[r]?'':' zero')+'" style="--rc:var(--c-'+r+')" title="'+E.RLABEL[r]+'">'+icon(r,2.6)+'<b>'+p.pool[r]+'</b><i>'+E.RLABEL[r]+'</i></span>').join('')+'</div>'}
+function standings(){return s.players.map((t,i)=>({t,i})).sort((a,b)=>b.t.profit-a.t.profit).map(({t,i},rank)=>'<div class="stand'+(i===s.current&&!s.over?' cur':'')+'" data-seat="'+i+'"><i>'+(rank+1)+'</i><div><span>'+esc(t.name)+'</span><small>'+(t.bot?'CPU · ':'')+t.completed+' deliv · '+E.deckSize(t)+' cards</small>'+(i===s.current&&!s.over?'<em class="playing">playing</em>':'')+'</div><strong>'+t.profit+'</strong></div>').join('')}
 function gains(k){const c=E.CARDS[k],out=Object.entries(c.g).map(([r,n])=>'<span class="g" style="--rc:var(--c-'+r+')">'+icon(r,1.4)+'+'+n+'</span>');
  if(c.draw)out.push('<span class="g">+'+c.draw+' draw</span>');if(c.buys)out.push('<span class="g">+'+c.buys+' buy</span>');if(k==='buyout')out.push('<span class="g" style="--rc:var(--c-combat)">took profit</span>');if(c.vp)out.push('<span class="g" style="--rc:var(--amber)">'+icon('star',1.4)+'+'+c.vp+' profit</span>');return out.join('')}
 function played(p,hidden){const list=hidden?[]:(p.turnPlayed||[]);
@@ -145,21 +213,22 @@ function render(){
  const snap=animBefore();
  const p=E.me(s),on=myTurn(),hidden=!on;
  $('status').innerHTML=(s.over?'Run complete':'Round <b>'+s.round+(s.winMode==='rounds'?' / '+s.maxRounds:'')+'</b> · <b>'+esc(p.name)+'</b>')+(s.finalRound&&!s.over?' · <b class="acc">final round</b>':'')+(s.winMode==='profit'?' · first to '+s.target:'');
- const hasRes=p.hand.some(k=>E.CARDS[k]&&E.CARDS[k].cat==='res'),mode=(!hidden&&p.hand.length)?'play':'shop';
+ const watching=hidden&&!s.over&&s.phase==='action'&&(ME!==null||p.bot);
+ const hasRes=p.hand.some(k=>E.CARDS[k]&&E.CARDS[k].cat==='res'),mode=watching?'play':(!hidden&&p.hand.length)?'play':'shop';
  const rail='<aside class="rail"><section class="panel plate notch"><div class="eyebrow">'+(p.bot?'Computer captain':'Active captain')+'</div><h2>'+esc(p.name)+'</h2><div class="profit">'+icon('star',2.4)+'<b>'+p.profit+'</b><span class="eyebrow">Profit</span></div>'
   +'<div class="chips"><div class="chip"><span class="eyebrow">Deals</span><b>'+p.buys+'</b></div><div class="chip"><span class="eyebrow">Orders</span><b>'+(s.actionLimit?p.actions:'∞')+'</b></div></div></section>'
-  +moveTiles(p,on)
+  +feedPanel()+moveTiles(p,on)
   +'<section class="panel notch"><div class="eyebrow">Standings</div>'+standings()+'</section>'
   +'<section class="panel notch"><div class="eyebrow">Your deck</div><div class="piles"><div><b>'+p.deck.length+'</b><span class="eyebrow">Draw</span></div><div><b>'+p.discard.length+'</b><span class="eyebrow">Discard</span></div><div><b>'+E.deckSize(p)+'</b><span class="eyebrow">Total</span></div></div><div class="links"><button data-a="deck">Deck</button><button data-a="done">Deliveries</button><button data-a="log">Log</button></div></section></aside>';
- const pool='<div class="pstrip" aria-label="This turn\'s pool">'+E.RES.map(r=>'<span class="ps'+(p.pool[r]?'':' zero')+'" style="--rc:var(--c-'+r+')" title="'+E.RLABEL[r]+'">'+icon(r,2.6)+'<b>'+p.pool[r]+'</b><i>'+E.RLABEL[r]+'</i></span>').join('')+'</div>';
+ const pool=poolStrip(p);
  const cband='<section class="band cband'+(s.boss?' boss-on':'')+'"><div class="bhead2"><h2>CONTRACT BOARD</h2>'+cdeckPile()+'<span class="eyebrow">First to pay claims it · refills at once · '+s.done.length+' delivered</span>'+(s.boss?'':bossPanel())+'</div>'
   +'<div class="cbody">'+(s.boss?bossPanel():'')+'<div class="cwrap"><div class="cgrid" style="--n:'+s.board.length+'">'+s.board.map(ctrCard).join('')+'</div></div></div></section>';
  const mband='<section class="band mband'+(mode==='play'?' mini':'')+'"><div class="bhead2"><h2>CARD MARKET</h2><span class="eyebrow">'+(mode==='play'?'Hover a card for its full text · ':'')+'Sorted by cost · bought cards go to your discard pile</span></div><div class="mgrid">'+marketList().map(k=>cardEl(k,0,true)).join('')+'</div></section>';
  const msg=hidden?(ME!==null&&!s.over?esc(p.name)+' is taking their turn. Your hand appears when it is your turn.':s.over?'The run is over.':'Hand hidden until the captain begins.'):'Hand played out. Deliver, buy, or end your turn.';
- const hband='<section class="band hband'+(mode==='shop'?' slim':'')+'"><div class="hmain"><div class="bhead2"><h2>YOUR HAND</h2><span class="eyebrow">'+(hidden?'hidden':p.hand.length+' card'+(p.hand.length===1?'':'s'))+'</span>'+(mode==='shop'?'<span class="hmsg">'+msg+'</span>':'')+pool+'</div>'
+ const hband=watching?'':'<section class="band hband'+(mode==='shop'?' slim':'')+'"><div class="hmain"><div class="bhead2"><h2>YOUR HAND</h2><span class="eyebrow">'+(hidden?'hidden':p.hand.length+' card'+(p.hand.length===1?'':'s'))+'</span>'+(mode==='shop'?'<span class="hmsg">'+msg+'</span>':'')+pool+'</div>'
   +(mode==='play'?'<div class="hwrap"><div class="hgrid" style="--n:'+p.hand.length+'">'+p.hand.map((k,i)=>cardEl(k,i,false)).join('')+'</div></div>':'')+'</div>'
   +'<div class="hside3"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play resources</button><button class="primary endb" data-a="'+(s.over?'new':'endAsk')+'"'+(!s.over&&!on?' disabled':'')+'>'+(s.over?'New run':'End turn')+'</button>'+played(p,hidden)+'</div></section>';
- $('stage').innerHTML='<div class="desk-shell" data-mode="'+mode+'">'+rail+'<div class="bands">'+cband+mband+hband+'</div></div>';
+ $('stage').innerHTML='<div class="desk-shell" data-mode="'+mode+'">'+rail+'<div class="bands">'+cband+mband+(watching?watchBand(p):hband)+'</div></div>';
  animAfter(snap);
 }
 function table(){return '<table class="t"><thead><tr><th>CAPTAIN</th><th>PROFIT</th><th>DELIVERIES</th></tr></thead><tbody>'+[...s.players].sort((a,b)=>b.profit-a.profit).map(p=>'<tr><td>'+esc(p.name)+'</td><td class="acc">'+p.profit+'</td><td>'+p.completed+'</td></tr>').join('')+'</tbody></table>'}
@@ -260,7 +329,7 @@ function endAsk(){if(!s||screen!=='game'||!E.live(s))return;s.warned=s.warned||{
  modal('<h2>End your turn?</h2><p>Unspent resources expire. Your hand and played cards go to discard, then you draw a new hand of 5. This reminder only appears on your first turn.</p><div class="btns"><button class="primary" data-a="end">End turn</button><button data-a="close">Cancel</button></div>')}
 
 /* ---------- events ---------- */
-document.addEventListener('change',e=>{const k=e.target.id;if(k in cfg&&k!=='names'&&screen==='setup'){collect();cfg[k]=k==='winMode'?e.target.value:Number(e.target.value);
+document.addEventListener('change',e=>{const k=e.target.id;if(k in cfg&&k!=='names'&&screen==='setup'){collect();cfg[k]=k==='winMode'||k==='cpuSpeed'?e.target.value:Number(e.target.value);
  if(k==='humans'){cfg.bots=Math.min(cfg.bots,6-cfg.humans);if(cfg.humans+cfg.bots<2)cfg.bots=1}renderSetup()}});
 function musicUI(){const b=$('mus');if(!b)return;b.textContent=Music.on?'Music on':'Music off';b.setAttribute('aria-pressed',String(Music.on));b.classList.toggle('lit',Music.on)}
 function musicPref(v){try{localStorage.setItem(MUS,JSON.stringify(v))}catch(e){}}
@@ -295,7 +364,9 @@ document.addEventListener('click',e=>{
  else if(a==='log')viewLog();
  else if(a==='review')hide();
  else if(a==='close')closeDlg();
- else if(a==='setup'){s=null;try{localStorage.removeItem(SAVE)}catch(x){}renderSetup()}
+ else if(a==='cpuskip'){skipPlayback()}
+ else if(a==='cpuspeed'){cycleSpeed()}
+ else if(a==='setup'){stopPlayback();s=null;try{localStorage.removeItem(SAVE)}catch(x){}renderSetup()}
  else if(a==='new'){if(s&&!s.over&&screen==='game')modal('<h2>Start a new run?</h2><p>The current run will be replaced. Saved records stay.</p><div class="btns"><button class="primary" data-a="setup">New run</button><button data-a="close">Cancel</button></div>');else renderSetup()}
 });
 document.addEventListener('keydown',e=>{

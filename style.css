@@ -363,3 +363,36 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
 .hband.slim .hside3>button{min-height:52px;padding-inline:22px}
 .hband.slim .played{display:none}
 .desk-shell .rail .plate h2{font-size:24px}
+
+/* ---------- watching other captains ---------- */
+.desk-shell .rail{display:flex;flex-direction:column}
+.feed{flex:1 1 140px;min-height:110px;overflow:hidden;display:flex;flex-direction:column;gap:6px;border-color:var(--line2)!important}
+.feed ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;overflow:auto;scrollbar-width:thin;min-height:0}
+.feed li{display:flex;align-items:center;gap:8px;padding:4px 6px;border:1px solid var(--line);background:var(--panel2);font-size:13.5px;line-height:1.25}
+.feed li img{flex:none}.feed li img.px{border:1px solid #000}
+.feed li span{min-width:0}.feed li .gs{display:inline-flex;margin-left:6px;gap:4px}
+.feed li.act{border-color:#5a4a22}.feed li.res{border-color:#1f5a55}.feed li.big{border-color:var(--amber2);background:#2a2008}.feed li.hit{border-color:#7a2a20;background:#2a0f14}.feed li.buy{border-color:var(--line2)}
+.feed li.new{animation:feedin .45s cubic-bezier(.2,.8,.25,1) both}
+@keyframes feedin{from{transform:translateX(-24px);opacity:0;background:#3a3010}to{transform:none;opacity:1}}
+.feed p{margin:0;font-size:13px}
+.stand .playing{display:inline-block;margin-left:6px;font:600 9px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#06231c;background:var(--teal);padding:0 5px;font-style:normal;animation:playing 1.4s ease-in-out infinite}
+@keyframes playing{50%{opacity:.45}}
+.fxpop{position:fixed;z-index:50;pointer-events:none;transform:translate(-50%,-50%);font:700 30px var(--disp);text-shadow:2px 2px 0 #000;white-space:nowrap;animation:fxpop 1.3s ease-out both}
+.fxpop.up{color:var(--amber)}.fxpop.down{color:var(--coral)}
+@keyframes fxpop{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}15%{opacity:1;transform:translate(-50%,-60%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-170%) scale(1)}}
+.mgrid .pc.flash{animation:mflash 1s ease-out both}
+@keyframes mflash{0%,100%{box-shadow:none}25%{box-shadow:0 0 0 4px var(--amber),0 0 24px #f5b93caa}}
+.ghost.toss{animation:delivered .9s ease-in both}
+.boss.shake{animation:shake .45s ease-in-out both}
+@keyframes shake{20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+.move.fired{animation:fired .8s ease-out both}
+@keyframes fired{30%{box-shadow:0 0 0 4px var(--coral),0 0 30px #ff7a63aa}}
+.hband.watch{border-color:var(--teal)}
+.hband.watch .bhead2 h2{color:var(--teal)}
+.hgrid .pc.back{background:repeating-linear-gradient(45deg,#1b2a52 0 10px,#24386c 10px 20px);border-color:#000;box-shadow:inset 0 0 0 3px var(--amber2);display:flex;align-items:center;justify-content:center}
+.hgrid .pc.back i{width:40%;aspect-ratio:1;border:3px solid var(--amber2);transform:rotate(45deg);opacity:.6}
+.hgrid .tcard .pb{gap:4px}
+.watchside .whois{display:flex;flex-direction:column;gap:4px;border:2px solid var(--teal);background:#04201d;padding:14px}
+.watchside .whois b{font:700 30px var(--disp);color:var(--teal)}
+.watchside .whois .mute{font-size:14px}
+@media (prefers-reduced-motion:reduce){.feed li.new,.stand .playing,.mgrid .pc.flash,.boss.shake,.move.fired{animation:none}}
