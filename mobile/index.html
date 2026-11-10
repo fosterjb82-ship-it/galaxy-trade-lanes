@@ -1312,7 +1312,7 @@ function sfx(name,delay){if(!on||!ctx||!SFX[name])return;if(!fx){fx=ctx.createGa
 function victory(){if(!on||!ctx)return;
  const t0=ctx.currentTime+.15,B=.5,out=ctx.createGain(),comp=ctx.createDynamicsCompressor();out.gain.value=Math.min(1,.45+vol*.8);out.connect(comp);comp.connect(ctx.destination);out.connect(verb);
  // dip the background music, then bring it back
- master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(master.gain.value,ctx.currentTime);master.gain.linearRampToValueAtTime(vol*.12,t0+.4);
+ master.gain.cancelScheduledValues(t0-.15);master.gain.setValueAtTime(vol*.9,t0-.15);master.gain.linearRampToValueAtTime(vol*.12,t0+.4);
  master.gain.setValueAtTime(vol*.12,t0+9.6);master.gain.linearRampToValueAtTime(vol*.9,t0+12.4);
  const brass=(m,at,dur,lvl)=>{const t=t0+at*B,d=dur*B,f=ctx.createBiquadFilter(),g=ctx.createGain();f.type='lowpass';f.Q.value=3;f.frequency.setValueAtTime(500,t);f.frequency.linearRampToValueAtTime(3600,t+.07);f.frequency.exponentialRampToValueAtTime(1500,t+Math.max(.15,d));
   env(g,t,.025,lvl,Math.max(0,d-.12),.35);f.connect(g);g.connect(out);[-6,6].forEach(det=>{const o=ctx.createOscillator();o.type='sawtooth';o.frequency.value=hz(m);o.detune.value=det;o.connect(f);o.start(t);o.stop(t+d+.5)})};
