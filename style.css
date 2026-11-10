@@ -497,3 +497,17 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .vtab img.ava{width:30px;height:30px}
 .vsh{display:flex;align-items:center;gap:12px}.vsh .mute{font-size:13px}
 .mprof img.ava{width:34px;height:34px}
+
+/* larger game title and captain names */
+.brand{font-size:38px;letter-spacing:.09em}
+.brand small{font-size:11px;margin-top:5px}
+.top .status{font-size:14px}
+.desk-shell .rail .plate h2{font-size:30px}
+.stand div span{font-size:19px}
+.stand{padding-block:5px}
+.feed li.sep{font-size:12px}
+.watchside .whois b{font-size:38px}
+.vtab{font-size:20px}
+.vsh h3{font-size:38px}
+.upname{font-size:42px}
+.who{font-size:14px}

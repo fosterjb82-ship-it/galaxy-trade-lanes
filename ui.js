@@ -227,7 +227,7 @@ function victory(seat){
   +'<section class="vcons"><h4>Contracts delivered · '+mine.length+'</h4><div class="vgrid">'+cards+'</div></section></div>'
   +'<div class="btns"><button class="primary" data-a="setup">New run</button><button data-a="decks" data-id="'+seat+'">Captains\' decks</button><button data-a="review">Review board</button></div></div>',true);
  $('dialog').classList.add('vicdlg');
- if(vicShown!==s.id){vicShown=s.id;Music.sfx('deliver');Music.sfx('turn',.5)}}
+ if(vicShown!==s.id){vicShown=s.id;Music.victory()}}
 /* ---------- captain ships ---------- */
 const shipName=id=>(E.SHIPS.find(x=>x.id===id)||{name:''}).name;
 function ava(p,size,cls){return p&&p.ship?'<img class="px ava'+(cls?' '+cls:'')+'" src="'+SP.shipURL(p.ship)+'" width="'+size+'" height="'+size+'" alt="'+esc(shipName(p.ship))+'" title="'+esc(shipName(p.ship))+'">':''}

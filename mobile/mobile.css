@@ -116,3 +116,8 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 .vleg{font-size:14px}
 .capfields{grid-template-columns:1fr}
 .shippick button img{width:36px;height:36px}
+.brand{font-size:23px}
+.brand small{font-size:9px;margin-top:3px}
+.stand div span{font-size:17px}
+.vtab{font-size:17px}
+.upname{font-size:28px}

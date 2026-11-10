@@ -78,6 +78,29 @@ const SFX={
 };
 function sfx(name,delay){if(!on||!ctx||!SFX[name])return;if(!fx){fx=ctx.createGain();const c=ctx.createDynamicsCompressor();fx.connect(c);c.connect(ctx.destination);fx.connect(verb)}
  fx.gain.value=Math.min(1,.35+vol*.9);try{SFX[name](ctx.currentTime+.01+(delay||0))}catch(e){}}
+/* ---- victory fanfare: about 12 s, played over a dipped soundtrack ---- */
+function victory(){if(!on||!ctx)return;
+ const t0=ctx.currentTime+.15,B=.5,out=ctx.createGain(),comp=ctx.createDynamicsCompressor();out.gain.value=Math.min(1,.45+vol*.8);out.connect(comp);comp.connect(ctx.destination);out.connect(verb);
+ // dip the background music, then bring it back
+ master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(master.gain.value,ctx.currentTime);master.gain.linearRampToValueAtTime(vol*.12,t0+.4);
+ master.gain.setValueAtTime(vol*.12,t0+9.6);master.gain.linearRampToValueAtTime(vol*.9,t0+12.4);
+ const brass=(m,at,dur,lvl)=>{const t=t0+at*B,d=dur*B,f=ctx.createBiquadFilter(),g=ctx.createGain();f.type='lowpass';f.Q.value=3;f.frequency.setValueAtTime(500,t);f.frequency.linearRampToValueAtTime(3600,t+.07);f.frequency.exponentialRampToValueAtTime(1500,t+Math.max(.15,d));
+  env(g,t,.025,lvl,Math.max(0,d-.12),.35);f.connect(g);g.connect(out);[-6,6].forEach(det=>{const o=ctx.createOscillator();o.type='sawtooth';o.frequency.value=hz(m);o.detune.value=det;o.connect(f);o.start(t);o.stop(t+d+.5)})};
+ const chord=(ms,at,dur,lvl)=>ms.forEach(m=>{const t=t0+at*B,d=dur*B,o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();o.type='square';o.frequency.value=hz(m);f.type='lowpass';f.frequency.value=1400;
+  env(g,t,.06,lvl,Math.max(0,d-.2),.6);o.connect(f);f.connect(g);g.connect(out);o.start(t);o.stop(t+d+.7)});
+ const low=(m,at,dur)=>{const t=t0+at*B,o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=hz(m);env(g,t,.02,.22,dur*B-.1,.3);o.connect(g);g.connect(out);o.start(t);o.stop(t+dur*B+.4)};
+ const timp=(at,lvl)=>{const t=t0+at*B,o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(98,t);o.frequency.exponentialRampToValueAtTime(52,t+.5);env(g,t,.004,lvl,.05,.7);o.connect(g);g.connect(out);o.start(t);o.stop(t+.9);
+  const n=ctx.createBufferSource(),nf=ctx.createBiquadFilter(),ng=ctx.createGain();n.buffer=noise;nf.type='lowpass';nf.frequency.value=600;env(ng,t,.002,lvl*.6,.01,.25);n.connect(nf);nf.connect(ng);ng.connect(out);n.start(t,Math.random()*.5);n.stop(t+.35)};
+ const bellAt=(m,at)=>{const t=t0+at*B,c=ctx.createOscillator(),mo=ctx.createOscillator(),mg=ctx.createGain(),g=ctx.createGain();c.frequency.value=hz(m);mo.frequency.value=hz(m)*3.5;mg.gain.value=hz(m)*1.1;
+  mo.connect(mg);mg.connect(c.frequency);env(g,t,.004,.08,0,2.4);c.connect(g);g.connect(out);[c,mo].forEach(x=>{x.start(t);x.stop(t+2.6)})};
+ // melody (beat = 0.5 s): call, answer, climb, and a held high C
+ [[0,67,.33],[.33,67,.33],[.67,67,.33],[1,72,1],[2,76,.5],[2.5,74,.5],[3,72,.5],[3.5,76,.5],[4,79,1.5],
+  [5.5,81,.5],[6,79,.5],[6.5,77,.5],[7,76,.5],[7.5,74,.5],[8,76,.5],[8.5,77,.5],[9,79,.5],[9.5,81,.5],[10,83,1],[11,84,8]].forEach(([at,m,d])=>{brass(m,at,d,.13);if(at>=4)brass(m-12,at,d,.05)});
+ // harmony and bass
+ chord([60,64,67],0,4,.035);chord([57,60,65],4,1.5,.035);chord([60,65,69],5.5,2.5,.035);chord([59,62,67,65],8,3,.04);chord([60,64,67,72,76],11,8,.045);
+ [[0,36,4],[4,41,1.5],[5.5,41,2.5],[8,43,3],[11,36,8]].forEach(([at,m,d])=>low(m,at,d));
+ [0,1,4,8,10,11,11.5].forEach((at,i)=>timp(at,i>4?.42:.3));
+ [84,88,91,96,100].forEach((m,i)=>bellAt(m,11.2+i*.35));bellAt(96,14.5);bellAt(91,16)}
 document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hidden)ctx.suspend();else if(on)ctx.resume()});
-return {start,stop,setVol,sfx,get on(){return on},get vol(){return vol}};
+return {start,stop,setVol,sfx,victory,get on(){return on},get vol(){return vol}};
 })();
