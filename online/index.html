@@ -291,7 +291,7 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
  grid-template-columns:repeat(var(--n),min(calc((100cqw - (var(--n) - 1) * 16px) / var(--n)),calc((100cqh - 178px) * 1.83),420px))}
 .cgrid .pc{width:auto;height:100%;max-height:100cqh}
 .cgrid .pc .art{height:auto;aspect-ratio:88/48}
-.cgrid .pc .art img.px{width:100%;height:100%;object-fit:cover}
+.cgrid .pc .art>img.px{width:100%;height:100%;object-fit:cover}
 .cgrid .pc .pb{padding:10px 12px 12px;gap:7px}
 .cgrid .pc h3{font-size:27px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cgrid .dest{font-size:13px}
@@ -316,7 +316,7 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
 .mband.mini .mgrid{grid-template-columns:repeat(16,minmax(0,1fr))}
 .mgrid .pc{width:auto;min-width:0}
 .mgrid .pc .art{height:auto;aspect-ratio:88/40}
-.mgrid .pc .art img.px{width:100%;height:100%;object-fit:cover}
+.mgrid .pc .art>img.px{width:100%;height:100%;object-fit:cover}
 .mgrid .pc h3{font-size:20px}
 .mgrid .pc p{font-size:14px}
 .mgrid .pc button{min-height:38px;font-size:15px}
@@ -343,7 +343,7 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
  grid-template-columns:repeat(var(--n),min(calc((100cqw - (var(--n) - 1) * 14px) / var(--n)),calc((100cqh - 214px) * 1.83),400px))}
 .hgrid .pc{width:auto;height:100%;max-height:100cqh}
 .hgrid .pc .art{height:auto;aspect-ratio:88/48}
-.hgrid .pc .art img.px{width:100%;height:100%;object-fit:cover}
+.hgrid .pc .art>img.px{width:100%;height:100%;object-fit:cover}
 .hgrid .pc .pb{padding:10px 12px 12px;gap:6px;overflow:hidden}
 .hgrid .kind{font-size:12px}
 .hgrid .pc h3{font-size:25px}
@@ -472,7 +472,7 @@ button{font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.05
 .vleg tr.tot td{border-bottom:0;border-top:2px solid var(--amber2);font-weight:700}.vleg tr.tot td:last-child{font-size:28px;color:var(--amber)}
 .vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;max-height:560px;overflow:auto;padding:2px}
 .vcard{width:auto!important;animation:vcard .45s cubic-bezier(.2,.8,.25,1) both}
-.vcard .art{height:auto!important}.vcard .art img.px{width:100%;height:auto}
+.vcard .art{height:auto!important}.vcard .art>img.px{width:100%;height:auto}
 .vcard h3{font-size:20px}
 .vcard .badge.profit{font-size:22px}
 @keyframes vcard{from{transform:translateY(24px) scale(.92);opacity:0}to{transform:none;opacity:1}}
@@ -516,6 +516,45 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .vsh h3{font-size:38px}
 .upname{font-size:42px}
 .who{font-size:14px}
+
+/* resource badge on card art */
+.badge.gain{top:auto;bottom:4px;left:4px;right:auto;display:flex;gap:6px;padding:1px 6px 1px 3px;background:#05080fe6;border:1px solid var(--line2);font:700 15px/1.3 var(--disp)}
+.badge.gain span{display:inline-flex;align-items:center;gap:2px;color:var(--rc)}
+.badge.gain img{width:16px;height:16px}
+.cgrid .badge.gain,.hgrid .badge.gain{font-size:22px;gap:10px;padding:2px 10px 2px 5px;bottom:6px;left:6px}
+.hgrid .badge.gain img{width:24px;height:24px}
+.mband.mini .badge.gain{font-size:12px;gap:3px;padding:0 3px 0 1px;bottom:2px;left:2px}.mband.mini .badge.gain img{width:12px;height:12px}
+.mpop .art{position:relative}
+/* magnified card view */
+.cdetail{position:fixed;z-index:58;width:460px;max-width:calc(100vw - 24px);background:var(--panel2);border:3px solid var(--amber);box-shadow:8px 8px 0 #000b;display:flex;flex-direction:column;pointer-events:auto;animation:cdin .16s ease-out both}
+.cdetail .art{position:relative;line-height:0;background:#000}
+.cdetail .art>img.px{width:100%;height:auto}
+.cdetail .badge.gain{font-size:26px;gap:12px;padding:3px 12px 3px 6px;bottom:8px;left:8px}.cdetail .badge.gain img{width:28px;height:28px}
+.cdetail .badge.tl{font-size:24px;top:8px;left:8px}.cdetail .badge.tl img{width:22px;height:22px}
+.cdetail .badge.profit{font-size:32px;top:8px;right:8px}
+.cdb{padding:12px 16px 14px;display:flex;flex-direction:column;gap:8px}
+.cdb .kind{font-size:12px}
+.cdb h3{font-size:34px;margin:0}
+.cdb .ctext{margin:0;font-size:18px;line-height:1.4;color:var(--ink)}
+.cdb .facts{display:flex;flex-direction:column;gap:4px;font-size:15px;color:var(--mute)}
+.cdb .facts div{display:flex;align-items:center;gap:6px}.cdb .facts b{color:var(--ink)}
+.cdb .tg{color:var(--teal)}.cdb .ag{color:var(--amber)}
+.cdb .tips{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+.cdb .tips li{display:flex;align-items:flex-start;gap:8px;font-size:14px;line-height:1.35;border-left:3px solid var(--rc,var(--line2));padding:4px 8px;background:#0b1222}
+.cdb .tips b{color:var(--rc,var(--ink))}
+.reqt{width:100%;border-collapse:collapse;font-size:16px}
+.reqt th{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);text-align:left;padding:2px 4px}
+.reqt td{padding:5px 4px;border-bottom:1px solid var(--line)}.reqt td:first-child{display:flex;align-items:center;gap:6px;color:var(--rc)}
+.reqt td b{font:700 20px var(--disp)}.reqt td.ok{color:var(--teal);font-weight:700}.reqt td.bad{color:var(--coral);font-weight:700}
+.cstat{padding:6px 10px;border:2px solid var(--line2);font-size:15px}.cstat.ok{border-color:var(--teal);color:var(--teal)}.cstat.bad{border-color:var(--coral);color:var(--coral)}
+.chint{padding:6px 16px 10px;font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.cdetail.phone{left:12px!important;right:12px;width:auto;top:50%!important;transform:translateY(-50%);max-height:86vh;overflow:auto}
+@keyframes cdin{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.cdetail.phone{animation:none}
+@media (prefers-reduced-motion:reduce){.cdetail{animation:none}}
+.hgrid .badge.gain{font-size:26px;gap:12px;padding:3px 12px 3px 6px}.hgrid .badge.gain img{width:28px;height:28px}
+.cgrid .badge.gain img{width:24px;height:24px}
+.mgrid:not(.x) .badge.gain img{width:16px;height:16px}.mband.mini .badge.gain img{width:13px;height:13px}
 /* online table additions */
 .roster{display:inline-flex;flex-wrap:wrap;gap:4px 10px;vertical-align:middle}
 .who{position:relative;padding-left:11px;color:var(--mute)}
@@ -1302,6 +1341,58 @@ function act(fn,snd){if(!s||screen!=='game')return;if(fn()===false){notify('Not 
 
 /* ---------- game view ---------- */
 const tok=(r,n,met)=>'<span class="tok '+(met?'met':'miss')+'" style="--rc:var(--c-'+r+')" title="'+E.RLABEL[r]+'">'+icon(r,1.6)+n+'</span>';
+// what a card produces, as resource icons on its art
+function gainBadge(k){const c=E.CARDS[k];if(!c)return '';const g=Object.entries(c.g).map(([r,n])=>'<span style="--rc:var(--c-'+r+')">'+icon(r,1.8)+'<b>'+n+'</b></span>');
+ if(c.vp)g.push('<span style="--rc:var(--amber)">'+icon('star',1.8)+'<b>'+c.vp+'</b></span>');return g.length?'<span class="badge gain">'+g.join('')+'</span>':''}
+/* ---------- magnified card view: right-click, hold the mouse still for a moment, or press and hold on a phone ---------- */
+const DWELL_MS=1000;
+const RES_TIP={fuel:'Every contract needs fuel, and pirate patrols burn 1.',ore:'Ore fills contracts but needs 1 cargo space per ore.',tech:'Tech fills contracts but needs 1 cargo space per tech.',cr:'Credits buy cards, hire mercenaries and cash in (4 → 1 profit).',combat:'Combat covers armed contracts, pirate patrols and boss fights.',cargo:'Cargo space carries ore and tech; you start each turn with 1.'};
+function ownedCount(p,k){return p?[...p.hand,...p.deck,...p.discard,...p.played].filter(x=>x===k).length:0}
+function cardDetail(k){const c=E.CARDS[k],me=s&&s.players&&s.players[viewer()],facts=[];
+ facts.push(c.cost?icon('cr',1.6)+'<span>Costs <b>'+c.cost+'</b> credits'+(s&&s.market&&s.market[k]!==undefined?' · <b>'+s.market[k]+'</b> left in the market':'')+'</span>':'<span>Starter card (every captain begins with it)</span>');
+ facts.push(c.cat==='res'?'<span class="tg">Free to play: does not use an order.</span>':'<span class="ag">Uses 1 order ('+(s&&s.actionLimit===0?'unlimited orders':'2 per turn')+').</span>');
+ if(me&&(me.hand.length||me.deck.length)&&!me.hand.includes('?')){const n=ownedCount(me,k);facts.push('<span>You own <b>'+n+'</b> cop'+(n===1?'y':'ies')+'</span>')}
+ const tips=Object.keys(c.g).map(r=>'<li style="--rc:var(--c-'+r+')">'+icon(r,1.6)+'<span><b>'+E.RLABEL[r]+'.</b> '+RES_TIP[r]+'</span></li>');
+ if(c.draw)tips.push('<li>'+icon('cargo',1.6)+'<span><b>Draw.</b> Drawn cards arrive at once and can be played this turn.</span></li>');
+ if(c.vp)tips.push('<li>'+icon('star',1.6)+'<span><b>Profit.</b> Added straight to your score every time you play it.</span></li>');
+ return '<div class="art">'+px(SP.cardURL(k),88*5,52*5)+gainBadge(k)+(c.cost?'<span class="badge tl">'+icon('cr',2)+c.cost+'</span>':'')+'</div>'
+  +'<div class="cdb"><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><h3>'+c.n+'</h3><p class="ctext">'+c.t+'</p><div class="facts">'+facts.map(f=>'<div>'+f+'</div>').join('')+'</div>'+(tips.length?'<ul class="tips">'+tips.join('')+'</ul>':'')+'</div>'}
+function contractDetail(c,done){const p=s.players[viewer()],mine=!done&&myTurn(),need=E.need(c),rows=Object.entries(c.req).map(([r,n])=>({r,n,have:p.pool[r]}));
+ if(need)rows.push({r:'cargo',n:need,have:p.pool.cargo,note:'cargo space for '+need+' ore/tech'});
+ const missing=rows.filter(x=>x.have<x.n);
+ const status=done?'<div class="cstat ok">Delivered by '+esc(done.captain)+' in round '+done.round+'</div>':s.boss?'<div class="cstat bad">Blockaded by '+esc(s.boss.name)+': no deliveries until it is beaten</div>'
+  :!mine?'<div class="cstat">'+esc(E.me(s).name)+'\'s turn: the first captain to pay for it takes it</div>':missing.length?'<div class="cstat bad">Missing '+missing.map(x=>(x.n-x.have)+' '+(x.r==='cargo'?'cargo space':E.RLABEL[x.r].toLowerCase())).join(', ')+'</div>':'<div class="cstat ok">Ready to deliver</div>';
+ return '<div class="art">'+px(SP.sceneURL(c.dest,c.id),88*5,52*5)+'<span class="badge profit">'+icon('star',2.2)+'+'+c.profit+'</span></div>'
+  +'<div class="cdb"><div class="kind">Contract · to '+esc(c.dest)+' · '+(c.req.combat?'Armed':'Freight')+'</div><h3>'+esc(c.name)+'</h3><p class="ctext">Pay the resources below to earn <b class="acc">+'+c.profit+' profit</b>. Ore and tech also need 1 cargo space each.</p>'
+  +'<table class="reqt"><thead><tr><th>Needs</th><th></th>'+(mine?'<th>You have</th><th></th>':'')+'</tr></thead><tbody>'+rows.map(x=>'<tr style="--rc:var(--c-'+x.r+')"><td>'+icon(x.r,1.8)+(x.note||E.RLABEL[x.r])+'</td><td><b>'+x.n+'</b></td>'+(mine?'<td>'+x.have+'</td><td class="'+(x.have>=x.n?'ok':'bad')+'">'+(x.have>=x.n?'✓':'✗')+'</td>':'')+'</tr>').join('')+'</tbody></table>'+status+'</div>'}
+let det=null,dwell=null,dwellEl=null,pressT=null,pressFired=false;
+function detailFor(el){
+ if(el.dataset.mk)return cardDetail(el.dataset.mk);
+ if(el.dataset.hand!==undefined){const k=(s.players[viewer()]||{hand:[]}).hand[Number(el.dataset.hand)];return k&&E.CARDS[k]?cardDetail(k):null}
+ if(el.dataset.k)return cardDetail(el.dataset.k);
+ if(el.dataset.cid){const c=s.board.find(x=>x&&String(x.id)===el.dataset.cid);return c?contractDetail(c):null}
+ if(el.dataset.did!==undefined){const seat=typeof vicSeat==='number'?vicSeat:0,d=s.done.filter(x=>x.player===seat)[Number(el.dataset.did)];return d?contractDetail(d,d):null}
+ return null}
+function hideDetail(){if(det){det.remove();det=null}}
+function showDetail(el,pinned){if(!s)return;const html=detailFor(el);if(!html)return;hideDetail();const mp=document.querySelector('.mpop');if(mp)mp.remove();
+ det=document.createElement('div');det.className='cdetail notch'+(pinned?' pinned':'');det.setAttribute('role','dialog');det.setAttribute('aria-label','Card details');
+ det.innerHTML=html+'<div class="chint">'+(pinned?'Click anywhere or press Esc to close':'Right-click a card to keep this open')+'</div>';document.body.append(det);det._src=el;
+ const z=typeof zoomK==='function'?zoomK():1,r=el.getBoundingClientRect(),W=innerWidth/z,H=innerHeight/z,dw=det.offsetWidth,dh=det.offsetHeight;
+ if(!DESK){det.classList.add('phone');return}
+ let left=r.right/z+16;if(left+dw>W-12)left=r.left/z-dw-16;if(left<12)left=Math.max(12,(W-dw)/2);
+ det.style.left=left+'px';det.style.top=Math.max(12,Math.min(H-dh-12,(r.top+r.height/2)/z-dh/2))+'px'}
+const DSEL='.pc[data-hand],.pc[data-mk],.ctr[data-cid],.tcard[data-k],.vcard[data-did]';
+document.addEventListener('contextmenu',e=>{const el=e.target.closest&&e.target.closest(DSEL);if(!el)return;e.preventDefault();clearTimeout(dwell);showDetail(el,true)});
+document.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const el=e.target.closest&&e.target.closest(DSEL);
+ if(el===dwellEl)return;clearTimeout(dwell);dwellEl=el;if(det&&!det.classList.contains('pinned')&&det._src!==el)hideDetail();
+ if(el)dwell=setTimeout(()=>{if(dwellEl===el&&document.body.contains(el)&&!(det&&det.classList.contains('pinned')))showDetail(el,false)},DWELL_MS)});
+document.addEventListener('pointerdown',e=>{clearTimeout(dwell);
+ if(det&&!e.target.closest('.cdetail')){hideDetail()}
+ if(e.pointerType==='touch'){const el=e.target.closest&&e.target.closest(DSEL);pressFired=false;clearTimeout(pressT);if(el)pressT=setTimeout(()=>{pressFired=true;showDetail(el,true)},450)}},true);
+['pointerup','pointercancel','pointermove'].forEach(n=>document.addEventListener(n,e=>{if(e.pointerType==='touch'&&(n!=='pointermove'||Math.abs(e.movementX)+Math.abs(e.movementY)>6))clearTimeout(pressT)},true));
+document.addEventListener('click',e=>{if(pressFired){pressFired=false;e.preventDefault();e.stopPropagation()}},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&det){hideDetail();e.stopPropagation()}},true);
+addEventListener('scroll',()=>{if(det&&!det.classList.contains('pinned'))hideDetail()},true);
 function ctrCard(c){const p=E.me(s),ready=myTurn()&&E.canComplete(s,c),nd=E.need(c);
  return '<article class="pc ctr notch'+(ready?' ready':'')+'" data-cid="'+c.id+'"><div class="art">'+px(SP.sceneURL(c.dest,c.id),AW,AH)+'<span class="badge profit">'+icon('star',1.6)+'+'+c.profit+'</span>'+(ready?'<div class="go">READY TO DELIVER</div>':'')+(s.boss?'<div class="go blk">BLOCKADED</div>':'')+'</div>'
  +'<div class="pb"><h3>'+esc(c.name)+'</h3><div class="dest">To '+esc(c.dest)+' · '+(c.req.combat?'Armed':'Freight')+'</div>'
@@ -1319,7 +1410,7 @@ function bossPanel(compact){const b=s.boss,p=E.me(s),on=myTurn();
   +'<p class="mute">Team up: every captain spends combat or credits to damage it. Beaten: <b class="acc">+'+(b.bounty||1)+' profit per damage</b> you dealt, <b class="acc">+'+E.FINAL_BLOW+'</b> for the final blow. Not beaten by the end of round '+b.until+': it raids every captain for '+(b.raid||E.RAID)+' profit, and <b class="down">double ('+2*(b.raid||E.RAID)+')</b> from whoever dealt the least damage.</p>'
   +'<div class="bdmg">'+s.players.map((t,i)=>'<span'+(i===s.current?' class="cur"':'')+'>'+esc(t.name)+' <b>'+b.dmg[i]+'</b></span>').join('')+'</div>'+btns+'</div></section>'}
 function cardEl(k,idx,market){const c=E.CARDS[k],p=E.me(s),on=myTurn();
- let h='<article class="pc '+c.cat+(k==='buyout'&&!market?' bo':'')+(market&&on&&p.buys>0&&s.market[k]>0&&p.pool.cr>=c.cost?' can':'')+' notch"'+(market?' data-mk="'+k+'"':' data-hand="'+idx+'"')+'><div class="art">'+px(SP.cardURL(k),AW,AH)
+ let h='<article class="pc '+c.cat+(k==='buyout'&&!market?' bo':'')+(market&&on&&p.buys>0&&s.market[k]>0&&p.pool.cr>=c.cost?' can':'')+' notch"'+(market?' data-mk="'+k+'"':' data-hand="'+idx+'"')+'><div class="art">'+px(SP.cardURL(k),AW,AH)+gainBadge(k)
  +(market?'<span class="badge tl">'+icon('cr',1.6)+c.cost+'</span><span class="badge tr">×'+s.market[k]+'</span>':'')+'</div>'
  +'<div class="pb"><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><h3>'+c.n+'</h3>'+(market?'<div class="fx">'+shortFx(k)+'</div>':'')+'<p>'+c.t+'</p>';
  if(market)h+='<button data-a="buy" data-key="'+k+'"'+(!on||p.buys<1||s.market[k]<1||p.pool.cr<c.cost?' disabled':'')+'>Buy · '+c.cost+' cr</button>';
@@ -1401,7 +1492,7 @@ if(DESK){addEventListener('resize',fitDesk);fitDesk()}
 if(DESK){let pop=null;
  document.addEventListener('mouseover',e=>{const el=e.target.closest&&e.target.closest('.mband.mini .pc[data-mk]');if(!el){if(pop&&!e.target.closest('.mpop')){pop.remove();pop=null}return}
   const k=el.dataset.mk,c=E.CARDS[k];if(pop&&pop.dataset.k===k)return;if(pop)pop.remove();
-  pop=document.createElement('div');pop.className='mpop notch';pop.dataset.k=k;pop.innerHTML=px(SP.cardURL(k),264,156)+'<div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><b>'+c.n+'</b><p>'+c.t+'</p><small>'+icon('cr',1.6)+c.cost+' credits · '+s.market[k]+' left'+(c.cat==='act'?' · uses 1 order':' · free to play')+'</small>';
+  pop=document.createElement('div');pop.className='mpop notch';pop.dataset.k=k;pop.innerHTML='<div class="art">'+px(SP.cardURL(k),264,156)+gainBadge(k)+'</div>'+'<div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><b>'+c.n+'</b><p>'+c.t+'</p><small>'+icon('cr',1.6)+c.cost+' credits · '+s.market[k]+' left'+(c.cat==='act'?' · uses 1 order':' · free to play')+'</small>';
   document.body.append(pop);const z=zoomK(),r=el.getBoundingClientRect(),pw=pop.offsetWidth,ph=pop.offsetHeight;
   pop.style.left=Math.max(8,Math.min(innerWidth/z-pw-8,(r.left+r.width/2)/z-pw/2))+'px';pop.style.top=Math.max(8,r.top/z-ph-10)+'px'});
  document.addEventListener('click',()=>{if(pop){pop.remove();pop=null}},true)}
@@ -1426,7 +1517,7 @@ function feedPanel(){const all=(s.events||[]).slice().reverse(),now=e=>e.n>(s.fe
  return '<section class="panel feed notch"><div class="eyebrow"><span>Captain\'s log</span><span>'+(all.length?all.length+' moves':'')+'</span></div>'
   +(rows?'<ol id="feedlog">'+rows+'</ol>':'<p class="mute">Every move by every captain appears here.</p>')+'</section>'}
 // ---------- 2: watching another captain's table ----------
-function tableCard(k,i){const c=E.CARDS[k];return '<article class="pc '+c.cat+' notch tcard" data-tp="'+i+'"><div class="art">'+px(SP.cardURL(k),AW,AH)+'</div><div class="pb"><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><h3>'+c.n+'</h3><p>'+c.t+'</p></div></article>'}
+function tableCard(k,i){const c=E.CARDS[k];return '<article class="pc '+c.cat+' notch tcard" data-tp="'+i+'" data-k="'+k+'"><div class="art">'+px(SP.cardURL(k),AW,AH)+gainBadge(k)+'</div><div class="pb"><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><h3>'+c.n+'</h3><p>'+c.t+'</p></div></article>'}
 function watchBand(p){const tp=p.turnPlayed||[],backs=p.hand.length,cpu=playingBack();
  return '<section class="band hband watch"><div class="hmain"><div class="bhead2"><h2>'+esc(p.name).toUpperCase()+'\'S TABLE</h2><span class="eyebrow">'+tp.length+' played · '+backs+' in hand</span>'+poolStrip(p)+'</div>'
   +'<div class="hwrap"><div class="hgrid" style="--n:'+Math.max(5,tp.length+backs)+'">'+tp.map(tableCard).join('')+Array.from({length:backs},()=>'<div class="pc back notch"><i></i></div>').join('')+'</div></div></div>'
@@ -1449,7 +1540,7 @@ function victory(seat){
   +(loss?'<div class="vloss"><span class="vlossbar" style="width:'+Math.max(2,Math.min(100,loss/scale*100))+'%" data-tip="Lost: '+loss+'"></span><span>⚠ Lost <b>'+loss+'</b> · '+lossItems.map(x=>x.l.toLowerCase()+' −'+x.v).join(' · ')+'</span></div>':'');
  const legend='<table class="vleg"><tbody>'+pos.map(x=>'<tr'+(x.v?'':' class="zero"')+'><td><i style="background:'+x.c+'"></i>'+icon(x.ic,1.6)+x.l+'</td><td class="mute">'+(counts[x.k]||'')+'</td><td><b>'+(x.v?'+'+x.v:'0')+'</b></td></tr>').join('')
   +lossItems.map(x=>'<tr class="neg"><td><i></i>⚠ '+x.l+'</td><td></td><td><b>−'+x.v+'</b></td></tr>').join('')+'<tr class="tot"><td>Final profit</td><td></td><td><b>'+t.profit+'</b></td></tr></tbody></table>';
- const cards=mine.length?mine.map((d,j)=>'<article class="pc ctr notch vcard" style="animation-delay:'+(j*70)+'ms"><div class="art">'+px(SP.sceneURL(d.dest,d.id),AW,AH)+'<span class="badge profit">'+icon('star',1.6)+'+'+d.profit+'</span><div class="go">ROUND '+d.round+'</div></div><div class="pb"><h3>'+esc(d.name)+'</h3><div class="dest">To '+esc(d.dest)+'</div></div></article>').join(''):'<p class="mute vnone">'+esc(t.name)+' did not deliver a contract this run.</p>';
+ const cards=mine.length?mine.map((d,j)=>'<article class="pc ctr notch vcard" data-did="'+j+'" style="animation-delay:'+(j*70)+'ms"><div class="art">'+px(SP.sceneURL(d.dest,d.id),AW,AH)+'<span class="badge profit">'+icon('star',1.6)+'+'+d.profit+'</span><div class="go">ROUND '+d.round+'</div></div><div class="pb"><h3>'+esc(d.name)+'</h3><div class="dest">To '+esc(d.dest)+'</div></div></article>').join(''):'<p class="mute vnone">'+esc(t.name)+' did not deliver a contract this run.</p>';
  const tabs=order.map((i,r)=>'<button class="vtab'+(i===seat?' on':'')+'" data-a="vic" data-id="'+i+'"><em>#'+(r+1)+'</em>'+ava(s.players[i],30)+esc(s.players[i].name)+'<b>'+s.players[i].profit+'</b></button>').join('');
  modal('<div class="vic"><div class="vhead">'+ava(s.players[win[0]],144,'vship')+'<div><div class="eyebrow">Run complete · round '+s.round+(s.winMode==='profit'?' · race to '+s.target:'')+'</div><h2>'+win.map(i=>esc(s.players[i].name)).join(' & ')+(win.length>1?' share the win!':' wins!')+'</h2><p class="mute">Only profit counts. Click a captain to see how they earned it.</p></div><div class="vbig">'+icon('star',3.6)+'<b>'+hi+'</b><span class="eyebrow">winning profit</span></div></div>'
   +'<div class="vtabs">'+tabs+'</div>'

@@ -51,6 +51,11 @@ Every move is recorded by the engine as an event (who, what, how much). The desk
 - **Board effects**: deliveries fly to the captain who made them, profit changes pop beside each captain, bought market cards flash, boss hits shake the boss and show the damage, the active captain's standings row says *playing*.
 - **Computer turns play back one move at a time** (setup option *Computer turns*: normal, slow, fast or instant; Speed and *Skip to my turn* buttons while they play). Online, several moves sent at once (like Play resources) are shown one after another.
 
+## Card details
+
+- Every card that produces resources shows them as icons on its art (hand, market, tables, popups).
+- **Magnified view**: right-click any card or contract (stays open until you click elsewhere or press Esc), rest the mouse on it for 1 second (closes when you move away), or press and hold on a phone. Cards show large art, cost, market stock, whether they use an order, how many you own, and what their resources are for; contracts show each requirement against your pool (✓/✗), the cargo space needed, and whether they are ready, missing something or blockaded. The hover delay is `DWELL_MS` in `ui.js`.
+
 ## Captain ships
 
 Each captain flies one of eight ships (Longhaul Freighter, Starling Courier, Red Talon Corvette, Wayfarer Explorer, Rockjaw Miner, Solar Clipper, Ironclad Tug, Aurora Cruiser), unique per run. Human captains pick on the setup screen (or in the online lobby, where the server keeps picks unique); computer captains get the free ones. The ship's pixel-art badge shows next to the active captain, in the standings, the captain's log, the "you are up" and "now playing" panels, and on the victory screen. Ships are listed in `engine.js` (`SHIPS`), ready for faction strengths and weaknesses in a later update; art is in `sprites.js` (`SHIP_ART`).
