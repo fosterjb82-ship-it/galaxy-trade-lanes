@@ -46,12 +46,11 @@ function cashBtn(p,on){const n=Math.floor(p.pool.cr/E.CASH),ok=on&&n>0;
  return '<button class="mcash'+(ok?' lit':'')+'" data-a="cash"'+(ok?'':' disabled')+'>Cash in '+E.CASH+' credits → +1 profit<small>'+(ok?'You can do this '+n+(n===1?' time':' times')+' now':'Any time, as often as you can afford')+'</small></button>'}
 function menu(){
  modal('<div class="eyebrow">Galaxy Trade Lanes · phone build</div><h2>Menu</h2><div class="mmenu">'
-  +'<div class="mvol"><label for="vol2">Music volume</label><input id="vol2" type="range" min="0" max="1" step="0.05" value="'+Music.vol+'"></div>'
+  +'<button data-a="sound">Sound settings</button>'
   +'<button data-a="rules">Rules</button><button data-a="enc">Encyclopedia</button><button data-a="records">Records</button>'
   +(screen==='game'?'<button data-a="new">New run</button>':'')
   +'<button class="primary" data-a="close">Back</button></div>');
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
  if(b.dataset.a==='tab'){tab=b.dataset.t;render()}else if(b.dataset.a==='menu')menu()});
-document.addEventListener('input',e=>{if(e.target.id==='vol2'){Music.setVol(Number(e.target.value));$('vol').value=e.target.value;musicPref({on:Music.on,vol:Music.vol})}});
 if(screen==='game')render();

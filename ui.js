@@ -416,16 +416,35 @@ function endAsk(){if(!s||screen!=='game'||!E.live(s))return;s.warned=s.warned||{
 /* ---------- events ---------- */
 document.addEventListener('change',e=>{const k=e.target.id;if(k in cfg&&k!=='names'&&screen==='setup'){collect();cfg[k]=k==='winMode'||k==='cpuSpeed'?e.target.value:Number(e.target.value);
  if(k==='humans'){cfg.bots=Math.min(cfg.bots,6-cfg.humans);if(cfg.humans+cfg.bots<2)cfg.bots=1}renderSetup()}});
-function musicUI(){const b=$('mus');if(!b)return;b.textContent=Music.on?'Music on':'Music off';b.setAttribute('aria-pressed',String(Music.on));b.classList.toggle('lit',Music.on)}
-function musicPref(v){try{localStorage.setItem(MUS,JSON.stringify(v))}catch(e){}}
-let musicWanted=true;try{const m=JSON.parse(localStorage.getItem(MUS)||'null');if(m){musicWanted=m.on!==false;if(typeof m.vol==='number'){Music.setVol(m.vol);$('vol').value=m.vol}}}catch(e){}
-document.addEventListener('pointerdown',function first(e){document.removeEventListener('pointerdown',first,true);if(e.target.closest&&e.target.closest('#mus,#vol'))return;if(musicWanted&&!Music.on){try{Music.start()}catch(x){}musicUI()}},true);
-$('vol').addEventListener('input',e=>{Music.setVol(Number(e.target.value));musicPref({on:Music.on,vol:Music.vol})});
+/* ---------- sound: one Sound button opens a panel with All sound, Music and Effects ---------- */
+function musicUI(){const b=$('snd');if(!b)return;const mu=typeof musicWanted==='undefined'?Music.on:musicWanted,st=!Music.allOn?'muted':!mu&&!Music.fxOn?'off':!mu?'effects only':!Music.fxOn?'music only':'';
+ b.innerHTML='Sound'+(st?'<small>'+st+'</small>':'');b.classList.toggle('lit',Music.allOn&&(mu||Music.fxOn));b.classList.toggle('muted',!Music.allOn);
+ const set=(id,v)=>{const el=$(id);if(el){if(el.type==='checkbox')el.checked=v;else el.value=v}};
+ set('snd-all',Music.allOn);set('snd-mus',mu);set('snd-fx',Music.fxOn);set('vol-all',Music.allVol);set('vol-mus',Music.vol);set('vol-fx',Music.fxVol);
+ document.querySelectorAll('.sndp output[data-for]').forEach(o=>{const r=$(o.dataset.for);if(r)o.textContent=Math.round(r.value*100)+'%'})}
+function musicPref(){try{localStorage.setItem(MUS,JSON.stringify({on:musicWanted,vol:Music.vol,all:Music.allOn,allVol:Music.allVol,fx:Music.fxOn,fxVol:Music.fxVol}))}catch(e){}}
+let musicWanted=true;try{const m=JSON.parse(localStorage.getItem(MUS)||'null');if(m){musicWanted=m.on!==false;if(typeof m.vol==='number')Music.setVol(m.vol);
+ if(m.all===false)Music.setAll(false);if(typeof m.allVol==='number')Music.setAllVol(m.allVol);if(m.fx===false)Music.setFx(false);if(typeof m.fxVol==='number')Music.setFxVol(m.fxVol)}}catch(e){}
+document.addEventListener('pointerdown',function first(e){document.removeEventListener('pointerdown',first,true);if(e.target.closest&&e.target.closest('#snd,.sndp'))return;if(musicWanted&&Music.allOn&&!Music.on){try{Music.start()}catch(x){}musicUI()}},true);
+function soundPanel(){const row=(k,label,desc,on,v)=>'<div class="srow"><label class="sw" for="snd-'+k+'"><input type="checkbox" id="snd-'+k+'"'+(on?' checked':'')+'><span class="knob"></span><span class="sl"><b>'+label+'</b><small>'+desc+'</small></span></label>'
+  +'<input type="range" id="vol-'+k+'" min="0" max="1" step="0.05" value="'+v+'" aria-label="'+label+' volume"><output data-for="vol-'+k+'">'+Math.round(v*100)+'%</output></div>';
+ modal('<div class="eyebrow">Settings</div><h2>Sound</h2><div class="sndp">'+row('all','All sound','Master switch and volume for everything',Music.allOn,Music.allVol)
+  +row('mus','Music','Soundtrack and victory fanfare',musicWanted,Music.vol)+row('fx','Effects','Cards, deliveries, patrols, bosses, menus',Music.fxOn,Music.fxVol)+'</div>'
+  +'<div class="btns"><button data-a="sndtest">Test effects</button><button class="primary" data-a="close">Done</button></div>')}
+function soundChange(e){const id=e.target.id;if(!/^(snd|vol)-(all|mus|fx)$/.test(id))return false;const v=e.target.type==='checkbox'?e.target.checked:Number(e.target.value);
+ try{if(id==='snd-all')Music.setAll(v);else if(id==='vol-all')Music.setAllVol(v);
+  else if(id==='snd-mus'){musicWanted=v;if(v&&Music.allOn)Music.start();else if(!v)Music.stop()}
+  else if(id==='vol-mus')Music.setVol(v);else if(id==='snd-fx'){Music.setFx(v);if(v)Music.sfx('tab')}else if(id==='vol-fx')Music.setFxVol(v);
+  if(id==='snd-all'&&v&&musicWanted&&!Music.on)Music.start()}catch(x){notify('This browser blocked audio.')}
+ musicPref();musicUI();return true}
+document.addEventListener('input',e=>{if(e.target.type==='range')soundChange(e)});
+document.addEventListener('change',e=>{if(soundChange(e))e.stopImmediatePropagation()},true);
 document.addEventListener('click',e=>{
  const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
  const a=b.dataset.a,id=Number(b.dataset.id);
  if(['tab','menu','rules','records','deck','done','log','enc','decks','close','review','new','endAsk'].includes(a))Music.sfx('tab');
- if(a==='music'){try{if(Music.on){Music.stop();musicWanted=false}else{Music.start();musicWanted=true}}catch(x){notify('This browser blocked audio.')}musicPref({on:musicWanted,vol:Music.vol});musicUI();return}
+ if(a==='sound'){Music.sfx('tab');soundPanel();musicUI();return}
+ if(a==='sndtest'){['play','buy','deliver'].forEach((n,i)=>Music.sfx(n,i*.35));if(!Music.fxOn||!Music.allOn)notify(Music.allOn?'Effects are switched off.':'All sound is switched off.');return}
  else if(a==='start')start();
  else if(a==='begin')act(()=>E.begin(s));
  else if(a==='play'){const k=E.me(s).hand[id];act(()=>E.play(s,id,$('bt'+id)?Number($('bt'+id).value):undefined),k&&E.CARDS[k].cat==='act'?'action':'play')}

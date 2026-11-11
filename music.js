@@ -1,6 +1,6 @@
 const Music=(function(){
 'use strict';
-let ctx=null,master=null,bus=null,verb=null,dly=null,timer=null,step=0,next=0,on=false,vol=.5,noise=null,padCut=null;
+let allG=null,allOn=true,allVol=1,fxOn=true,fxVol=.7,ctx=null,master=null,bus=null,verb=null,dly=null,timer=null,step=0,next=0,on=false,vol=.5,noise=null,padCut=null;
 const BPM=76,E8=60/BPM/2,LOOP=128;
 const CH=[
  {b:45,p:[57,60,64,67,71]},{b:41,p:[57,60,64,65,72]},{b:48,p:[55,59,62,64,67]},{b:43,p:[55,59,62,66,69]},
@@ -15,7 +15,9 @@ function build(){
  ctx=new (window.AudioContext||window.webkitAudioContext)();
  master=ctx.createGain();master.gain.value=0;
  const comp=ctx.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=3;
- master.connect(comp);comp.connect(ctx.destination);
+ // everything ends in the 'all sound' gain
+ allG=ctx.createGain();allG.gain.value=allOn?allVol:0;allG.connect(ctx.destination);
+ master.connect(comp);comp.connect(allG);
  bus=ctx.createGain();bus.connect(master);
  verb=ctx.createConvolver();verb.buffer=ir(3.4);const wet=ctx.createGain();wet.gain.value=.42;verb.connect(wet);wet.connect(master);
  dly=ctx.createDelay(2);dly.delayTime.value=E8*3;const fb=ctx.createGain();fb.gain.value=.38;const dlp=ctx.createBiquadFilter();dlp.type='lowpass';dlp.frequency.value=2600;
@@ -76,11 +78,12 @@ const SFX={
  boss:t=>{tone(hz(40),t,1.1,'sawtooth',.12,hz(38));tone(hz(47),t+.05,1.0,'sawtooth',.08,hz(45));tone(hz(52),t+.5,.9,'square',.05,hz(50))},
  hit:t=>{tone(180,t,.25,'sawtooth',.14,40);tone(900,t,.08,'square',.05,200)}
 };
-function sfx(name,delay){if(!on||!ctx||!SFX[name])return;if(!fx){fx=ctx.createGain();const c=ctx.createDynamicsCompressor();fx.connect(c);c.connect(ctx.destination);fx.connect(verb)}
- fx.gain.value=Math.min(1,.35+vol*.9);try{SFX[name](ctx.currentTime+.01+(delay||0))}catch(e){}}
+function sfx(name,delay){if(!fxOn||!allOn||!SFX[name])return;try{if(!ctx)build();if(ctx.state!=='running')ctx.resume()}catch(e){return}
+ if(!fx){fx=ctx.createGain();const c=ctx.createDynamicsCompressor();fx.connect(c);c.connect(allG);fx.connect(verb)}
+ fx.gain.value=Math.min(1.3,fxVol*1.3);try{SFX[name](ctx.currentTime+.01+(delay||0))}catch(e){}}
 /* ---- victory fanfare: about 12 s, played over a dipped soundtrack ---- */
 function victory(){if(!on||!ctx)return;
- const t0=ctx.currentTime+.15,B=.5,out=ctx.createGain(),comp=ctx.createDynamicsCompressor();out.gain.value=Math.min(1,.45+vol*.8);out.connect(comp);comp.connect(ctx.destination);out.connect(verb);
+ const t0=ctx.currentTime+.15,B=.5,out=ctx.createGain(),comp=ctx.createDynamicsCompressor();out.gain.value=Math.min(1,.45+vol*.8);out.connect(comp);comp.connect(allG);out.connect(verb);
  // dip the background music, then bring it back
  master.gain.cancelScheduledValues(t0-.15);master.gain.setValueAtTime(vol*.9,t0-.15);master.gain.linearRampToValueAtTime(vol*.12,t0+.4);
  master.gain.setValueAtTime(vol*.12,t0+9.6);master.gain.linearRampToValueAtTime(vol*.9,t0+12.4);
@@ -101,6 +104,12 @@ function victory(){if(!on||!ctx)return;
  [[0,36,4],[4,41,1.5],[5.5,41,2.5],[8,43,3],[11,36,8]].forEach(([at,m,d])=>low(m,at,d));
  [0,1,4,8,10,11,11.5].forEach((at,i)=>timp(at,i>4?.42:.3));
  [84,88,91,96,100].forEach((m,i)=>bellAt(m,11.2+i*.35));bellAt(96,14.5);bellAt(91,16)}
+/* ---- sound settings: all sound, music (start/stop/setVol above), effects ---- */
+function applyAll(){if(allG&&ctx){allG.gain.cancelScheduledValues(ctx.currentTime);allG.gain.setTargetAtTime(allOn?allVol:0,ctx.currentTime,.05)}}
+function setAll(v){allOn=!!v;applyAll()}
+function setAllVol(v){allVol=v;applyAll()}
+function setFx(v){fxOn=!!v}
+function setFxVol(v){fxVol=v}
 document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hidden)ctx.suspend();else if(on)ctx.resume()});
-return {start,stop,setVol,sfx,victory,get on(){return on},get vol(){return vol}};
+return {start,stop,setVol,sfx,victory,setAll,setAllVol,setFx,setFxVol,get on(){return on},get vol(){return vol},get allOn(){return allOn},get allVol(){return allVol},get fxOn(){return fxOn},get fxVol(){return fxVol}};
 })();

@@ -555,6 +555,23 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .hgrid .badge.gain{font-size:26px;gap:12px;padding:3px 12px 3px 6px}.hgrid .badge.gain img{width:28px;height:28px}
 .cgrid .badge.gain img{width:24px;height:24px}
 .mgrid:not(.x) .badge.gain img{width:16px;height:16px}.mband.mini .badge.gain img{width:13px;height:13px}
+
+/* Sound button and panel */
+#snd{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;min-width:96px}
+#snd small{font:500 9px var(--mono);letter-spacing:.1em;color:var(--mute);text-transform:uppercase}
+#snd.lit{border-color:#2a7a62;color:var(--teal)}#snd.muted{color:var(--coral);border-color:#7a2a20}
+.sndp{display:flex;flex-direction:column;gap:10px;margin:6px 0 4px}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) 220px 52px;align-items:center;gap:14px;padding:10px 12px;border:2px solid var(--line);background:var(--panel2)}
+.srow:first-child{border-color:var(--amber2)}
+.sw{display:flex;align-items:center;gap:12px;cursor:pointer;min-width:0}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.sw .knob{flex:none;width:46px;height:24px;border:2px solid var(--line2);background:#0b1222;position:relative}
+.sw .knob::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:var(--mute);transition:transform .15s,background .15s}
+.sw input:checked+.knob{border-color:var(--teal);background:#04201d}.sw input:checked+.knob::after{transform:translateX(22px);background:var(--teal)}
+.sw input:focus-visible+.knob{outline:2px solid var(--amber);outline-offset:2px}
+.sl{display:flex;flex-direction:column;min-width:0}.sl b{font:700 20px var(--disp)}.sl small{font-size:13px;color:var(--mute)}
+.srow input[type=range]{width:100%;min-height:0;padding:0;border:0;background:transparent;accent-color:var(--amber)}
+.srow output{font:700 18px var(--disp);text-align:right;font-variant-numeric:tabular-nums}
 /* Phone build. Loaded after style.css and overrides it.
    Layout: compact header, a fixed strip with this turn's pool, one scrolling tab body,
    and a tab bar in thumb reach at the bottom. Single dark look by choice. */
@@ -678,8 +695,12 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 .stand div span{font-size:17px}
 .vtab{font-size:17px}
 .upname{font-size:28px}
+
+#snd{min-width:0;min-height:38px;padding:4px 10px;font-size:13px}#snd small{font-size:8px}
+.srow{grid-template-columns:1fr 52px;gap:8px}.srow input[type=range]{grid-column:1/-1;grid-row:2}
+.brand{font-size:21px;white-space:nowrap}
 </style>
-<div id="app"><header class="top"><div class="brand">GALAXY TRADE LANES<small>CARGO &amp; CREDITS · POCKET</small></div><nav><button id="mus" data-a="music" aria-pressed="false">Music off</button><input id="vol" type="range" min="0" max="1" step="0.05" value="0.5" aria-label="Music volume" hidden><button data-a="menu">Menu</button></nav><div class="status" id="status"></div></header><main id="stage"></main></div>
+<div id="app"><header class="top"><div class="brand">GALAXY TRADE LANES<small>CARGO &amp; CREDITS · POCKET</small></div><nav><button id="snd" data-a="sound">Sound</button><button data-a="menu">Menu</button></nav><div class="status" id="status"></div></header><main id="stage"></main></div>
 <div id="overlay" class="overlay" hidden><section id="dialog" class="dialog notch" tabindex="-1" role="dialog" aria-modal="true" aria-label="Game dialog"></section></div>
 <script>
 const Engine=(function(){
@@ -1269,7 +1290,7 @@ return {S,PAL,scene,cardArt,hero,icon,boss,ship,SHIP_ART,patrolArt,cashArt,EMB,S
 if(typeof module!=='undefined')module.exports=Sprites;
 const Music=(function(){
 'use strict';
-let ctx=null,master=null,bus=null,verb=null,dly=null,timer=null,step=0,next=0,on=false,vol=.5,noise=null,padCut=null;
+let allG=null,allOn=true,allVol=1,fxOn=true,fxVol=.7,ctx=null,master=null,bus=null,verb=null,dly=null,timer=null,step=0,next=0,on=false,vol=.5,noise=null,padCut=null;
 const BPM=76,E8=60/BPM/2,LOOP=128;
 const CH=[
  {b:45,p:[57,60,64,67,71]},{b:41,p:[57,60,64,65,72]},{b:48,p:[55,59,62,64,67]},{b:43,p:[55,59,62,66,69]},
@@ -1284,7 +1305,9 @@ function build(){
  ctx=new (window.AudioContext||window.webkitAudioContext)();
  master=ctx.createGain();master.gain.value=0;
  const comp=ctx.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=3;
- master.connect(comp);comp.connect(ctx.destination);
+ // everything ends in the 'all sound' gain
+ allG=ctx.createGain();allG.gain.value=allOn?allVol:0;allG.connect(ctx.destination);
+ master.connect(comp);comp.connect(allG);
  bus=ctx.createGain();bus.connect(master);
  verb=ctx.createConvolver();verb.buffer=ir(3.4);const wet=ctx.createGain();wet.gain.value=.42;verb.connect(wet);wet.connect(master);
  dly=ctx.createDelay(2);dly.delayTime.value=E8*3;const fb=ctx.createGain();fb.gain.value=.38;const dlp=ctx.createBiquadFilter();dlp.type='lowpass';dlp.frequency.value=2600;
@@ -1345,11 +1368,12 @@ const SFX={
  boss:t=>{tone(hz(40),t,1.1,'sawtooth',.12,hz(38));tone(hz(47),t+.05,1.0,'sawtooth',.08,hz(45));tone(hz(52),t+.5,.9,'square',.05,hz(50))},
  hit:t=>{tone(180,t,.25,'sawtooth',.14,40);tone(900,t,.08,'square',.05,200)}
 };
-function sfx(name,delay){if(!on||!ctx||!SFX[name])return;if(!fx){fx=ctx.createGain();const c=ctx.createDynamicsCompressor();fx.connect(c);c.connect(ctx.destination);fx.connect(verb)}
- fx.gain.value=Math.min(1,.35+vol*.9);try{SFX[name](ctx.currentTime+.01+(delay||0))}catch(e){}}
+function sfx(name,delay){if(!fxOn||!allOn||!SFX[name])return;try{if(!ctx)build();if(ctx.state!=='running')ctx.resume()}catch(e){return}
+ if(!fx){fx=ctx.createGain();const c=ctx.createDynamicsCompressor();fx.connect(c);c.connect(allG);fx.connect(verb)}
+ fx.gain.value=Math.min(1.3,fxVol*1.3);try{SFX[name](ctx.currentTime+.01+(delay||0))}catch(e){}}
 /* ---- victory fanfare: about 12 s, played over a dipped soundtrack ---- */
 function victory(){if(!on||!ctx)return;
- const t0=ctx.currentTime+.15,B=.5,out=ctx.createGain(),comp=ctx.createDynamicsCompressor();out.gain.value=Math.min(1,.45+vol*.8);out.connect(comp);comp.connect(ctx.destination);out.connect(verb);
+ const t0=ctx.currentTime+.15,B=.5,out=ctx.createGain(),comp=ctx.createDynamicsCompressor();out.gain.value=Math.min(1,.45+vol*.8);out.connect(comp);comp.connect(allG);out.connect(verb);
  // dip the background music, then bring it back
  master.gain.cancelScheduledValues(t0-.15);master.gain.setValueAtTime(vol*.9,t0-.15);master.gain.linearRampToValueAtTime(vol*.12,t0+.4);
  master.gain.setValueAtTime(vol*.12,t0+9.6);master.gain.linearRampToValueAtTime(vol*.9,t0+12.4);
@@ -1370,8 +1394,14 @@ function victory(){if(!on||!ctx)return;
  [[0,36,4],[4,41,1.5],[5.5,41,2.5],[8,43,3],[11,36,8]].forEach(([at,m,d])=>low(m,at,d));
  [0,1,4,8,10,11,11.5].forEach((at,i)=>timp(at,i>4?.42:.3));
  [84,88,91,96,100].forEach((m,i)=>bellAt(m,11.2+i*.35));bellAt(96,14.5);bellAt(91,16)}
+/* ---- sound settings: all sound, music (start/stop/setVol above), effects ---- */
+function applyAll(){if(allG&&ctx){allG.gain.cancelScheduledValues(ctx.currentTime);allG.gain.setTargetAtTime(allOn?allVol:0,ctx.currentTime,.05)}}
+function setAll(v){allOn=!!v;applyAll()}
+function setAllVol(v){allVol=v;applyAll()}
+function setFx(v){fxOn=!!v}
+function setFxVol(v){fxVol=v}
 document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hidden)ctx.suspend();else if(on)ctx.resume()});
-return {start,stop,setVol,sfx,victory,get on(){return on},get vol(){return vol}};
+return {start,stop,setVol,sfx,victory,setAll,setAllVol,setFx,setFxVol,get on(){return on},get vol(){return vol},get allOn(){return allOn},get allVol(){return allVol},get fxOn(){return fxOn},get fxVol(){return fxVol}};
 })();
 const E=Engine,SP=Sprites,$=id=>document.getElementById(id);
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1791,16 +1821,35 @@ function endAsk(){if(!s||screen!=='game'||!E.live(s))return;s.warned=s.warned||{
 /* ---------- events ---------- */
 document.addEventListener('change',e=>{const k=e.target.id;if(k in cfg&&k!=='names'&&screen==='setup'){collect();cfg[k]=k==='winMode'||k==='cpuSpeed'?e.target.value:Number(e.target.value);
  if(k==='humans'){cfg.bots=Math.min(cfg.bots,6-cfg.humans);if(cfg.humans+cfg.bots<2)cfg.bots=1}renderSetup()}});
-function musicUI(){const b=$('mus');if(!b)return;b.textContent=Music.on?'Music on':'Music off';b.setAttribute('aria-pressed',String(Music.on));b.classList.toggle('lit',Music.on)}
-function musicPref(v){try{localStorage.setItem(MUS,JSON.stringify(v))}catch(e){}}
-let musicWanted=true;try{const m=JSON.parse(localStorage.getItem(MUS)||'null');if(m){musicWanted=m.on!==false;if(typeof m.vol==='number'){Music.setVol(m.vol);$('vol').value=m.vol}}}catch(e){}
-document.addEventListener('pointerdown',function first(e){document.removeEventListener('pointerdown',first,true);if(e.target.closest&&e.target.closest('#mus,#vol'))return;if(musicWanted&&!Music.on){try{Music.start()}catch(x){}musicUI()}},true);
-$('vol').addEventListener('input',e=>{Music.setVol(Number(e.target.value));musicPref({on:Music.on,vol:Music.vol})});
+/* ---------- sound: one Sound button opens a panel with All sound, Music and Effects ---------- */
+function musicUI(){const b=$('snd');if(!b)return;const mu=typeof musicWanted==='undefined'?Music.on:musicWanted,st=!Music.allOn?'muted':!mu&&!Music.fxOn?'off':!mu?'effects only':!Music.fxOn?'music only':'';
+ b.innerHTML='Sound'+(st?'<small>'+st+'</small>':'');b.classList.toggle('lit',Music.allOn&&(mu||Music.fxOn));b.classList.toggle('muted',!Music.allOn);
+ const set=(id,v)=>{const el=$(id);if(el){if(el.type==='checkbox')el.checked=v;else el.value=v}};
+ set('snd-all',Music.allOn);set('snd-mus',mu);set('snd-fx',Music.fxOn);set('vol-all',Music.allVol);set('vol-mus',Music.vol);set('vol-fx',Music.fxVol);
+ document.querySelectorAll('.sndp output[data-for]').forEach(o=>{const r=$(o.dataset.for);if(r)o.textContent=Math.round(r.value*100)+'%'})}
+function musicPref(){try{localStorage.setItem(MUS,JSON.stringify({on:musicWanted,vol:Music.vol,all:Music.allOn,allVol:Music.allVol,fx:Music.fxOn,fxVol:Music.fxVol}))}catch(e){}}
+let musicWanted=true;try{const m=JSON.parse(localStorage.getItem(MUS)||'null');if(m){musicWanted=m.on!==false;if(typeof m.vol==='number')Music.setVol(m.vol);
+ if(m.all===false)Music.setAll(false);if(typeof m.allVol==='number')Music.setAllVol(m.allVol);if(m.fx===false)Music.setFx(false);if(typeof m.fxVol==='number')Music.setFxVol(m.fxVol)}}catch(e){}
+document.addEventListener('pointerdown',function first(e){document.removeEventListener('pointerdown',first,true);if(e.target.closest&&e.target.closest('#snd,.sndp'))return;if(musicWanted&&Music.allOn&&!Music.on){try{Music.start()}catch(x){}musicUI()}},true);
+function soundPanel(){const row=(k,label,desc,on,v)=>'<div class="srow"><label class="sw" for="snd-'+k+'"><input type="checkbox" id="snd-'+k+'"'+(on?' checked':'')+'><span class="knob"></span><span class="sl"><b>'+label+'</b><small>'+desc+'</small></span></label>'
+  +'<input type="range" id="vol-'+k+'" min="0" max="1" step="0.05" value="'+v+'" aria-label="'+label+' volume"><output data-for="vol-'+k+'">'+Math.round(v*100)+'%</output></div>';
+ modal('<div class="eyebrow">Settings</div><h2>Sound</h2><div class="sndp">'+row('all','All sound','Master switch and volume for everything',Music.allOn,Music.allVol)
+  +row('mus','Music','Soundtrack and victory fanfare',musicWanted,Music.vol)+row('fx','Effects','Cards, deliveries, patrols, bosses, menus',Music.fxOn,Music.fxVol)+'</div>'
+  +'<div class="btns"><button data-a="sndtest">Test effects</button><button class="primary" data-a="close">Done</button></div>')}
+function soundChange(e){const id=e.target.id;if(!/^(snd|vol)-(all|mus|fx)$/.test(id))return false;const v=e.target.type==='checkbox'?e.target.checked:Number(e.target.value);
+ try{if(id==='snd-all')Music.setAll(v);else if(id==='vol-all')Music.setAllVol(v);
+  else if(id==='snd-mus'){musicWanted=v;if(v&&Music.allOn)Music.start();else if(!v)Music.stop()}
+  else if(id==='vol-mus')Music.setVol(v);else if(id==='snd-fx'){Music.setFx(v);if(v)Music.sfx('tab')}else if(id==='vol-fx')Music.setFxVol(v);
+  if(id==='snd-all'&&v&&musicWanted&&!Music.on)Music.start()}catch(x){notify('This browser blocked audio.')}
+ musicPref();musicUI();return true}
+document.addEventListener('input',e=>{if(e.target.type==='range')soundChange(e)});
+document.addEventListener('change',e=>{if(soundChange(e))e.stopImmediatePropagation()},true);
 document.addEventListener('click',e=>{
  const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
  const a=b.dataset.a,id=Number(b.dataset.id);
  if(['tab','menu','rules','records','deck','done','log','enc','decks','close','review','new','endAsk'].includes(a))Music.sfx('tab');
- if(a==='music'){try{if(Music.on){Music.stop();musicWanted=false}else{Music.start();musicWanted=true}}catch(x){notify('This browser blocked audio.')}musicPref({on:musicWanted,vol:Music.vol});musicUI();return}
+ if(a==='sound'){Music.sfx('tab');soundPanel();musicUI();return}
+ if(a==='sndtest'){['play','buy','deliver'].forEach((n,i)=>Music.sfx(n,i*.35));if(!Music.fxOn||!Music.allOn)notify(Music.allOn?'Effects are switched off.':'All sound is switched off.');return}
  else if(a==='start')start();
  else if(a==='begin')act(()=>E.begin(s));
  else if(a==='play'){const k=E.me(s).hand[id];act(()=>E.play(s,id,$('bt'+id)?Number($('bt'+id).value):undefined),k&&E.CARDS[k].cat==='act'?'action':'play')}
@@ -1892,14 +1941,13 @@ function cashBtn(p,on){const n=Math.floor(p.pool.cr/E.CASH),ok=on&&n>0;
  return '<button class="mcash'+(ok?' lit':'')+'" data-a="cash"'+(ok?'':' disabled')+'>Cash in '+E.CASH+' credits → +1 profit<small>'+(ok?'You can do this '+n+(n===1?' time':' times')+' now':'Any time, as often as you can afford')+'</small></button>'}
 function menu(){
  modal('<div class="eyebrow">Galaxy Trade Lanes · phone build</div><h2>Menu</h2><div class="mmenu">'
-  +'<div class="mvol"><label for="vol2">Music volume</label><input id="vol2" type="range" min="0" max="1" step="0.05" value="'+Music.vol+'"></div>'
+  +'<button data-a="sound">Sound settings</button>'
   +'<button data-a="rules">Rules</button><button data-a="enc">Encyclopedia</button><button data-a="records">Records</button>'
   +(screen==='game'?'<button data-a="new">New run</button>':'')
   +'<button class="primary" data-a="close">Back</button></div>');
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
  if(b.dataset.a==='tab'){tab=b.dataset.t;render()}else if(b.dataset.a==='menu')menu()});
-document.addEventListener('input',e=>{if(e.target.id==='vol2'){Music.setVol(Number(e.target.value));$('vol').value=e.target.value;musicPref({on:Music.on,vol:Music.vol})}});
 if(screen==='game')render();
 /* Guided tutorial: a short scripted game against one computer captain.
    Loaded after ui.js (and after mobile/mobile.js in the phone build). A coach box explains each step,
