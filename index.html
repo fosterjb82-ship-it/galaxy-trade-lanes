@@ -1524,7 +1524,7 @@ function animAfter(snap){if(screen!=='game'||!s)return;
 function shortFx(k){const c=E.CARDS[k],o=[];if(k==='buyout')o.push('steal 2 favor');Object.entries(c.g).forEach(([r,n])=>o.push('+'+n+' '+SHORT[r]));
  if(c.draw)o.push('draw '+c.draw);if(c.buys)o.push('+'+c.buys+' deal');if(c.vp)o.push('+'+c.vp+' favor');if(c.junk)o.push('scrap 1');if(c.dbl)o.push('×2 boss dmg');return o.join(' · ')}
 /* ---------- desktop: scale the 2560x1300 layout to any window (1080p, 2K, 4K) ---------- */
-const DESK=!!document.querySelector('.top .sound');
+const DESK=!document.querySelector('.top [data-a=menu]'); // phone build has a Menu button; every desktop build lacks it
 const zoomK=()=>DESK?(parseFloat(document.body.style.zoom)||1):1;
 function fitDesk(){if(!DESK)return;const W=innerWidth,H=innerHeight,k=Math.max(.6,Math.min(1.7,Math.min(W/2560,H/1300)));
  document.body.classList.add('desk');document.body.style.zoom=k;document.body.style.height=(H/k)+'px';document.body.style.overflow='hidden'}
