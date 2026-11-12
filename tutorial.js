@@ -10,7 +10,7 @@ const give=(hand)=>{const p=me();p.hand=hand.slice()};
 
 /* each step: title, text, target (desktop selector), phone {sel, tab}, enter(), done() (action steps) or next:true (info) */
 const STEPS=[
- {t:'Welcome aboard, captain',x:'Every captain races to deliver <b>contracts</b> from this shared board. Each one pays <b class="acc">profit</b> (the ★ number). The captain with the most profit at the end of the run wins.',
+ {t:'Welcome aboard, captain',x:'Every captain races to deliver <b>contracts</b> from this shared board. Each one pays <b class="acc">favor</b> (the ★ number). The captain with the most favor at the end of the run wins.',
   sel:'.cband',ph:{sel:'.mbody',tab:'board'},next:true},
  {t:'Your hand',x:'You draw 5 cards each turn. <b class="tg">Resource</b> cards are free to play. <b class="ag">Order</b> cards are stronger, but you can only give 2 orders per turn.',
   sel:'.hgrid',ph:{sel:'.mbody .grid',tab:'hand'},next:true},
@@ -20,7 +20,7 @@ const STEPS=[
   sel:'.pstrip',ph:{sel:'.mpool',tab:'hand'},next:true},
  {t:'Make cargo space',x:'Ore and tech need <b>cargo space</b> to carry, and you start each turn with only 1. Give the <b>Hold Rig</b> order for +2 cargo.',
   sel:()=>handSel('rig'),ph:{sel:()=>handSel('rig'),tab:'hand'},done:()=>me().pool.cargo>=3},
- {t:'Deliver a contract',x:'<b>Seed Stock</b> needs 1 fuel, 1 ore and 1 cargo space, and you have all three, so it is glowing. Click <b>Deliver</b> for +8 profit. A new contract is dealt into its place.',
+ {t:'Deliver a contract',x:'<b>Seed Stock</b> needs 1 fuel, 1 ore and 1 cargo space, and you have all three, so it is glowing. Click <b>Deliver</b> for +8 favor. A new contract is dealt into its place.',
   sel:()=>'.ctr[data-cid="'+seedId+'"]',ph:{sel:()=>'.ctr[data-cid="'+seedId+'"]',tab:'board'},done:()=>s.done.length>=1},
  {t:'Buy a card',x:'You have 2 credits and 1 <b>deal</b> (purchase) this turn. Buy any card you can afford. It goes to your discard pile and shows up in a later hand, so your deck gets stronger over time.',
   sel:'.mband',ph:{sel:'.mbody .pc.can [data-a=buy]',tab:'market'},done:()=>me().buys===0},
@@ -32,9 +32,9 @@ const STEPS=[
   sel:'[data-a=res]',ph:{sel:'[data-a=res]',tab:'hand'},done:()=>me().pool.cr>=6},
  {t:'Arm up',x:'Give the <b>Gunship</b> order for +3 combat. Combat is used for armed contracts, pirate patrols and boss fights.',
   sel:()=>handSel('gunship'),ph:{sel:()=>handSel('gunship'),tab:'hand'},done:()=>me().pool.combat>=3},
- {t:'Pirate patrol',x:'Spend 3 combat and 1 fuel on a <b>pirate patrol</b> for +5 profit, once per turn. Each patrol can also push the next pirate boss back a round (up to 2 rounds per boss).',
+ {t:'Pirate patrol',x:'Spend 3 combat and 1 fuel on a <b>pirate patrol</b> for +5 favor, once per turn. Each patrol can also push the next pirate boss back a round (up to 2 rounds per boss).',
   sel:'.move.patrol',ph:{sel:'.mpatrol',tab:'hand'},done:()=>me().patrolled},
- {t:'Cash in',x:'Leftover credits are wasted at the end of your turn. <b>Cash in</b> 4 credits for +1 profit whenever you have spare.',
+ {t:'Cash in',x:'Leftover credits are wasted at the end of your turn. <b>Cash in</b> 4 credits for +1 favor whenever you have spare.',
   sel:'.move.cash',ph:{sel:'.mcash',tab:'hand'},done:()=>me().pool.cr<6},
  {t:'A pirate boss!',x:'Every few rounds a <b>pirate boss</b> blockades the lanes: nobody can deliver until it is beaten. All captains fight it together. Each one has its own trick, shown in yellow, and a countdown before it raids everyone.',
   sel:'.boss',ph:{sel:'.boss',tab:'board'},next:true,enter:()=>{const B=E.BOSSES.dread;s.threats=true;
@@ -43,9 +43,9 @@ const STEPS=[
   sel:()=>handSel('weapons'),ph:{sel:()=>handSel('weapons'),tab:'hand'},done:()=>me().dbl},
  {t:'Attack!',x:'2 combat × 2 = 4 damage, exactly what this boss has left. Click <b>Attack</b>. No combat? You can also hire mercenaries with credits.',
   sel:'.cband [data-a=attack]',ph:{sel:'.boss [data-a=attack]',tab:'board'},done:()=>!s.boss},
- {t:'Victory report',x:'Beating a boss pays every captain +1 profit per damage they dealt, plus +5 for the final blow. Click <b>Confirm</b>.',
+ {t:'Victory report',x:'Beating a boss pays every captain +1 favor per damage they dealt, plus +5 for the final blow. Click <b>Confirm</b>.',
   sel:'#dialog [data-a=bossok]',ph:{sel:'#dialog [data-a=bossok]'},done:()=>E.unseen(s,0)<0},
- {t:'You are ready',x:'That is the whole loop: <b>play</b> cards, <b>deliver</b> contracts, <b>buy</b> better cards, fight pirates together, and finish with the most profit. The <b>Rules</b> and <b>Cards</b> buttons explain everything in detail.',
+ {t:'You are ready',x:'That is the whole loop: <b>play</b> cards, <b>deliver</b> contracts, <b>buy</b> better cards, fight pirates together, and finish with the most favor. The <b>Rules</b> and <b>Cards</b> buttons explain everything in detail.',
   sel:null,ph:{sel:null},finish:true}
 ];
 

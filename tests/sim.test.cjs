@@ -37,4 +37,9 @@ const old=JSON.parse(JSON.stringify(s));delete old.market.salvage;assert.equal(E
 // ships: chosen ones kept, duplicates and blanks get free ones, all unique
 {const z=E.create({seed:1,players:[{name:'A',ship:'tug'},{name:'B',ship:'tug'},{name:'C'},{name:'D',ship:'nope'}]});const ids=z.players.map(p=>p.ship);
  assert.equal(ids[0],'tug');assert.equal(new Set(ids).size,4);assert.ok(ids.every(i=>E.SHIP_IDS.includes(i)));}
+// market: standard = 8 core + 4 specialists (one costing 5+); full = all 16; cards not on offer cannot be bought
+for(let seed=1;seed<=40;seed++){const z=E.create({seed,players:[{name:'A'},{name:'B'}]});assert.equal(z.offer.length,12);assert.ok(E.CORE.every(k=>z.offer.includes(k)));
+ const sp=z.offer.filter(k=>!E.CORE.includes(k));assert.equal(new Set(sp).size,4);assert.ok(sp.some(k=>E.CARDS[k].cost>=5));assert.ok(sp.some(k=>E.CARDS[k].g.combat));}
+{const z=E.create({seed:3,market:'full',players:[{name:'A'},{name:'B'}]});assert.equal(z.offer.length,16);
+ const y=E.create({seed:3,offer:E.CORE.slice(),players:[{name:'A'},{name:'B'}]});E.begin(y);E.me(y).pool.cr=9;assert.equal(E.buy(y,'charter'),false);assert.equal(E.buy(y,'deal'),true);}
 console.log('ok avg profit',(tot/n).toFixed(1),'zero',zero,'of',n);

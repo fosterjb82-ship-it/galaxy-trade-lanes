@@ -38,9 +38,9 @@ function joinScreen(msg){screen='setup';hide();$('status').innerHTML='';
  +'<div class="heroart">'+px(SP.heroURL(),576,256)+'</div></section>';
  setTimeout(()=>{const i=$('olname');if(i)i.focus()},50)}
 
-const SETTINGS=[['actionLimit','Orders per turn',[[2,'Two orders (recommended)'],[0,'Unlimited']]],['winMode','Victory',[['rounds','Highest profit after set rounds'],['profit','Race to a profit target']]],
- ['rounds','Run length',[[10,'10 rounds'],[12,'12 rounds'],[16,'16 rounds (recommended)'],[20,'20 rounds']]],['target','Profit target',[[50,'50 profit'],[80,'80 profit'],[120,'120 profit']]],
- ['boardSize','Contract board',[[3,'3 contracts'],[4,'4 contracts'],[5,'5 contracts']]],['threats','Pirate threats',[[true,'On: boss battles (recommended)'],[false,'Off']]]];
+const SETTINGS=[['actionLimit','Orders per turn',[[2,'Two orders (recommended)'],[0,'Unlimited']]],['winMode','Victory',[['rounds','Highest favor after set rounds'],['profit','Race to a favor target']]],
+ ['rounds','Run length',[[10,'10 rounds'],[12,'12 rounds'],[16,'16 rounds (recommended)'],[20,'20 rounds']]],['target','Favor target',[[50,'50 favor'],[80,'80 favor'],[120,'120 favor']]],
+ ['boardSize','Contract board',[[3,'3 contracts'],[4,'4 contracts'],[5,'5 contracts']]],['market','Card market',[['standard','Standard: 8 core + 4 random specialists'],['full','Full: all 16 cards']]],['threats','Pirate threats',[[true,'On: boss battles (recommended)'],[false,'Off']]]];
 function lobbyScreen(p){screen='setup';const host=p.you.host,S=p.settings;
  const fields=SETTINGS.filter(([k])=>!(k==='rounds'&&S.winMode!=='rounds')&&!(k==='target'&&S.winMode!=='profit')).map(([k,label,opts])=>'<div><label for="ol_'+k+'">'+label+'</label>'+(host
   ?'<select id="ol_'+k+'" data-ol="'+k+'">'+opts.map(([v,l])=>'<option value="'+v+'"'+(String(S[k])===String(v)?' selected':'')+'>'+l+'</option>').join('')+'</select>'
@@ -96,7 +96,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
   if(op==='leave'&&r.ok){forget();joinScreen('')}return}
 },true);
 document.addEventListener('change',async e=>{const k=e.target.dataset&&e.target.dataset.ol;if(!k)return;e.stopImmediatePropagation();
- let v=e.target.value;v=k==='winMode'?v:k==='threats'?v==='true':Number(v);const r=await post('/api/lobby',{op:'settings',settings:{[k]:v}});if(!r.ok)notify(r.error)},true);
+ let v=e.target.value;v=k==='winMode'||k==='market'?v:k==='threats'?v==='true':Number(v);const r=await post('/api/lobby',{op:'settings',settings:{[k]:v}});if(!r.ok)notify(r.error)},true);
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='olname'){e.preventDefault();const b=document.querySelector('[data-a=oljoin]');if(b)b.click()}});
 
 /* ---------- start ---------- */

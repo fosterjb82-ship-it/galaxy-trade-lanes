@@ -18,7 +18,7 @@ const MAX_PLAYERS = 6, WAIT_MS = 25000;
 
 /* ---------------- table state ---------------- */
 const id = n => crypto.randomBytes(n).toString('hex');
-const defaults = () => ({ actionLimit: 2, winMode: 'rounds', rounds: 16, target: 80, boardSize: 4, threats: true });
+const defaults = () => ({ actionLimit: 2, winMode: 'rounds', rounds: 16, target: 80, boardSize: 4, threats: true, market: 'standard' });
 let T = { server: id(4), hostKey: id(6), version: 1, players: [], hostToken: null, settings: defaults(), game: null, notice: '' };
 try { const saved = JSON.parse(fs.readFileSync(SAVE_FILE, 'utf8')); if (saved && saved.server) { T = saved; T.version++; if (T.game) E.migrate(T.game); } } catch (e) { /* fresh table */ }
 const seen = {};                       // token -> last time this browser was heard from
@@ -103,6 +103,7 @@ function lobby(tok, op, body) {
     if ([50, 80, 120].includes(s.target)) S.target = s.target;
     if ([3, 4, 5].includes(s.boardSize)) S.boardSize = s.boardSize;
     if (typeof s.threats === 'boolean') S.threats = s.threats;
+    if (['standard', 'full'].includes(s.market)) S.market = s.market;
     changed(); return { ok: true };
   }
   if (op === 'kick') {

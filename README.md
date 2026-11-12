@@ -1,6 +1,6 @@
 # Galaxy Trade Lanes: Cargo & Credits
 
-A pixel-art space freight deck-builder for 2–6 captains (any mix of humans and computer players). Buy cards, load your hold, and race rival captains to the same public contracts. Profit is the score.
+A pixel-art space freight deck-builder for 2–6 captains (any mix of humans and computer players). Buy cards, load your hold, and race rival captains to the same public contracts. **Favor** (with the trade authorities) is the score.
 
 Planned series: **Galaxy Trade Lanes: Cargo & Credits** (this game) and **Galaxy Trade Lanes: Fleet Battles** (a future combat-focused game).
 
@@ -48,7 +48,7 @@ Every move is recorded by the engine as an event (who, what, how much). The desk
 - **Captain's log** in the left rail: a running log of every move by every captain (cards played, deliveries, purchases, patrols, cash-ins, scraps, boss hits), newest first, with a divider per turn. Six entries show at once; scroll for the last 80 moves.
 - **Bigger pool** once your hand is played out (or nothing left in it can be played): the hand band collapses to large resource counters, with any unplayable cards as chips you can still scrap.
 - **Their table** in the hand band while someone else plays: the cards they have played face up, the rest of their hand face down, their live pool.
-- **Board effects**: deliveries fly to the captain who made them, profit changes pop beside each captain, bought market cards flash, boss hits shake the boss and show the damage, the active captain's standings row says *playing*.
+- **Board effects**: deliveries fly to the captain who made them, favor changes pop beside each captain, bought market cards flash, boss hits shake the boss and show the damage, the active captain's standings row says *playing*.
 - **Computer turns play back one move at a time** (setup option *Computer turns*: normal, slow, fast or instant; Speed and *Skip to my turn* buttons while they play). Online, several moves sent at once (like Play resources) are shown one after another.
 
 ## Card details
@@ -62,7 +62,7 @@ Each captain flies one of eight ships (Longhaul Freighter, Starling Courier, Red
 
 ## Victory screen
 
-When a run ends, a victory screen shows the winner's name and profit, tabs for every captain in finishing order, and for the selected captain: a **score breakdown** (one stacked bar by profit source: contracts, pirate patrols, boss rewards, cash-ins, Trade Charters, buyouts; losses to raids and buyouts in a separate red row; a legend with every amount) and **every contract they delivered** as large cards with the round. The engine tracks each captain's profit sources (`player.score`), which always add up to their final profit. Captains' decks and Review board stay available. Colours come from a palette checked for colour-blind separation on the dark panel.
+When a run ends, a victory screen shows the winner's name and favor, tabs for every captain in finishing order, and for the selected captain: a **score breakdown** (one stacked bar by favor source: contracts, pirate patrols, boss rewards, cash-ins, Trade Charters, buyouts; losses to raids and buyouts in a separate red row; a legend with every amount) and **every contract they delivered** as large cards with the round. The engine tracks each captain's favor sources (`player.score`), which always add up to their final favor (stored internally as `profit`). Captains' decks and Review board stay available. Colours come from a palette checked for colour-blind separation on the dark panel.
 
 ## Tutorial
 
@@ -110,21 +110,22 @@ node preview.cjs                    # art preview sheets into out/
 ## Rules summary
 
 - Turn counters are called **Deals** (purchases left) and **Orders** (order cards you can still play; 2 per turn by default).
-- The card market is sorted by cost, then resource cards before order cards.
+- Card market (setup option **Card market**, also in the online lobby): **Standard** (default) offers the 8 core cards (Dockside Deal, Plasma Pack, Barge, Quartermaster, Data Vault, Ore Borer, Gunship, Clearing House) every game plus 4 random specialists from the other 8, always including at least one costing 5+ and one extra combat card. **Full** offers all 16. Specialists carry a violet *Specialist* tag; the Encyclopedia lists every card marked Core / Specialist / In this game. Saves from before this option load with the full market. In testing, computer captains beat 65–70% of bosses with a Standard market versus 67–76% with Full.
+- The card market shows core cards first, then specialists, each sorted by cost, then resource cards before order cards.
 - Everyone starts with 10 cards (4 Scrip, 3 Fuel Drums, 2 Ore Samples, 1 Hold Rig) and draws 5 each turn.
 - Resource cards are unlimited per turn. Order cards use an order (2 per turn by default, or unlimited).
 - Contracts on the shared board need fuel, ore, tech, credits and/or combat, plus cargo space equal to ore + tech. Base cargo space is 1 per turn.
 - One deal (purchase) per turn (Brokerage adds one). Bought cards go to the discard pile.
-- Pirate patrol: spend 3 combat + 1 fuel for +5 profit, once per turn.
-- Cash in: trade 4 credits for 1 profit, any time on your turn, as often as you can afford.
+- Pirate patrol: spend 3 combat + 1 fuel for +5 favor, once per turn.
+- Cash in: trade 4 credits for 1 favor, any time on your turn, as often as you can afford.
 - Salvage Crew (costs 5): an action card that scraps 1 other card from your hand for free (not limited by the once-per-turn scrap), then draws 2.
-- Trade Charter (costs 8): a resource card worth 2 credits and 2 profit each time it is played.
-- Pirate threats (setup option, on by default): a boss arrives every 5 rounds (counted from the last boss's arrival, starting in round 5). Each pirate patrol pushes the next boss back 1 round, at most 2 rounds per boss (so a 16-round run always gets at least 2 bosses). Each boss is drawn at random (no repeats) from six with their own ability: Blackwake Dreadnought (no tricks), Red Maw Marauder (raid takes 8), Iron Corsair Armada (mercenaries cost 3), Void Wraith (only 2 rounds, thin hull), Scrap Hive Swarm (repairs 1 hull per captain each round), Siren of Lumen Gate (+2 profit per damage, tougher hull). While a boss is active no contracts can be delivered; the boss panel shows rounds and captain turns left. Spend combat (1 damage each) or hire mercenaries (usually 2 credits per damage). Beaten: +1 profit per damage dealt (Siren: +2) and +5 for the final blow. Not beaten in time: it raids every captain, and the captain(s) who dealt the least damage lose double. Later bosses have more hull; computer captains beat roughly 66–79% of bosses in testing. Each human captain confirms a results screen afterwards.
+- Trade Charter (costs 8): a resource card worth 2 credits and 2 favor each time it is played.
+- Pirate threats (setup option, on by default): a boss arrives every 5 rounds (counted from the last boss's arrival, starting in round 5). Each pirate patrol pushes the next boss back 1 round, at most 2 rounds per boss (so a 16-round run always gets at least 2 bosses). Each boss is drawn at random (no repeats) from six with their own ability: Blackwake Dreadnought (no tricks), Red Maw Marauder (raid takes 8), Iron Corsair Armada (mercenaries cost 3), Void Wraith (only 2 rounds, thin hull), Scrap Hive Swarm (repairs 1 hull per captain each round), Siren of Lumen Gate (+2 favor per damage, tougher hull). While a boss is active no contracts can be delivered; the boss panel shows rounds and captain turns left. Spend combat (1 damage each) or hire mercenaries (usually 2 credits per damage). Beaten: +1 favor per damage dealt (Siren: +2) and +5 for the final blow. Not beaten in time: it raids every captain, and the captain(s) who dealt the least damage lose double. Later bosses have more hull; computer captains beat roughly 66–79% of bosses in testing. Each human captain confirms a results screen afterwards.
 - Weapons Officer (costs 5): an action card that gives 2 combat and draws 1; combat spent on a boss that turn deals double damage.
 - Sound: the **Sound** button opens a panel with three separate switches and volumes: **All sound** (master), **Music** (soundtrack and victory fanfare) and **Effects** (cards, deliveries, patrols, bosses, menus), plus Test effects. Settings are remembered in the browser. All audio is synthesized in `music.js`.
 - Runs saved before a new card was added get that card fully stocked in the market when loaded (`Engine.migrate`).
 - Scrap one card from hand for 1 credit, once per turn.
-- Unspent resources vanish at end of turn. Highest profit after the set rounds wins, or race to a profit target with equal turns for everyone.
+- Unspent resources vanish at end of turn. Highest favor after the set rounds wins, or race to a favor target with equal turns for everyone.
 
 ## Notes for continuing in Claude Code
 
