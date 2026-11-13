@@ -1,0 +1,19 @@
+{
+  "name": "galaxy-trade-lanes",
+  "productName": "Galaxy Trade Lanes",
+  "version": "0.1.0",
+  "description": "Galaxy Trade Lanes: Cargo & Credits, a pixel-art space freight deck-builder",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "prepare-game": "node prepare.cjs",
+    "start": "node prepare.cjs && electron .",
+    "build:win": "node prepare.cjs && node build.cjs win32",
+    "build:mac": "node prepare.cjs && node build.cjs darwin",
+    "build:linux": "node prepare.cjs && node build.cjs linux"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "electron": "45.3.2"
+  }
+}

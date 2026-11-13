@@ -8,6 +8,10 @@ Planned series: **Galaxy Trade Lanes: Cargo & Credits** (this game) and **Galaxy
 
 Open `index.html` in any desktop browser. Everything (code, pixel art, music) is generated inside that one file, so it works offline with no install. Fonts load from Google Fonts when online and fall back to system fonts otherwise.
 
+## Desktop app (Windows, macOS, Linux)
+
+`electron/` wraps the desktop build in an Electron window, the starting point for a Steam release. It copies the built `index.html` with the fonts bundled for offline play, and leaves the browser build as it is. To build the Windows app, run `npm install` and then `npm run build:win` in `electron/`. See `electron/README.md`.
+
 ## Phone version (Pocket)
 
 A separate phone build lives in `mobile/` and is published as a Claude artifact, so it plays inside the Claude app:
