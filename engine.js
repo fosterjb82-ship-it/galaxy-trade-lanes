@@ -77,7 +77,30 @@ function rnd(s){s.seed=(s.seed*16807)%2147483647;return (s.seed-1)/2147483646}
 function shuffle(s,a){for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd(s)*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const me=s=>s.players[s.current];
 const fresh=()=>({fuel:0,ore:0,tech:0,cr:0,combat:0,cargo:1});
-const live=s=>s.phase==='action'&&!s.over;
+const live=s=>s.phase==='action'&&!s.over&&!s.undoReq;
+/* ---------- taking back card plays ----------
+   Each card play by a human captain stores a snapshot of the game before it, so it can be taken back
+   one step at a time during that turn. Only card plays can be taken back: buying, delivering, patrols,
+   cashing in, scrapping, boss attacks and ending the turn clear the history. A play that drew cards
+   also clears it, since the drawn cards are now known. With other human captains in the game, every
+   one of them must agree first (undoReq); against computer captains only, it happens at once. */
+const UNDO_KEEP=['undo','undoReq','undoStop','log','events','evn','feedFrom','cpuSpeed','warned','tutorial'];
+let batching=false;
+function snapState(s){const o={};for(const k in s)if(!UNDO_KEEP.includes(k))o[k]=s[k];return JSON.stringify(o)}
+function clearUndo(s,stop){s.undo=[];s.undoReq=null;s.undoStop=stop||null}
+function undoLabel(what){const ks=Array.isArray(what)?what:[what];if(ks.length===1)return CARDS[ks[0]].n;const n={};ks.forEach(k=>n[CARDS[k].n]=(n[CARDS[k].n]||0)+1);return ks.length+' cards ('+Object.entries(n).map(([x,c])=>c>1?c+' '+x:x).join(', ')+')'}
+function undoVoters(s){return s.players.map((p,i)=>i).filter(i=>i!==s.current&&!s.players[i].bot)}
+function canUndo(s){return s.phase==='action'&&!s.over&&!s.undoReq&&!!(s.undo&&s.undo.length)}
+function stepBack(s){const e=s.undo.pop(),keep={};UNDO_KEEP.forEach(k=>{if(k in s)keep[k]=s[k]});
+ Object.keys(s).forEach(k=>delete s[k]);Object.assign(s,JSON.parse(e.snap),keep);s.undoReq=null;s.undoStop=null;
+ log(s,me(s).name+' took back '+undoLabel(e.what)+'.');ev(s,{t:'undo',ks:e.what});return true}
+function requestUndo(s){if(!canUndo(s))return false;const v=undoVoters(s);if(!v.length)return stepBack(s);
+ const top=s.undo[s.undo.length-1];s.undoReq={by:s.current,what:top.what,need:v,yes:[]};log(s,me(s).name+' asked to take back '+undoLabel(top.what)+'.');return true}
+function voteUndo(s,seat,yes){const r=s.undoReq;if(!r||!r.need.includes(seat)||r.yes.includes(seat))return false;
+ if(!yes){s.undoReq=null;log(s,s.players[seat].name+' said no to taking back '+undoLabel(r.what)+'.');return true}
+ r.yes.push(seat);if(r.yes.length===r.need.length){s.undoReq=null;stepBack(s)}return true}
+function cancelUndo(s){if(!s.undoReq)return false;s.undoReq=null;return true}
+function record(s,before,keys,drew){if(drew)clearUndo(s,keys[keys.length-1]);else{(s.undo=s.undo||[]).push({what:keys,snap:before});s.undoStop=null}}
 const need=c=>(c.req.ore||0)+(c.req.tech||0);
 const deckSize=p=>p.deck.length+p.discard.length+p.hand.length+p.played.length;
 function log(s,t){s.log.unshift('R'+s.round+' · '+t);if(s.log.length>50)s.log.length=50}
@@ -129,6 +152,7 @@ function play(s,i,target){
  if(!canPlay(s,i))return false;
  const p=me(s),k=p.hand[i],c=CARDS[k];
  if(k==='buyout'&&(!Number.isInteger(target)||target===s.current||!s.players[target]))return false;
+ const before=!p.bot&&!batching?snapState(s):null;
  let junk=null;
  if(c.junk&&Number.isInteger(target)&&target>=0&&target!==i&&target<p.hand.length)junk=target>i?target-1:target;
  p.hand.splice(i,1);
@@ -145,9 +169,12 @@ function play(s,i,target){
  if(c.draw)draw(s,p,c.draw);
  if(c.vp){p.profit+=c.vp;score(p,'charter',c.vp);log(s,p.name+' played '+c.n+' for +'+c.vp+' favor.')}
  if(k==='buyout'||c.vp)checkTarget(s);
+ if(before)record(s,before,[k],!!c.draw);
  return true;
 }
-function playResources(s){if(!live(s))return false;const p=me(s);let i;while((i=p.hand.findIndex(k=>CARDS[k].cat==='res'))>=0)play(s,i);return true}
+function playResources(s){if(!live(s))return false;const p=me(s),before=p.bot?null:snapState(s),keys=[];let i,drew=false;
+ batching=true;try{while((i=p.hand.findIndex(k=>CARDS[k].cat==='res'))>=0){const k=p.hand[i];if(!play(s,i))break;keys.push(k);if(CARDS[k].draw)drew=true}}finally{batching=false}
+ if(before&&keys.length)record(s,before,keys,drew);return true}
 function canComplete(s,c){if(!live(s)||!c||s.boss)return false;const p=me(s);return Object.entries(c.req).every(([r,n])=>p.pool[r]>=n)&&p.pool.cargo>=need(c)}
 function complete(s,id){
  const c=s.board.find(x=>x&&x.id===id),p=me(s);
@@ -209,7 +236,7 @@ function scrap(s,i){const p=me(s);if(!live(s)||p.scrapped||p.pool.cr<1||!Number.
  p.pool.cr--;const k=p.hand.splice(i,1)[0];s.trash.push(k);(p.scrappedCards=p.scrappedCards||[]).push(k);p.scrapped=true;log(s,p.name+' scrapped '+CARDS[k].n+'.');ev(s,{t:'scrap',k});return true}
 function end(s){
  if(!live(s))return false;
- const p=me(s);
+ const p=me(s);clearUndo(s);
  p.discard.push(...p.hand,...p.played);p.hand=[];p.played=[];p.pool=fresh();
  p.buys=1;p.actions=s.actionLimit;p.patrolled=false;p.scrapped=false;p.dbl=false;p.turnPlayed=[];draw(s,p,5);
  s.current++;
@@ -265,6 +292,9 @@ function* botSteps(s){
  end(s);
 }
 function botTurn(s){if(s.over||!me(s).bot)return false;for(const _ of botSteps(s));return true}
-return {RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,attack,mercs,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
+const commit=f=>function(s,...a){const r=f(s,...a);if(r)clearUndo(s);return r};
+return {canUndo,requestUndo,voteUndo,cancelUndo,undoLabel,undoVoters,
+ begin:commit(begin),buy:commit(buy),complete:commit(complete),patrol:commit(patrol),cashIn:commit(cashIn),scrap:commit(scrap),attack:commit(attack),mercs:commit(mercs),
+ RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;

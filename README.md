@@ -58,6 +58,7 @@ Every move is recorded by the engine as an event (who, what, how much). The desk
 ## Card details
 
 - Every card that produces resources shows them as icons on its art (hand, market, tables, popups).
+- **Back (take back a card play)**: the Back button (or Ctrl+Z on desktop) takes back your last card play, one step at a time; "Play resources" counts as one step. Only card plays can be taken back. Buying, delivering, patrols, cashing in, scrapping, hitting a boss and ending the turn clear the history, and so does a card that drew cards, because the drawn cards are now known. Against computer captains it happens at once. With other human captains (pass-and-play or online), each of them must agree; one decline keeps the play, and the asker can withdraw the request. Computer captains never take back. Online, the server keeps the snapshots and sends browsers only the card names. Tested in `tests/undo.test.cjs`. Hidden in the tutorial.
 - **Magnified view**: right-click any card or contract (stays open until you click elsewhere or press Esc), rest the mouse on it for 1 second (closes when you move away), or press and hold on a phone. Cards show large art, cost, market stock, whether they use an order, how many you own, and what their resources are for; contracts show each requirement against your pool (✓/✗), the cargo space needed, and whether they are ready, missing something or blockaded. The hover delay is `DWELL_MS` in `ui.js`.
 
 ## Captain ships

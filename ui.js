@@ -244,6 +244,7 @@ function feedLine(e){const c=e.k&&E.CARDS[e.k],nm=c?'<b>'+c.n+'</b>':'';
   case 'scrap':return {i:icon('cr',1.6),x:'Scrapped '+nm,cls:''};
   case 'hit':return {i:icon('combat',1.6),x:'Hit '+esc(e.boss)+' for <b class="down">'+e.d+'</b>'+(e.via==='mercs'?' with mercenaries':e.dbl?' (double)':''),cls:'hit'};
   case 'bossdown':return {i:icon('star',1.6),x:'<b class="acc">'+esc(e.boss)+' destroyed!</b>',cls:'big'};
+  case 'undo':return {i:'<span class="undoi">↶</span>',x:'Took back <b>'+esc(E.undoLabel(e.ks))+'</b>',cls:'undo'};
   case 'raid':return {i:icon('combat',1.6),x:'<b class="down">'+esc(e.boss)+' raided everyone</b>',cls:'hit'};
  }return {i:'',x:'',cls:''}}
 function feedPanel(){const all=(s.events||[]).slice().reverse(),now=e=>e.n>(s.feedFrom||0)&&e.who===s.current&&e.r===s.round;let last=null,rows='';
@@ -316,7 +317,7 @@ function render(){
  const msg=hidden?(ME!==null&&!s.over?esc(p.name)+' is taking their turn. Your hand appears when it is your turn.':s.over?'The run is over.':'Hand hidden until the captain begins.'):'Hand played out. Deliver, buy, or end your turn.';
  const hband=watching?'':'<section class="band hband'+(mode==='shop'?' slim':'')+'"><div class="hmain"><div class="bhead2"><h2>YOUR HAND</h2><span class="eyebrow">'+(hidden?'hidden':p.hand.length+' card'+(p.hand.length===1?'':'s'))+'</span>'+(mode==='shop'?(left||'<span class="hmsg">'+msg+'</span>'):'')+pool+'</div>'
   +(mode==='play'?'<div class="hwrap"><div class="hgrid" style="--n:'+p.hand.length+'">'+p.hand.map((k,i)=>cardEl(k,i,false)).join('')+'</div></div>':'')+'</div>'
-  +'<div class="hside3"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play resources</button><button class="primary endb" data-a="'+(s.over?'new':'endAsk')+'"'+(!s.over&&!on?' disabled':'')+'>'+(s.over?'New run':'End turn')+'</button>'+played(p,hidden)+'</div></section>';
+  +'<div class="hside3"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play resources</button>'+backBtn(on)+'<button class="primary endb" data-a="'+(s.over?'new':'endAsk')+'"'+(!s.over&&!on?' disabled':'')+'>'+(s.over?'New run':'End turn')+'</button>'+played(p,hidden)+'</div></section>';
  $('stage').innerHTML='<div class="desk-shell" data-mode="'+mode+'">'+rail+'<div class="bands">'+cband+mband+(watching?watchBand(p):hband)+'</div></div>';
  {const fl2=$('feedlog');if(fl2&&feedTop)fl2.scrollTop=feedTop}
  animAfter(snap);
@@ -340,7 +341,7 @@ function bossReport(){
   return true}
  return false}
 function phase(){
- if(screen!=='game')return;bossNews();if(bossReport())return;const p=E.me(s);
+ if(screen!=='game')return;if(s.undoReq&&!s.over){undoDialog();return}bossNews();if(bossReport())return;const p=E.me(s);
  if(s.over){victory(vicSeat);return}
  if(s.phase==='handoff'){if(!p.bot){const alarm=s.boss&&!s.boss.alerted;if(alarm)s.boss.alerted=true;Music.sfx(alarm?'boss':'turn')};modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Final round':'Next captain')+'</div><h2 class="upname">'+ava(p,56)+esc(p.name)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' favor</p>'+(s.boss?'<div class="threat soon">'+icon('combat',1.6)+'<span><b>'+esc(s.boss.name)+'</b> is blockading the lanes: '+s.boss.hp+' / '+s.boss.max+' hull left, '+(s.boss.until-s.round+1)+' round(s) to beat it.</span></div>':'')+'<div class="btns"><button class="primary" data-a="begin">Begin turn</button></div>');return}
  hide();
@@ -350,6 +351,7 @@ function rules(){modal('<div class="eyebrow">How Galaxy Trade Lanes works</div><
  +'<p><b class="acc">Playing cards.</b> Resource cards are unlimited. Order cards (anything that draws, adds cargo, combat or deals) use one order; the default is two orders per turn. Draw effects resolve at once.</p>'
  +'<p><b class="acc">Contracts.</b> The shared board holds 3 to 5 jobs. Pay the listed fuel, ore, tech, credits and combat, plus cargo space equal to ore + tech. Your base space is 1, so play Hold Rigs and Barges to carry more. Each delivery uses its space for the rest of the turn. A replacement appears immediately.</p>'
  +'<p><b class="acc">Market.</b> Eight core cards are in every game. A Standard market adds 4 random specialists (always one costing 5 or more and one extra combat card); a Full market offers all 16.</p>'
+ +'<p><b class="acc">Taking back.</b> Back takes back your last card play, one step at a time, until you buy, deliver, patrol, cash in, scrap, hit a boss or end your turn. A card that drew cards cannot be taken back, since you have seen the new cards. With other human captains in the game, every one of them must agree; against computer captains it is instant.</p>'
  +'<p><b class="acc">Deals.</b> One deal (purchase) per turn; Brokerage adds one. Bought cards go to your discard pile and have no immediate effect.</p>'
  +'<p><b class="acc">Combat.</b> Combat covers escort requirements. Or spend 3 combat and 1 fuel for a pirate patrol worth +5 favor, once per turn. There are no dice.</p>'
  +'<p><b class="acc">Buyout.</b> Costs 6. Take up to 2 favor from a rival, draw a card, and scrap the card.</p>'
@@ -398,7 +400,7 @@ function encyclopedia(sec){sec=sec||'cards';
  modal('<div class="eyebrow">Galaxy Trade Lanes</div><h2>Encyclopedia</h2><div class="dtabs">'+tabs.map(([k,l])=>'<button class="sm'+(k===sec?' on':'')+'" data-a="enc" data-sec="'+k+'">'+l+'</button>').join('')+'</div>'+h+'<div class="btns"><button class="primary" data-a="close">Back</button></div>',true)}
 function viewDone(){modal('<div class="eyebrow">All captains · this run</div><h2>Deliveries.</h2>'+(s.done.length?[...s.done].reverse().map(c=>'<div class="done"><div><div class="eyebrow">Round '+c.round+' · '+esc(c.captain)+'</div><b>'+esc(c.name)+'</b> <span class="mute">to '+esc(c.dest)+'</span></div><strong>+'+c.profit+'</strong></div>').join(''):'<p class="mute">No deliveries yet.</p>')+'<div class="btns"><button class="primary" data-a="close">Back</button></div>')}
 function viewLog(){modal('<div class="eyebrow">Latest 50 events</div><h2>Run log.</h2><div class="log">'+s.log.map(t=>'<div>'+esc(t)+'</div>').join('')+'</div><div class="btns"><button class="primary" data-a="close">Back</button></div>')}
-function closeDlg(){if(screen==='game'&&s&&(s.phase==='handoff'||s.over||document.querySelector('#dialog [data-a=bossok]'))){if(document.querySelector('#dialog [data-a=bossok]'))return;phase()}else hide()}
+function closeDlg(){if(document.querySelector('#dialog .undodlg'))return;if(screen==='game'&&s&&(s.phase==='handoff'||s.over||document.querySelector('#dialog [data-a=bossok]'))){if(document.querySelector('#dialog [data-a=bossok]'))return;phase()}else hide()}
 
 /* ---------- end-of-turn check ---------- */
 function leftovers(){const p=E.me(s),out=[];
@@ -413,6 +415,22 @@ function leftovers(){const p=E.me(s),out=[];
  const n=Math.floor(p.pool.cr/E.CASH);
  if(n)out.push('Cash in <b>'+n*E.CASH+'</b> credits for <b class="acc">+'+n+'</b> favor');
  return out}
+/* ---------- taking back a card play ---------- */
+function backBtn(on,cls){if(!s||s.tutorial)return '';const ok=on&&E.canUndo(s),top=ok?s.undo[s.undo.length-1]:null,others=E.undoVoters(s).length;
+ const tip=ok?'Take back '+E.undoLabel(top.what)+(others?'. Every other captain must agree.':'')+' (Ctrl+Z)'
+  :on&&s.undoStop?E.CARDS[s.undoStop].n+' drew cards, so it cannot be taken back.':'Take back your last card play. Purchases and other moves cannot be taken back.';
+ return '<button class="backb'+(cls?' '+cls:'')+'" data-a="undo"'+(ok?'':' disabled')+' title="'+esc(tip)+'"><span>↶ Back</span><small>'+(ok?esc(E.undoLabel(top.what)):on&&s.undoStop?'not after '+esc(E.CARDS[s.undoStop].n):'card plays only')+'</small></button>'}
+function undoDialog(){const r=s.undoReq;if(!r)return;const by=s.players[r.by],what=esc(E.undoLabel(r.what));
+ const rows=r.need.map(i=>{const p=s.players[i],ok=r.yes.includes(i),mine=ME===null||ME===i;
+  return '<li>'+ava(p,32)+'<b>'+esc(p.name)+'</b>'+(ok?'<span class="uok">Agreed</span>':mine?'<span class="ubtns"><button class="primary" data-a="undovote" data-who="'+i+'" data-yes="1">Agree</button><button data-a="undovote" data-who="'+i+'" data-yes="0">Decline</button></span>':'<span class="mute">Deciding…</span>')+'</li>'}).join('');
+ const asker=ME===null||ME===r.by;
+ modal('<div class="undodlg"><div class="eyebrow">Take back a card play</div><h2>'+ava(by,40)+esc(by.name)+' wants to take back '+what+'.</h2>'
+  +'<p class="mute">Every other captain has to agree. '+(ME===null?'Each captain answers for themselves.':ME===r.by?'Waiting for their answers.':'')+' One no keeps the play.</p>'
+  +'<ul class="uvotes">'+rows+'</ul>'+(asker?'<div class="btns"><button data-a="undocancel">'+(ME===null?'Withdraw request':'Cancel request')+'</button></div>':'')+'</div>')}
+function undoVote(b){const who=Number(b.dataset.who),yes=b.dataset.yes==='1',name=s.players[who].name;
+ Promise.resolve(E.voteUndo(s,who,yes)).then(ok=>{if(ok===false)return;Music.sfx('tab');
+  if(ME===null){if(!yes)notify(name+' said no. The play stands.');save();render();phase()}})}
+
 function endAsk(){if(!s||screen!=='game'||!E.live(s))return;s.warned=s.warned||{};const left=leftovers();
  if(left.length){modal('<div class="eyebrow">Before you end your turn</div><h2>You still have moves.</h2><ul class="left">'+left.map(x=>'<li>'+x+'</li>').join('')+'</ul><p class="mute">Unspent resources and credits expire when your turn ends.</p><div class="btns"><button data-a="close">Keep playing</button><button class="primary" data-a="end">End turn anyway</button></div>');return}
  if(s.warned[s.current]){act(()=>E.end(s));return}
@@ -447,7 +465,7 @@ document.addEventListener('change',e=>{if(soundChange(e))e.stopImmediatePropagat
 document.addEventListener('click',e=>{
  const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
  const a=b.dataset.a,id=Number(b.dataset.id);
- if(['tab','menu','rules','records','deck','done','log','enc','decks','close','review','new','endAsk'].includes(a))Music.sfx('tab');
+ if(['tab','menu','rules','records','deck','done','log','enc','decks','close','review','new','endAsk','undo','undocancel'].includes(a))Music.sfx('tab');
  if(a==='sound'){Music.sfx('tab');soundPanel();musicUI();return}
  if(a==='sndtest'){['play','buy','deliver'].forEach((n,i)=>Music.sfx(n,i*.35));if(!Music.fxOn||!Music.allOn)notify(Music.allOn?'Effects are switched off.':'All sound is switched off.');return}
  else if(a==='start')start();
@@ -464,6 +482,9 @@ document.addEventListener('click',e=>{
  else if(a==='scrap')act(()=>E.scrap(s,id),'scrap');
  else if(a==='end'){s.warned=s.warned||{};s.warned[s.current]=true;act(()=>E.end(s))}
  else if(a==='endAsk')endAsk();
+ else if(a==='undo')act(()=>E.requestUndo(s));
+ else if(a==='undocancel')act(()=>E.cancelUndo(s));
+ else if(a==='undovote')undoVote(b);
  else if(a==='rules')rules();
  else if(a==='records')showRecords();
  else if(a==='deck')viewDeck();
@@ -488,6 +509,9 @@ document.addEventListener('keydown',e=>{
   if(e.shiftKey&&(cur===first||cur===$('dialog'))){e.preventDefault();last.focus()}
   else if(!e.shiftKey&&(cur===last||cur===$('dialog'))){e.preventDefault();first.focus()}}
 });
+document.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.key.toLowerCase()!=='z')return;
+ if(!$('overlay').hidden||screen!=='game'||!s||s.tutorial||!myTurn()||!E.canUndo(s)||/INPUT|SELECT|TEXTAREA/.test((document.activeElement||{}).tagName||''))return;
+ e.preventDefault();Music.sfx('tab');act(()=>E.requestUndo(s))});
 (function boot(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(SAVE))}catch(e){}
  musicUI();if(saved&&saved.v===1&&saved.players&&saved.board){s=E.migrate(saved);seenBoss=(s.bossDone||[]).length;screen='game';settle()}else renderSetup();

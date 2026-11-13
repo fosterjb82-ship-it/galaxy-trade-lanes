@@ -590,6 +590,18 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .hband.slim .ps i{display:none}
 .hband.slim .hmsg{flex:0 1 300px;min-width:220px}
 .hband.slim .hside3{flex:none}
+/* take back (Back button, approval dialog, log line) */
+.backb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0}
+.backb small{font:500 10px/1.2 var(--mono);letter-spacing:.04em;text-transform:none;opacity:.75;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hband.slim .hside3 .backb{min-height:52px;padding-inline:16px;max-width:260px}
+.undodlg h2{display:flex;align-items:center;gap:12px}
+.uvotes{list-style:none;padding:0;margin:14px 0;display:flex;flex-direction:column;gap:8px}
+.uvotes li{display:flex;align-items:center;gap:10px;border:2px solid var(--line);background:var(--panel2);padding:8px 10px}
+.uvotes li b{flex:1;font-size:18px}
+.ubtns{display:flex;gap:8px}
+.uok{color:var(--teal);font:600 13px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.undoi{display:inline-block;width:36px;text-align:center;font:700 20px/1 var(--disp);color:var(--teal)}
+.feed li.undo b{color:var(--teal)}
 /* Phone build. Loaded after style.css and overrides it.
    Layout: compact header, a fixed strip with this turn's pool, one scrolling tab body,
    and a tab bar in thumb reach at the bottom. Single dark look by choice. */
@@ -717,6 +729,8 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 #snd{min-width:0;min-height:38px;padding:4px 10px;font-size:13px}#snd small{font-size:8px}
 .srow{grid-template-columns:1fr 52px;gap:8px}.srow input[type=range]{grid-column:1/-1;grid-row:2}
 .brand{font-size:21px;white-space:nowrap}
+.mback{grid-column:1/-1;min-height:46px}
+.ubtns button{min-height:44px}
 </style>
 <div id="app"><header class="top"><div class="brand">GALAXY TRADE LANES<small>CARGO &amp; CREDITS · POCKET</small></div><nav><button id="snd" data-a="sound">Sound</button><button data-a="menu">Menu</button></nav><div class="status" id="status"></div></header><main id="stage"></main></div>
 <div id="overlay" class="overlay" hidden><section id="dialog" class="dialog notch" tabindex="-1" role="dialog" aria-modal="true" aria-label="Game dialog"></section></div>
@@ -800,7 +814,30 @@ function rnd(s){s.seed=(s.seed*16807)%2147483647;return (s.seed-1)/2147483646}
 function shuffle(s,a){for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd(s)*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const me=s=>s.players[s.current];
 const fresh=()=>({fuel:0,ore:0,tech:0,cr:0,combat:0,cargo:1});
-const live=s=>s.phase==='action'&&!s.over;
+const live=s=>s.phase==='action'&&!s.over&&!s.undoReq;
+/* ---------- taking back card plays ----------
+   Each card play by a human captain stores a snapshot of the game before it, so it can be taken back
+   one step at a time during that turn. Only card plays can be taken back: buying, delivering, patrols,
+   cashing in, scrapping, boss attacks and ending the turn clear the history. A play that drew cards
+   also clears it, since the drawn cards are now known. With other human captains in the game, every
+   one of them must agree first (undoReq); against computer captains only, it happens at once. */
+const UNDO_KEEP=['undo','undoReq','undoStop','log','events','evn','feedFrom','cpuSpeed','warned','tutorial'];
+let batching=false;
+function snapState(s){const o={};for(const k in s)if(!UNDO_KEEP.includes(k))o[k]=s[k];return JSON.stringify(o)}
+function clearUndo(s,stop){s.undo=[];s.undoReq=null;s.undoStop=stop||null}
+function undoLabel(what){const ks=Array.isArray(what)?what:[what];if(ks.length===1)return CARDS[ks[0]].n;const n={};ks.forEach(k=>n[CARDS[k].n]=(n[CARDS[k].n]||0)+1);return ks.length+' cards ('+Object.entries(n).map(([x,c])=>c>1?c+' '+x:x).join(', ')+')'}
+function undoVoters(s){return s.players.map((p,i)=>i).filter(i=>i!==s.current&&!s.players[i].bot)}
+function canUndo(s){return s.phase==='action'&&!s.over&&!s.undoReq&&!!(s.undo&&s.undo.length)}
+function stepBack(s){const e=s.undo.pop(),keep={};UNDO_KEEP.forEach(k=>{if(k in s)keep[k]=s[k]});
+ Object.keys(s).forEach(k=>delete s[k]);Object.assign(s,JSON.parse(e.snap),keep);s.undoReq=null;s.undoStop=null;
+ log(s,me(s).name+' took back '+undoLabel(e.what)+'.');ev(s,{t:'undo',ks:e.what});return true}
+function requestUndo(s){if(!canUndo(s))return false;const v=undoVoters(s);if(!v.length)return stepBack(s);
+ const top=s.undo[s.undo.length-1];s.undoReq={by:s.current,what:top.what,need:v,yes:[]};log(s,me(s).name+' asked to take back '+undoLabel(top.what)+'.');return true}
+function voteUndo(s,seat,yes){const r=s.undoReq;if(!r||!r.need.includes(seat)||r.yes.includes(seat))return false;
+ if(!yes){s.undoReq=null;log(s,s.players[seat].name+' said no to taking back '+undoLabel(r.what)+'.');return true}
+ r.yes.push(seat);if(r.yes.length===r.need.length){s.undoReq=null;stepBack(s)}return true}
+function cancelUndo(s){if(!s.undoReq)return false;s.undoReq=null;return true}
+function record(s,before,keys,drew){if(drew)clearUndo(s,keys[keys.length-1]);else{(s.undo=s.undo||[]).push({what:keys,snap:before});s.undoStop=null}}
 const need=c=>(c.req.ore||0)+(c.req.tech||0);
 const deckSize=p=>p.deck.length+p.discard.length+p.hand.length+p.played.length;
 function log(s,t){s.log.unshift('R'+s.round+' · '+t);if(s.log.length>50)s.log.length=50}
@@ -852,6 +889,7 @@ function play(s,i,target){
  if(!canPlay(s,i))return false;
  const p=me(s),k=p.hand[i],c=CARDS[k];
  if(k==='buyout'&&(!Number.isInteger(target)||target===s.current||!s.players[target]))return false;
+ const before=!p.bot&&!batching?snapState(s):null;
  let junk=null;
  if(c.junk&&Number.isInteger(target)&&target>=0&&target!==i&&target<p.hand.length)junk=target>i?target-1:target;
  p.hand.splice(i,1);
@@ -868,9 +906,12 @@ function play(s,i,target){
  if(c.draw)draw(s,p,c.draw);
  if(c.vp){p.profit+=c.vp;score(p,'charter',c.vp);log(s,p.name+' played '+c.n+' for +'+c.vp+' favor.')}
  if(k==='buyout'||c.vp)checkTarget(s);
+ if(before)record(s,before,[k],!!c.draw);
  return true;
 }
-function playResources(s){if(!live(s))return false;const p=me(s);let i;while((i=p.hand.findIndex(k=>CARDS[k].cat==='res'))>=0)play(s,i);return true}
+function playResources(s){if(!live(s))return false;const p=me(s),before=p.bot?null:snapState(s),keys=[];let i,drew=false;
+ batching=true;try{while((i=p.hand.findIndex(k=>CARDS[k].cat==='res'))>=0){const k=p.hand[i];if(!play(s,i))break;keys.push(k);if(CARDS[k].draw)drew=true}}finally{batching=false}
+ if(before&&keys.length)record(s,before,keys,drew);return true}
 function canComplete(s,c){if(!live(s)||!c||s.boss)return false;const p=me(s);return Object.entries(c.req).every(([r,n])=>p.pool[r]>=n)&&p.pool.cargo>=need(c)}
 function complete(s,id){
  const c=s.board.find(x=>x&&x.id===id),p=me(s);
@@ -932,7 +973,7 @@ function scrap(s,i){const p=me(s);if(!live(s)||p.scrapped||p.pool.cr<1||!Number.
  p.pool.cr--;const k=p.hand.splice(i,1)[0];s.trash.push(k);(p.scrappedCards=p.scrappedCards||[]).push(k);p.scrapped=true;log(s,p.name+' scrapped '+CARDS[k].n+'.');ev(s,{t:'scrap',k});return true}
 function end(s){
  if(!live(s))return false;
- const p=me(s);
+ const p=me(s);clearUndo(s);
  p.discard.push(...p.hand,...p.played);p.hand=[];p.played=[];p.pool=fresh();
  p.buys=1;p.actions=s.actionLimit;p.patrolled=false;p.scrapped=false;p.dbl=false;p.turnPlayed=[];draw(s,p,5);
  s.current++;
@@ -988,7 +1029,10 @@ function* botSteps(s){
  end(s);
 }
 function botTurn(s){if(s.over||!me(s).bot)return false;for(const _ of botSteps(s));return true}
-return {RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,begin,canPlay,play,playResources,playAll,canComplete,complete,buy,patrol,cashIn,CASH,scrap,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,attack,mercs,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
+const commit=f=>function(s,...a){const r=f(s,...a);if(r)clearUndo(s);return r};
+return {canUndo,requestUndo,voteUndo,cancelUndo,undoLabel,undoVoters,
+ begin:commit(begin),buy:commit(buy),complete:commit(complete),patrol:commit(patrol),cashIn:commit(cashIn),scrap:commit(scrap),attack:commit(attack),mercs:commit(mercs),
+ RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;
 const Sprites=(function(){
@@ -1677,6 +1721,7 @@ function feedLine(e){const c=e.k&&E.CARDS[e.k],nm=c?'<b>'+c.n+'</b>':'';
   case 'scrap':return {i:icon('cr',1.6),x:'Scrapped '+nm,cls:''};
   case 'hit':return {i:icon('combat',1.6),x:'Hit '+esc(e.boss)+' for <b class="down">'+e.d+'</b>'+(e.via==='mercs'?' with mercenaries':e.dbl?' (double)':''),cls:'hit'};
   case 'bossdown':return {i:icon('star',1.6),x:'<b class="acc">'+esc(e.boss)+' destroyed!</b>',cls:'big'};
+  case 'undo':return {i:'<span class="undoi">↶</span>',x:'Took back <b>'+esc(E.undoLabel(e.ks))+'</b>',cls:'undo'};
   case 'raid':return {i:icon('combat',1.6),x:'<b class="down">'+esc(e.boss)+' raided everyone</b>',cls:'hit'};
  }return {i:'',x:'',cls:''}}
 function feedPanel(){const all=(s.events||[]).slice().reverse(),now=e=>e.n>(s.feedFrom||0)&&e.who===s.current&&e.r===s.round;let last=null,rows='';
@@ -1749,7 +1794,7 @@ function render(){
  const msg=hidden?(ME!==null&&!s.over?esc(p.name)+' is taking their turn. Your hand appears when it is your turn.':s.over?'The run is over.':'Hand hidden until the captain begins.'):'Hand played out. Deliver, buy, or end your turn.';
  const hband=watching?'':'<section class="band hband'+(mode==='shop'?' slim':'')+'"><div class="hmain"><div class="bhead2"><h2>YOUR HAND</h2><span class="eyebrow">'+(hidden?'hidden':p.hand.length+' card'+(p.hand.length===1?'':'s'))+'</span>'+(mode==='shop'?(left||'<span class="hmsg">'+msg+'</span>'):'')+pool+'</div>'
   +(mode==='play'?'<div class="hwrap"><div class="hgrid" style="--n:'+p.hand.length+'">'+p.hand.map((k,i)=>cardEl(k,i,false)).join('')+'</div></div>':'')+'</div>'
-  +'<div class="hside3"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play resources</button><button class="primary endb" data-a="'+(s.over?'new':'endAsk')+'"'+(!s.over&&!on?' disabled':'')+'>'+(s.over?'New run':'End turn')+'</button>'+played(p,hidden)+'</div></section>';
+  +'<div class="hside3"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play resources</button>'+backBtn(on)+'<button class="primary endb" data-a="'+(s.over?'new':'endAsk')+'"'+(!s.over&&!on?' disabled':'')+'>'+(s.over?'New run':'End turn')+'</button>'+played(p,hidden)+'</div></section>';
  $('stage').innerHTML='<div class="desk-shell" data-mode="'+mode+'">'+rail+'<div class="bands">'+cband+mband+(watching?watchBand(p):hband)+'</div></div>';
  {const fl2=$('feedlog');if(fl2&&feedTop)fl2.scrollTop=feedTop}
  animAfter(snap);
@@ -1773,7 +1818,7 @@ function bossReport(){
   return true}
  return false}
 function phase(){
- if(screen!=='game')return;bossNews();if(bossReport())return;const p=E.me(s);
+ if(screen!=='game')return;if(s.undoReq&&!s.over){undoDialog();return}bossNews();if(bossReport())return;const p=E.me(s);
  if(s.over){victory(vicSeat);return}
  if(s.phase==='handoff'){if(!p.bot){const alarm=s.boss&&!s.boss.alerted;if(alarm)s.boss.alerted=true;Music.sfx(alarm?'boss':'turn')};modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Final round':'Next captain')+'</div><h2 class="upname">'+ava(p,56)+esc(p.name)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' favor</p>'+(s.boss?'<div class="threat soon">'+icon('combat',1.6)+'<span><b>'+esc(s.boss.name)+'</b> is blockading the lanes: '+s.boss.hp+' / '+s.boss.max+' hull left, '+(s.boss.until-s.round+1)+' round(s) to beat it.</span></div>':'')+'<div class="btns"><button class="primary" data-a="begin">Begin turn</button></div>');return}
  hide();
@@ -1783,6 +1828,7 @@ function rules(){modal('<div class="eyebrow">How Galaxy Trade Lanes works</div><
  +'<p><b class="acc">Playing cards.</b> Resource cards are unlimited. Order cards (anything that draws, adds cargo, combat or deals) use one order; the default is two orders per turn. Draw effects resolve at once.</p>'
  +'<p><b class="acc">Contracts.</b> The shared board holds 3 to 5 jobs. Pay the listed fuel, ore, tech, credits and combat, plus cargo space equal to ore + tech. Your base space is 1, so play Hold Rigs and Barges to carry more. Each delivery uses its space for the rest of the turn. A replacement appears immediately.</p>'
  +'<p><b class="acc">Market.</b> Eight core cards are in every game. A Standard market adds 4 random specialists (always one costing 5 or more and one extra combat card); a Full market offers all 16.</p>'
+ +'<p><b class="acc">Taking back.</b> Back takes back your last card play, one step at a time, until you buy, deliver, patrol, cash in, scrap, hit a boss or end your turn. A card that drew cards cannot be taken back, since you have seen the new cards. With other human captains in the game, every one of them must agree; against computer captains it is instant.</p>'
  +'<p><b class="acc">Deals.</b> One deal (purchase) per turn; Brokerage adds one. Bought cards go to your discard pile and have no immediate effect.</p>'
  +'<p><b class="acc">Combat.</b> Combat covers escort requirements. Or spend 3 combat and 1 fuel for a pirate patrol worth +5 favor, once per turn. There are no dice.</p>'
  +'<p><b class="acc">Buyout.</b> Costs 6. Take up to 2 favor from a rival, draw a card, and scrap the card.</p>'
@@ -1831,7 +1877,7 @@ function encyclopedia(sec){sec=sec||'cards';
  modal('<div class="eyebrow">Galaxy Trade Lanes</div><h2>Encyclopedia</h2><div class="dtabs">'+tabs.map(([k,l])=>'<button class="sm'+(k===sec?' on':'')+'" data-a="enc" data-sec="'+k+'">'+l+'</button>').join('')+'</div>'+h+'<div class="btns"><button class="primary" data-a="close">Back</button></div>',true)}
 function viewDone(){modal('<div class="eyebrow">All captains · this run</div><h2>Deliveries.</h2>'+(s.done.length?[...s.done].reverse().map(c=>'<div class="done"><div><div class="eyebrow">Round '+c.round+' · '+esc(c.captain)+'</div><b>'+esc(c.name)+'</b> <span class="mute">to '+esc(c.dest)+'</span></div><strong>+'+c.profit+'</strong></div>').join(''):'<p class="mute">No deliveries yet.</p>')+'<div class="btns"><button class="primary" data-a="close">Back</button></div>')}
 function viewLog(){modal('<div class="eyebrow">Latest 50 events</div><h2>Run log.</h2><div class="log">'+s.log.map(t=>'<div>'+esc(t)+'</div>').join('')+'</div><div class="btns"><button class="primary" data-a="close">Back</button></div>')}
-function closeDlg(){if(screen==='game'&&s&&(s.phase==='handoff'||s.over||document.querySelector('#dialog [data-a=bossok]'))){if(document.querySelector('#dialog [data-a=bossok]'))return;phase()}else hide()}
+function closeDlg(){if(document.querySelector('#dialog .undodlg'))return;if(screen==='game'&&s&&(s.phase==='handoff'||s.over||document.querySelector('#dialog [data-a=bossok]'))){if(document.querySelector('#dialog [data-a=bossok]'))return;phase()}else hide()}
 
 /* ---------- end-of-turn check ---------- */
 function leftovers(){const p=E.me(s),out=[];
@@ -1846,6 +1892,22 @@ function leftovers(){const p=E.me(s),out=[];
  const n=Math.floor(p.pool.cr/E.CASH);
  if(n)out.push('Cash in <b>'+n*E.CASH+'</b> credits for <b class="acc">+'+n+'</b> favor');
  return out}
+/* ---------- taking back a card play ---------- */
+function backBtn(on,cls){if(!s||s.tutorial)return '';const ok=on&&E.canUndo(s),top=ok?s.undo[s.undo.length-1]:null,others=E.undoVoters(s).length;
+ const tip=ok?'Take back '+E.undoLabel(top.what)+(others?'. Every other captain must agree.':'')+' (Ctrl+Z)'
+  :on&&s.undoStop?E.CARDS[s.undoStop].n+' drew cards, so it cannot be taken back.':'Take back your last card play. Purchases and other moves cannot be taken back.';
+ return '<button class="backb'+(cls?' '+cls:'')+'" data-a="undo"'+(ok?'':' disabled')+' title="'+esc(tip)+'"><span>↶ Back</span><small>'+(ok?esc(E.undoLabel(top.what)):on&&s.undoStop?'not after '+esc(E.CARDS[s.undoStop].n):'card plays only')+'</small></button>'}
+function undoDialog(){const r=s.undoReq;if(!r)return;const by=s.players[r.by],what=esc(E.undoLabel(r.what));
+ const rows=r.need.map(i=>{const p=s.players[i],ok=r.yes.includes(i),mine=ME===null||ME===i;
+  return '<li>'+ava(p,32)+'<b>'+esc(p.name)+'</b>'+(ok?'<span class="uok">Agreed</span>':mine?'<span class="ubtns"><button class="primary" data-a="undovote" data-who="'+i+'" data-yes="1">Agree</button><button data-a="undovote" data-who="'+i+'" data-yes="0">Decline</button></span>':'<span class="mute">Deciding…</span>')+'</li>'}).join('');
+ const asker=ME===null||ME===r.by;
+ modal('<div class="undodlg"><div class="eyebrow">Take back a card play</div><h2>'+ava(by,40)+esc(by.name)+' wants to take back '+what+'.</h2>'
+  +'<p class="mute">Every other captain has to agree. '+(ME===null?'Each captain answers for themselves.':ME===r.by?'Waiting for their answers.':'')+' One no keeps the play.</p>'
+  +'<ul class="uvotes">'+rows+'</ul>'+(asker?'<div class="btns"><button data-a="undocancel">'+(ME===null?'Withdraw request':'Cancel request')+'</button></div>':'')+'</div>')}
+function undoVote(b){const who=Number(b.dataset.who),yes=b.dataset.yes==='1',name=s.players[who].name;
+ Promise.resolve(E.voteUndo(s,who,yes)).then(ok=>{if(ok===false)return;Music.sfx('tab');
+  if(ME===null){if(!yes)notify(name+' said no. The play stands.');save();render();phase()}})}
+
 function endAsk(){if(!s||screen!=='game'||!E.live(s))return;s.warned=s.warned||{};const left=leftovers();
  if(left.length){modal('<div class="eyebrow">Before you end your turn</div><h2>You still have moves.</h2><ul class="left">'+left.map(x=>'<li>'+x+'</li>').join('')+'</ul><p class="mute">Unspent resources and credits expire when your turn ends.</p><div class="btns"><button data-a="close">Keep playing</button><button class="primary" data-a="end">End turn anyway</button></div>');return}
  if(s.warned[s.current]){act(()=>E.end(s));return}
@@ -1880,7 +1942,7 @@ document.addEventListener('change',e=>{if(soundChange(e))e.stopImmediatePropagat
 document.addEventListener('click',e=>{
  const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
  const a=b.dataset.a,id=Number(b.dataset.id);
- if(['tab','menu','rules','records','deck','done','log','enc','decks','close','review','new','endAsk'].includes(a))Music.sfx('tab');
+ if(['tab','menu','rules','records','deck','done','log','enc','decks','close','review','new','endAsk','undo','undocancel'].includes(a))Music.sfx('tab');
  if(a==='sound'){Music.sfx('tab');soundPanel();musicUI();return}
  if(a==='sndtest'){['play','buy','deliver'].forEach((n,i)=>Music.sfx(n,i*.35));if(!Music.fxOn||!Music.allOn)notify(Music.allOn?'Effects are switched off.':'All sound is switched off.');return}
  else if(a==='start')start();
@@ -1897,6 +1959,9 @@ document.addEventListener('click',e=>{
  else if(a==='scrap')act(()=>E.scrap(s,id),'scrap');
  else if(a==='end'){s.warned=s.warned||{};s.warned[s.current]=true;act(()=>E.end(s))}
  else if(a==='endAsk')endAsk();
+ else if(a==='undo')act(()=>E.requestUndo(s));
+ else if(a==='undocancel')act(()=>E.cancelUndo(s));
+ else if(a==='undovote')undoVote(b);
  else if(a==='rules')rules();
  else if(a==='records')showRecords();
  else if(a==='deck')viewDeck();
@@ -1921,6 +1986,9 @@ document.addEventListener('keydown',e=>{
   if(e.shiftKey&&(cur===first||cur===$('dialog'))){e.preventDefault();last.focus()}
   else if(!e.shiftKey&&(cur===last||cur===$('dialog'))){e.preventDefault();first.focus()}}
 });
+document.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.key.toLowerCase()!=='z')return;
+ if(!$('overlay').hidden||screen!=='game'||!s||s.tutorial||!myTurn()||!E.canUndo(s)||/INPUT|SELECT|TEXTAREA/.test((document.activeElement||{}).tagName||''))return;
+ e.preventDefault();Music.sfx('tab');act(()=>E.requestUndo(s))});
 (function boot(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(SAVE))}catch(e){}
  musicUI();if(saved&&saved.v===1&&saved.players&&saved.board){s=E.migrate(saved);seenBoss=(s.bossDone||[]).length;screen='game';settle()}else renderSetup();
@@ -1949,7 +2017,7 @@ render=function(){
  if(tab==='hand'){
   const hasRes=p.hand.some(k=>E.CARDS[k]&&E.CARDS[k].cat==='res');
   const canPatrol=on&&!p.patrolled&&p.pool.combat>=3&&p.pool.fuel>=1;
-  h='<div class="mact"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play all resources</button><button class="mpatrol'+(canPatrol?' primary':'')+'" data-a="patrol"'+(canPatrol?'':' disabled')+'>'+(p.patrolled?'Patrol cleared':'Pirate patrol +5')+'<small>3 combat + 1 fuel · once per turn'+(E.delayLeft(s)?' · delays boss 1 round':'')+'</small></button></div>'
+  h='<div class="mact"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play all resources</button><button class="mpatrol'+(canPatrol?' primary':'')+'" data-a="patrol"'+(canPatrol?'':' disabled')+'>'+(p.patrolled?'Patrol cleared':'Pirate patrol +5')+'<small>3 combat + 1 fuel · once per turn'+(E.delayLeft(s)?' · delays boss 1 round':'')+'</small></button>'+backBtn(on,'mback')+'</div>'
    +(s.boss?bossPanel(true):'')
    +cashBtn(p,on)
    +(hidden?'<div class="empty">Hand hidden until the captain begins.</div>':p.hand.length?'<div class="grid">'+p.hand.map((k,i)=>cardEl(k,i,false)).join('')+'</div>':'<div class="empty">Hand played out. Deliver, buy, or end your turn.</div>')

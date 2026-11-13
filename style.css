@@ -585,3 +585,15 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .hband.slim .ps i{display:none}
 .hband.slim .hmsg{flex:0 1 300px;min-width:220px}
 .hband.slim .hside3{flex:none}
+/* take back (Back button, approval dialog, log line) */
+.backb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0}
+.backb small{font:500 10px/1.2 var(--mono);letter-spacing:.04em;text-transform:none;opacity:.75;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hband.slim .hside3 .backb{min-height:52px;padding-inline:16px;max-width:260px}
+.undodlg h2{display:flex;align-items:center;gap:12px}
+.uvotes{list-style:none;padding:0;margin:14px 0;display:flex;flex-direction:column;gap:8px}
+.uvotes li{display:flex;align-items:center;gap:10px;border:2px solid var(--line);background:var(--panel2);padding:8px 10px}
+.uvotes li b{flex:1;font-size:18px}
+.ubtns{display:flex;gap:8px}
+.uok{color:var(--teal);font:600 13px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.undoi{display:inline-block;width:36px;text-align:center;font:700 20px/1 var(--disp);color:var(--teal)}
+.feed li.undo b{color:var(--teal)}

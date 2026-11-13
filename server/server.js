@@ -36,6 +36,7 @@ function viewFor(seat) {
   const g = T.game; if (!g) return null;
   const v = JSON.parse(JSON.stringify(g));
   delete v.seed; delete v.bossOrder; v.cdeck = v.cdeck.map(() => 0);
+  v.undo = (v.undo || []).map(e => ({ what: e.what }));   // take-back snapshots hold every hidden card: names only
   if (!v.over) v.players.forEach((p, i) => {
     if (i === seat) { p.deck.sort(); return; }
     p.hand = p.hand.map(() => '?'); p.deck = p.deck.map(() => '?');
@@ -61,7 +62,8 @@ const TURN_MOVES = {
   play: (g, a) => E.play(g, int(a[0]), a[1] === undefined || a[1] === null ? undefined : int(a[1])),
   playResources: g => E.playResources(g), buy: (g, a) => E.buy(g, String(a[0])), complete: (g, a) => E.complete(g, int(a[0])),
   patrol: g => E.patrol(g), cashIn: g => E.cashIn(g), scrap: (g, a) => E.scrap(g, int(a[0])),
-  attack: g => E.attack(g), mercs: g => E.mercs(g), end: g => E.end(g)
+  attack: g => E.attack(g), mercs: g => E.mercs(g), end: g => E.end(g),
+  requestUndo: g => E.requestUndo(g), cancelUndo: g => E.cancelUndo(g)
 };
 const int = v => (Number.isInteger(Number(v)) ? Number(v) : NaN);
 function startTurnIfNeeded() { const g = T.game; if (g && !g.over && g.phase === 'handoff') E.begin(g); }
@@ -71,6 +73,11 @@ function act(tok, fn, args) {
   if (!me || !g) return { ok: false, error: 'No game is running.' };
   const seat = T.players.indexOf(me);
   if (fn === 'confirmBoss') { const ok = E.confirmBoss(g, int(args[0]), seat); if (ok) changed(); return { ok }; }
+  if (fn === 'voteUndo') {   // every other captain answers a take-back request, whoever's turn it is
+    const ok = E.voteUndo(g, seat, !!(Array.isArray(args) && args[0]));
+    if (ok) changed();
+    return { ok };
+  }
   if (!TURN_MOVES[fn]) return { ok: false, error: 'Unknown move.' };
   if (g.over) return { ok: false, error: 'The run is over.' };
   if (g.current !== seat) return { ok: false, error: 'It is not your turn.' };
@@ -119,7 +126,7 @@ function lobby(tok, op, body) {
   }
   if (op === 'skip') {       // move a stuck or absent captain's turn along
     const g = T.game; if (!g || g.over) return { ok: false, error: 'No run in progress.' };
-    const who = g.players[g.current].name; E.end(g); startTurnIfNeeded(); changed('The host skipped ' + who + "'s turn."); return { ok: true };
+    const who = g.players[g.current].name; E.cancelUndo(g); E.end(g); startTurnIfNeeded(); changed('The host skipped ' + who + "'s turn."); return { ok: true };
   }
   if (op === 'lobby') { T.game = null; changed('The host opened the lobby for a new run.'); return { ok: true }; }
   if (op === 'host') { const p = T.players[int(body.seat)]; if (!p) return { ok: false }; T.hostToken = p.token; changed(p.name + ' is now the host.'); return { ok: true }; }

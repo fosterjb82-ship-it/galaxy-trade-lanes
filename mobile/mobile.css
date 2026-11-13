@@ -125,3 +125,5 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 #snd{min-width:0;min-height:38px;padding:4px 10px;font-size:13px}#snd small{font-size:8px}
 .srow{grid-template-columns:1fr 52px;gap:8px}.srow input[type=range]{grid-column:1/-1;grid-row:2}
 .brand{font-size:21px;white-space:nowrap}
+.mback{grid-column:1/-1;min-height:46px}
+.ubtns button{min-height:44px}

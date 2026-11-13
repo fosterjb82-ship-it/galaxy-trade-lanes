@@ -16,6 +16,7 @@ Object.assign(Engine,{
  play:(g,i,t)=>send('play',[i,t]),playResources:()=>send('playResources',[]),buy:(g,k)=>send('buy',[k]),complete:(g,i)=>send('complete',[i]),
  patrol:()=>send('patrol',[]),cashIn:()=>send('cashIn',[]),scrap:(g,i)=>send('scrap',[i]),attack:()=>send('attack',[]),mercs:()=>send('mercs',[]),
  end:()=>send('end',[]),
+ requestUndo:()=>send('requestUndo',[]),cancelUndo:()=>send('cancelUndo',[]),voteUndo:(g,seat,yes)=>send('voteUndo',[yes?1:0]),
  confirmBoss:(g,k,i)=>{ORIG_CONFIRM(g,k,i);send('confirmBoss',[k]);return true}
 });
 act=function(fn,snd){if(!myTurn())return;if(document.querySelector('#dialog [data-a=end]'))hide();Promise.resolve(fn()).then(ok=>{if(ok===false)notify('Not enough resources, cargo, credits, orders or deals for that.');else if(snd)Music.sfx(snd)})};
@@ -64,7 +65,7 @@ function apply(p){last=p;
  lobbySeen=true;
  if(!p.started||!p.game){ME=null;s=null;if(!$('overlay').hidden&&document.querySelector('#dialog [data-a=bossok]'))hide();lobbyScreen(p);roster(p);return}
  const g=p.game;s=g;ME=p.you.seat;s.warned=warned;
- const turnKey=g.round+':'+g.current,keepDialog=!$('overlay').hidden&&!document.querySelector('#dialog [data-a=bossok]')&&screen==='game'&&!g.over&&E.unseen(g,ME)<0&&turnKey===apply.turnKey;apply.turnKey=turnKey;screen='game';
+ const turnKey=g.round+':'+g.current,keepDialog=!$('overlay').hidden&&!document.querySelector('#dialog [data-a=bossok]')&&!document.querySelector('#dialog .undodlg')&&!g.undoReq&&screen==='game'&&!g.over&&E.unseen(g,ME)<0&&turnKey===apply.turnKey;apply.turnKey=turnKey;screen='game';
  const mine=myTurn();if(mine&&!wasMyTurn){Music.sfx('turn');notify('Your turn, '+p.you.name+'.')}wasMyTurn=mine;
  if(g.over&&!recorded[p.server+g.id]){recorded[p.server+g.id]=1;try{record()}catch(e){}}
  render();roster(p);
