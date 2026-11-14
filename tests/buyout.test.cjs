@@ -29,11 +29,14 @@ assert(!E.CARDS.buyout.draw, 'no longer draws');
   assert(!E.canPlay(s, 0) && !E.play(s, 0, 0));
 }
 
-// must be able to pay the contract's resources; cargo space is not needed
+// must be able to pay the contract's resources and its cargo space (ore + tech)
 {
   const { s, c, ann } = setup();
   assert(!E.canPlay(s, 0), 'empty pool cannot pay');
-  Object.assign(ann.pool, c.req); ann.pool.cargo = 0;
+  Object.assign(ann.pool, c.req); ann.pool.cargo = E.need(c) - 1;
+  assert(E.need(c) > 0, 'test contract needs cargo');
+  assert(!E.canPlay(s, 0), 'one cargo short');
+  ann.pool.cargo = E.need(c);
   assert(E.canPlay(s, 0));
   assert.deepStrictEqual(E.buyoutTargets(s).map(d => d.id), [c.id]);
   const r = Object.keys(c.req).find(k => c.req[k]); ann.pool[r]--;
@@ -48,7 +51,7 @@ assert(!E.CARDS.buyout.draw, 'no longer draws');
   assert(!E.play(s, 0, 999), 'unknown contract');
   assert(E.play(s, 0, c.id));
   Object.entries(c.req).forEach(([r, n]) => assert.strictEqual(ann.pool[r], pool[r] - n, 'paid ' + r));
-  assert.strictEqual(ann.pool.cargo, pool.cargo, 'cargo untouched');
+  assert.strictEqual(ann.pool.cargo, pool.cargo - E.need(c), 'cargo space used');
   assert.strictEqual(ann.profit, annFavor + c.profit);
   assert.strictEqual(ben.profit, benFavor - c.profit);
   assert.strictEqual(ann.completed, 1); assert.strictEqual(ben.completed, 0);
@@ -83,7 +86,8 @@ assert(!E.CARDS.buyout.draw, 'no longer draws');
 // a computer captain uses it when the contract is worth more than anything it could deliver
 {
   const { s, c, ann } = setup();
-  ann.bot = true; ann.hand = ['buyout']; Object.assign(ann.pool, { ...c.req, cargo: 0 });
+  ann.bot = true; ann.hand = ['buyout']; Object.assign(ann.pool, { ...c.req, cargo: E.need(c) });
+  s.done.find(x => x.id === c.id).profit = 99;   // worth more than any board contract it could deliver instead
   E.botTurn(s);
   assert.strictEqual(s.done.find(x => x.id === c.id).player, 0);
 }

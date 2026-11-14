@@ -634,7 +634,7 @@ const CARDS={
  broker:{n:'Brokerage',cat:'act',kind:'Economy',g:{cr:2},buys:1,cost:4,t:'Gain 2 credits and 1 extra deal.'},
  deck:{n:'Process Deck',cat:'act',kind:'Industry',g:{ore:1,tech:1,cargo:2},cost:4,t:'Gain 1 ore, 1 tech and 2 cargo space.'},
  wing:{n:'Escort Wing',cat:'act',kind:'Combat',g:{combat:2,fuel:1},draw:1,cost:4,t:'Gain 2 combat and 1 fuel. Draw a card.'},
- buyout:{n:'Buyout Contract',cat:'act',kind:'Tactics',g:{},cost:7,t:'Take a contract a rival delivered: pay its resources (not cargo) and its favor moves to you. Scrap this card.'},
+ buyout:{n:'Buyout Contract',cat:'act',kind:'Tactics',g:{},cost:7,t:'Take a contract a rival delivered: pay its resources and cargo space, and its favor moves to you. Scrap this card.'},
  weapons:{n:'Weapons Officer',cat:'act',kind:'Crew',g:{combat:2},draw:1,dbl:1,cost:5,t:'Gain 2 combat and draw 1 card. This turn, combat you spend on a pirate boss deals double damage.'},
  salvage:{n:'Salvage Crew',cat:'act',kind:'Crew',g:{},draw:2,junk:1,cost:5,t:'Scrap 1 other card from your hand for free, then draw 2 cards.'},
  charter:{n:'Trade Charter',cat:'res',kind:'Economy',g:{cr:2},vp:2,cost:8,t:'Gain 2 credits and 2 favor.'}
@@ -764,7 +764,7 @@ function begin(s){if(s.over||s.phase!=='handoff')return false;s.phase='action';s
 function checkTarget(s){if(s.winMode==='profit'&&s.finalRound===null&&me(s).profit>=s.target){s.finalRound=s.round;log(s,'Favor target reached. Round '+s.round+' is the last round.')}}
 function canPlay(s,i){const p=me(s);return live(s)&&Number.isInteger(i)&&i>=0&&i<p.hand.length&&(CARDS[p.hand[i]].cat==='res'||s.actionLimit===0||p.actions>0)&&(p.hand[i]!=='buyout'||buyoutTargets(s).length>0)}
 // Buyout Contract: contracts other captains delivered that the active captain can pay for right now
-function buyoutTargets(s){const p=me(s);return s.done.filter(d=>d.player!==s.current&&Object.entries(d.req).every(([r,n])=>p.pool[r]>=n))}
+function buyoutTargets(s){const p=me(s);return s.done.filter(d=>d.player!==s.current&&Object.entries(d.req).every(([r,n])=>p.pool[r]>=n)&&p.pool.cargo>=need(d))}
 function play(s,i,target){
  if(!canPlay(s,i))return false;
  const p=me(s),k=p.hand[i],c=CARDS[k];
@@ -778,9 +778,9 @@ function play(s,i,target){
  (p.turnPlayed=p.turnPlayed||[]).push(k);
  if(c.cat==='act'&&s.actionLimit)p.actions--;
  if(k==='buyout'){
-  // pay the contract's resources; its favor moves across (the old owner never drops below 0)
+  // pay the contract's resources and cargo space, as for a delivery; its favor moves across (the old owner never drops below 0)
   const from=bo.player,v=s.players[from],amt=bo.profit,lost=Math.min(amt,v.profit);
-  Object.entries(bo.req).forEach(([r,n])=>p.pool[r]-=n);
+  Object.entries(bo.req).forEach(([r,n])=>p.pool[r]-=n);p.pool.cargo-=need(bo);
   v.profit-=lost;p.profit+=amt;v.completed--;p.completed++;score(p,'buyout',amt);score(v,'stolen',-lost);
   Object.assign(bo,{player:s.current,captain:p.name,from,fromName:v.name,boughtRound:s.round});
   s.trash.push(k);(p.scrappedCards=p.scrappedCards||[]).push(k);
@@ -1525,7 +1525,7 @@ function buyoutPick(idx){const ok=new Set(E.buyoutTargets(s).map(d=>d.id)),all=s
  if(!all.length)return '<select id="bt'+idx+'" aria-label="Contract to buy out" disabled><option>No rival contracts yet</option></select>';
  return '<select id="bt'+idx+'" class="bosel" data-bo="'+idx+'" aria-label="Contract to buy out">'+all.map(d=>'<option value="'+d.id+'"'+(ok.has(d.id)?'':' disabled')+'>'+esc(d.name)+' +'+d.profit+' · '+esc(s.players[d.player].name)+(ok.has(d.id)?'':' (can\'t pay)')+'</option>').join('')+'</select>'
   +'<div class="bopay" id="bp'+idx+'">'+boLine(all[0],ok.has(all[0].id))+'</div>'}
-function boLine(d,ok){return d?'<span>'+icon('star',1.4)+'<b>+'+d.profit+'</b> from '+esc(s.players[d.player].name)+'</span><span class="'+(ok?'':'short')+'">Pay '+Object.entries(d.req).filter(([,n])=>n).map(([r,n])=>tok(r,n,E.me(s).pool[r]>=n)).join('')+'</span>':''}
+function boLine(d,ok){return d?'<span>'+icon('star',1.4)+'<b>+'+d.profit+'</b> from '+esc(s.players[d.player].name)+'</span><span class="'+(ok?'':'short')+'">Pay '+Object.entries(d.req).filter(([,n])=>n).map(([r,n])=>tok(r,n,E.me(s).pool[r]>=n)).join('')+(E.need(d)?tok('cargo',E.need(d),E.me(s).pool.cargo>=E.need(d)):'')+'</span>':''}
 document.addEventListener('change',e=>{const el=e.target;if(!el.classList||!el.classList.contains('bosel')||!s)return;const d=s.done.find(x=>x.id===Number(el.value)),bp=$('bp'+el.dataset.bo);
  if(bp)bp.innerHTML=boLine(d,E.buyoutTargets(s).some(x=>x.id===(d&&d.id)))});
 const isSpec=k=>!E.CORE.includes(k);
@@ -1728,7 +1728,7 @@ function rules(){modal('<div class="eyebrow">How Galaxy Trade Lanes works</div><
  +'<p><b class="acc">Taking back.</b> Back takes back your last card play, one step at a time, until you buy, deliver, patrol, cash in, scrap, hit a boss or end your turn. A card that drew cards cannot be taken back, since you have seen the new cards. With other human captains in the game, every one of them must agree; against computer captains it is instant.</p>'
  +'<p><b class="acc">Deals.</b> One deal (purchase) per turn; Brokerage adds one. Bought cards go to your discard pile and have no immediate effect.</p>'
  +'<p><b class="acc">Combat.</b> Combat covers escort requirements. Or spend 3 combat and 1 fuel for a pirate patrol worth +5 favor, once per turn. There are no dice.</p>'
- +'<p><b class="acc">Buyout Contract.</b> Costs 7. An order card: take a contract another captain already delivered. Pay its resources (no cargo space needed); its favor moves from them to you, and the card is scrapped.</p>'
+ +'<p><b class="acc">Buyout Contract.</b> Costs 7. An order card: take a contract another captain already delivered. Pay its resources and cargo space, as if delivering it; its favor moves from them to you, and the card is scrapped.</p>'
  +'<p><b class="acc">Pirate threats.</b> Every '+E.BOSS_EVERY+' rounds a pirate boss blockades the lanes (each pirate patrol pushes the next one back '+E.PATROL_DELAY+' round, at most '+E.MAX_DELAY+' rounds per boss): no contracts can be delivered until it is beaten. Spend combat (1 damage each) or hire mercenaries (usually '+E.MERC+' credits per damage) on your turn. When it falls, every captain earns +1 favor per damage dealt (some bosses pay more) and the final blow earns +'+E.FINAL_BLOW+'. If it survives (usually '+E.BOSS_ROUNDS+' rounds) it raids every captain for '+E.RAID+' favor (double for whoever dealt the least damage) and leaves. Each boss is drawn at random and has its own ability.</p>'
  +'<p><b class="acc">Weapons Officer.</b> Costs 5. An order card: gain 2 combat and draw a card; combat you spend on a boss that turn deals double damage.</p>'
  +'<p><b class="acc">Salvage Crew.</b> Costs 5. An order card: scrap 1 other card from your hand for free (this does not use your once-per-turn scrap), then draw 2.</p>'

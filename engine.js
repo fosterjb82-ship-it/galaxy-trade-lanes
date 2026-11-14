@@ -19,7 +19,7 @@ const CARDS={
  broker:{n:'Brokerage',cat:'act',kind:'Economy',g:{cr:2},buys:1,cost:4,t:'Gain 2 credits and 1 extra deal.'},
  deck:{n:'Process Deck',cat:'act',kind:'Industry',g:{ore:1,tech:1,cargo:2},cost:4,t:'Gain 1 ore, 1 tech and 2 cargo space.'},
  wing:{n:'Escort Wing',cat:'act',kind:'Combat',g:{combat:2,fuel:1},draw:1,cost:4,t:'Gain 2 combat and 1 fuel. Draw a card.'},
- buyout:{n:'Buyout Contract',cat:'act',kind:'Tactics',g:{},cost:7,t:'Take a contract a rival delivered: pay its resources (not cargo) and its favor moves to you. Scrap this card.'},
+ buyout:{n:'Buyout Contract',cat:'act',kind:'Tactics',g:{},cost:7,t:'Take a contract a rival delivered: pay its resources and cargo space, and its favor moves to you. Scrap this card.'},
  weapons:{n:'Weapons Officer',cat:'act',kind:'Crew',g:{combat:2},draw:1,dbl:1,cost:5,t:'Gain 2 combat and draw 1 card. This turn, combat you spend on a pirate boss deals double damage.'},
  salvage:{n:'Salvage Crew',cat:'act',kind:'Crew',g:{},draw:2,junk:1,cost:5,t:'Scrap 1 other card from your hand for free, then draw 2 cards.'},
  charter:{n:'Trade Charter',cat:'res',kind:'Economy',g:{cr:2},vp:2,cost:8,t:'Gain 2 credits and 2 favor.'}
@@ -149,7 +149,7 @@ function begin(s){if(s.over||s.phase!=='handoff')return false;s.phase='action';s
 function checkTarget(s){if(s.winMode==='profit'&&s.finalRound===null&&me(s).profit>=s.target){s.finalRound=s.round;log(s,'Favor target reached. Round '+s.round+' is the last round.')}}
 function canPlay(s,i){const p=me(s);return live(s)&&Number.isInteger(i)&&i>=0&&i<p.hand.length&&(CARDS[p.hand[i]].cat==='res'||s.actionLimit===0||p.actions>0)&&(p.hand[i]!=='buyout'||buyoutTargets(s).length>0)}
 // Buyout Contract: contracts other captains delivered that the active captain can pay for right now
-function buyoutTargets(s){const p=me(s);return s.done.filter(d=>d.player!==s.current&&Object.entries(d.req).every(([r,n])=>p.pool[r]>=n))}
+function buyoutTargets(s){const p=me(s);return s.done.filter(d=>d.player!==s.current&&Object.entries(d.req).every(([r,n])=>p.pool[r]>=n)&&p.pool.cargo>=need(d))}
 function play(s,i,target){
  if(!canPlay(s,i))return false;
  const p=me(s),k=p.hand[i],c=CARDS[k];
@@ -163,9 +163,9 @@ function play(s,i,target){
  (p.turnPlayed=p.turnPlayed||[]).push(k);
  if(c.cat==='act'&&s.actionLimit)p.actions--;
  if(k==='buyout'){
-  // pay the contract's resources; its favor moves across (the old owner never drops below 0)
+  // pay the contract's resources and cargo space, as for a delivery; its favor moves across (the old owner never drops below 0)
   const from=bo.player,v=s.players[from],amt=bo.profit,lost=Math.min(amt,v.profit);
-  Object.entries(bo.req).forEach(([r,n])=>p.pool[r]-=n);
+  Object.entries(bo.req).forEach(([r,n])=>p.pool[r]-=n);p.pool.cargo-=need(bo);
   v.profit-=lost;p.profit+=amt;v.completed--;p.completed++;score(p,'buyout',amt);score(v,'stolen',-lost);
   Object.assign(bo,{player:s.current,captain:p.name,from,fromName:v.name,boughtRound:s.round});
   s.trash.push(k);(p.scrappedCards=p.scrappedCards||[]).push(k);
