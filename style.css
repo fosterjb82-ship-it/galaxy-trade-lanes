@@ -597,3 +597,11 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .uok{color:var(--teal);font:600 13px var(--mono);letter-spacing:.1em;text-transform:uppercase}
 .undoi{display:inline-block;width:36px;text-align:center;font:700 20px/1 var(--disp);color:var(--teal)}
 .feed li.undo b{color:var(--teal)}
+/* Buyout Contract target line */
+.bopay{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;font-size:13px;color:var(--mute)}
+.bopay span{display:inline-flex;align-items:center;gap:4px}
+.bopay b{color:var(--amber)}
+.bopay .tok{font-size:13px}
+.hgrid .pc.bo .art{aspect-ratio:88/34}
+.hgrid .pc.bo .pb{gap:4px}
+.hgrid .pc.bo p{font-size:13px;line-height:1.3}

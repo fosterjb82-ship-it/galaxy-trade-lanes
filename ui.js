@@ -148,12 +148,21 @@ function cardEl(k,idx,market){const c=E.CARDS[k],p=E.me(s),on=myTurn();
  if(market)h+='<button data-a="buy" data-key="'+k+'"'+(!on||p.buys<1||s.market[k]<1||p.pool.cr<c.cost?' disabled':'')+'>Buy · '+c.cost+' cr</button>';
  else{
   if(k==='salvage')h+='<select id="bt'+idx+'" aria-label="Card to scrap">'+p.hand.map((t,j)=>j!==idx?'<option value="'+j+'">Scrap '+E.CARDS[t].n+'</option>':'').join('')+'<option value="-1">Scrap nothing</option></select>';
-  if(k==='buyout')h+='<select id="bt'+idx+'" aria-label="Buyout target">'+s.players.map((t,j)=>j!==s.current?'<option value="'+j+'">'+esc(t.name)+' · '+t.profit+'</option>':'').join('')+'</select>';
+  if(k==='buyout')h+=buyoutPick(idx);
   h+='<button class="'+(c.cat==='act'?'primary':'')+'" data-a="play" data-id="'+idx+'"'+(on&&E.canPlay(s,idx)?'':' disabled')+'>'+(c.cat==='res'?'Play':'Give order')+'</button>'
   +'<button class="scr" data-a="scrap" data-id="'+idx+'"'+(!on||p.scrapped||p.pool.cr<1?' disabled':'')+'>Scrap · 1 cr</button>';
  }
  return h+'</div></article>';
 }
+// Buyout Contract: pick a contract another captain delivered; ones you cannot pay for yet are listed but disabled
+const reqText=r=>Object.entries(r).filter(([,n])=>n).map(([k,n])=>n+' '+SHORT[k]).join(', ');
+function buyoutPick(idx){const ok=new Set(E.buyoutTargets(s).map(d=>d.id)),all=s.done.filter(d=>d.player!==s.current).sort((a,b)=>ok.has(b.id)-ok.has(a.id)||b.profit-a.profit);
+ if(!all.length)return '<select id="bt'+idx+'" aria-label="Contract to buy out" disabled><option>No rival contracts yet</option></select>';
+ return '<select id="bt'+idx+'" class="bosel" data-bo="'+idx+'" aria-label="Contract to buy out">'+all.map(d=>'<option value="'+d.id+'"'+(ok.has(d.id)?'':' disabled')+'>'+esc(d.name)+' +'+d.profit+' · '+esc(s.players[d.player].name)+(ok.has(d.id)?'':' (can\'t pay)')+'</option>').join('')+'</select>'
+  +'<div class="bopay" id="bp'+idx+'">'+boLine(all[0],ok.has(all[0].id))+'</div>'}
+function boLine(d,ok){return d?'<span>'+icon('star',1.4)+'<b>+'+d.profit+'</b> from '+esc(s.players[d.player].name)+'</span><span class="'+(ok?'':'short')+'">Pay '+Object.entries(d.req).filter(([,n])=>n).map(([r,n])=>tok(r,n,E.me(s).pool[r]>=n)).join('')+'</span>':''}
+document.addEventListener('change',e=>{const el=e.target;if(!el.classList||!el.classList.contains('bosel')||!s)return;const d=s.done.find(x=>x.id===Number(el.value)),bp=$('bp'+el.dataset.bo);
+ if(bp)bp.innerHTML=boLine(d,E.buyoutTargets(s).some(x=>x.id===(d&&d.id)))});
 const isSpec=k=>!E.CORE.includes(k);
 const byCost=(a,b)=>E.CARDS[a].cost-E.CARDS[b].cost||(E.CARDS[a].cat==='res'?0:1)-(E.CARDS[b].cat==='res'?0:1)||E.CARDS[a].n.localeCompare(E.CARDS[b].n);
 // this game's market: core cards first, then the specialists, each by cost (all=true lists every card, for the encyclopedia)
@@ -215,7 +224,7 @@ function animAfter(snap){if(screen!=='game'||!s)return;
  if(!added.length)return;
  const pile=mid(document.querySelector('.piles>div:first-child'))||mid(document.querySelector('.mtabs [data-t=hand]'))||{x:40,y:innerHeight-40};
  added.forEach((idx,i)=>{const el=document.querySelector('[data-hand="'+idx+'"]');Music.sfx('draw',i*.09);if(el&&!still)fly(el,pile,i*90,'deal')})}
-function shortFx(k){const c=E.CARDS[k],o=[];if(k==='buyout')o.push('steal 2 favor');Object.entries(c.g).forEach(([r,n])=>o.push('+'+n+' '+SHORT[r]));
+function shortFx(k){const c=E.CARDS[k],o=[];if(k==='buyout')o.push('take a contract');Object.entries(c.g).forEach(([r,n])=>o.push('+'+n+' '+SHORT[r]));
  if(c.draw)o.push('draw '+c.draw);if(c.buys)o.push('+'+c.buys+' deal');if(c.vp)o.push('+'+c.vp+' favor');if(c.junk)o.push('scrap 1');if(c.dbl)o.push('×2 boss dmg');return o.join(' · ')}
 /* ---------- desktop: scale the 2560x1300 layout to any window (1080p, 2K, 4K) ---------- */
 const DESK=!document.querySelector('.top [data-a=menu]'); // phone build has a Menu button; every desktop build lacks it
@@ -235,7 +244,7 @@ const turnEvents=()=>(s.events||[]).filter(e=>e.n>(s.feedFrom||0)&&e.who===s.cur
 function feedLine(e){const c=e.k&&E.CARDS[e.k],nm=c?'<b>'+c.n+'</b>':'';
  switch(e.t){
   case 'play':return {i:'<img class="px" src="'+SP.cardURL(e.k)+'" width="36" height="21" alt="">',x:(c.cat==='act'?'Gave order ':'Played ')+nm+'<span class="gs">'+gains(e.k)+'</span>',cls:c.cat};
-  case 'buyout':return {i:icon('combat',1.6),x:'Bought out <b>'+e.amt+'</b> favor from '+esc((s.players[e.v]||{}).name||'a rival'),cls:'act'};
+  case 'buyout':return {i:icon('star',1.6),x:e.name?'Bought out <b>'+esc(e.name)+'</b> from '+esc((s.players[e.v]||{}).name||'a rival')+' <b class="acc">+'+e.amt+'</b>':'Bought out <b>'+e.amt+'</b> favor from '+esc((s.players[e.v]||{}).name||'a rival'),cls:'big'};
   case 'salvage':return {i:icon('cargo',1.6),x:'Salvaged '+nm+' out of their deck',cls:'act'};
   case 'deliver':return {i:icon('star',1.6),x:'Delivered <b>'+esc(e.name)+'</b> <b class="acc">+'+e.profit+'</b>',cls:'big'};
   case 'buy':return {i:icon('cr',1.6),x:'Bought '+nm,cls:'buy'};
@@ -271,12 +280,12 @@ function victory(seat){
  const t=s.players[seat],sc=scoreOf(t,seat),pos=SRC.map(([k,l,c,ic])=>({k,l,c,ic,v:Math.max(0,sc[k]||0)})).concat(sc.other>0?[{k:'other',l:'Earlier (not itemised)',c:'#6b7894',ic:'star',v:sc.other}]:[]);
  const gain=pos.reduce((a,x)=>a+x.v,0),lossItems=[['raided','Raided by pirates'],['stolen','Bought out by rivals']].map(([k,l])=>({k,l,v:-(sc[k]||0)})).filter(x=>x.v>0),loss=lossItems.reduce((a,x)=>a+x.v,0);
  const scale=Math.max(gain,1),rank=order.indexOf(seat)+1,mine=s.done.filter(d=>d.player===seat);
- const counts={contracts:mine.length+' delivered',patrols:Math.round((sc.patrols||0)/5)+' × +5',cash:(sc.cash||0)+' × +1',charter:Math.round((sc.charter||0)/2)+' plays',buyout:'',boss:t.bossDmg?t.bossDmg+' damage dealt':''};
+ const counts={contracts:mine.filter(d=>!d.fromName).length+' delivered',patrols:Math.round((sc.patrols||0)/5)+' × +5',cash:(sc.cash||0)+' × +1',charter:Math.round((sc.charter||0)/2)+' plays',buyout:mine.filter(d=>d.fromName).length?mine.filter(d=>d.fromName).length+' bought out':'',boss:t.bossDmg?t.bossDmg+' damage dealt':''};
  const bar='<div class="vbar" role="img" aria-label="'+esc(t.name)+' favor by source">'+pos.filter(x=>x.v).map(x=>'<i style="flex:'+x.v+' 1 0;background:'+x.c+'" data-tip="'+x.l+': '+x.v+' ('+Math.round(x.v/scale*100)+'%)"></i>').join('')+(gain?'':'<span class="mute">No favor earned</span>')+'</div>'
   +(loss?'<div class="vloss"><span class="vlossbar" style="width:'+Math.max(2,Math.min(100,loss/scale*100))+'%" data-tip="Lost: '+loss+'"></span><span>⚠ Lost <b>'+loss+'</b> · '+lossItems.map(x=>x.l.toLowerCase()+' −'+x.v).join(' · ')+'</span></div>':'');
  const legend='<table class="vleg"><tbody>'+pos.map(x=>'<tr'+(x.v?'':' class="zero"')+'><td><i style="background:'+x.c+'"></i>'+icon(x.ic,1.6)+x.l+'</td><td class="mute">'+(counts[x.k]||'')+'</td><td><b>'+(x.v?'+'+x.v:'0')+'</b></td></tr>').join('')
   +lossItems.map(x=>'<tr class="neg"><td><i></i>⚠ '+x.l+'</td><td></td><td><b>−'+x.v+'</b></td></tr>').join('')+'<tr class="tot"><td>Final favor</td><td></td><td><b>'+t.profit+'</b></td></tr></tbody></table>';
- const cards=mine.length?mine.map((d,j)=>'<article class="pc ctr notch vcard" data-did="'+j+'" style="animation-delay:'+(j*70)+'ms"><div class="art">'+px(SP.sceneURL(d.dest,d.id),AW,AH)+'<span class="badge profit">'+icon('star',1.6)+'+'+d.profit+'</span><div class="go">ROUND '+d.round+'</div></div><div class="pb"><h3>'+esc(d.name)+'</h3><div class="dest">To '+esc(d.dest)+'</div></div></article>').join(''):'<p class="mute vnone">'+esc(t.name)+' did not deliver a contract this run.</p>';
+ const cards=mine.length?mine.map((d,j)=>'<article class="pc ctr notch vcard" data-did="'+j+'" style="animation-delay:'+(j*70)+'ms"><div class="art">'+px(SP.sceneURL(d.dest,d.id),AW,AH)+'<span class="badge profit">'+icon('star',1.6)+'+'+d.profit+'</span><div class="go">ROUND '+(d.boughtRound||d.round)+(d.fromName?' · BOUGHT OUT':'')+'</div></div><div class="pb"><h3>'+esc(d.name)+'</h3><div class="dest">To '+esc(d.dest)+'</div></div></article>').join(''):'<p class="mute vnone">'+esc(t.name)+' did not deliver a contract this run.</p>';
  const tabs=order.map((i,r)=>'<button class="vtab'+(i===seat?' on':'')+'" data-a="vic" data-id="'+i+'"><em>#'+(r+1)+'</em>'+ava(s.players[i],30)+esc(s.players[i].name)+'<b>'+s.players[i].profit+'</b></button>').join('');
  modal('<div class="vic"><div class="vhead">'+ava(s.players[win[0]],144,'vship')+'<div><div class="eyebrow">Run complete · round '+s.round+(s.winMode==='profit'?' · race to '+s.target:'')+'</div><h2>'+win.map(i=>esc(s.players[i].name)).join(' & ')+(win.length>1?' share the win!':' wins!')+'</h2><p class="mute">Only favor counts. Click a captain to see how they earned it.</p></div><div class="vbig">'+icon('star',3.6)+'<b>'+hi+'</b><span class="eyebrow">winning favor</span></div></div>'
   +'<div class="vtabs">'+tabs+'</div>'
@@ -292,7 +301,7 @@ function shipPicker(i,n){const taken=new Set(cfg.ships.slice(0,n).filter((x,j)=>
  return '<div class="shippick" role="radiogroup" aria-label="Ship for captain '+(i+1)+'">'+E.SHIPS.map(x=>'<button type="button" class="'+(x.id===mine?'on':'')+'" role="radio" aria-checked="'+(x.id===mine)+'" data-a="pickship" data-id="'+i+'" data-ship="'+x.id+'"'+(taken.has(x.id)?' disabled title="Taken by another captain"':' title="'+x.name+'"')+'><img class="px" src="'+SP.shipURL(x.id)+'" width="40" height="40" alt="'+x.name+'"></button>').join('')+'<span class="shipname">'+esc(shipName(mine))+'</span></div>'}
 function standings(){return s.players.map((t,i)=>({t,i})).sort((a,b)=>b.t.profit-a.t.profit).map(({t,i},rank)=>'<div class="stand'+(i===s.current&&!s.over?' cur':'')+'" data-seat="'+i+'"><i>'+(rank+1)+'</i>'+ava(t,30)+'<div><span>'+esc(t.name)+'</span><small>'+(t.bot?'CPU · ':'')+t.completed+' deliv · '+E.deckSize(t)+' cards</small>'+(i===s.current&&!s.over?'<em class="playing">playing</em>':'')+'</div><strong>'+t.profit+'</strong></div>').join('')}
 function gains(k){const c=E.CARDS[k],out=Object.entries(c.g).map(([r,n])=>'<span class="g" style="--rc:var(--c-'+r+')">'+icon(r,1.4)+'+'+n+'</span>');
- if(c.draw)out.push('<span class="g">+'+c.draw+' draw</span>');if(c.buys)out.push('<span class="g">+'+c.buys+' buy</span>');if(k==='buyout')out.push('<span class="g" style="--rc:var(--c-combat)">took favor</span>');if(c.vp)out.push('<span class="g" style="--rc:var(--amber)">'+icon('star',1.4)+'+'+c.vp+' favor</span>');return out.join('')}
+ if(c.draw)out.push('<span class="g">+'+c.draw+' draw</span>');if(c.buys)out.push('<span class="g">+'+c.buys+' buy</span>');if(k==='buyout')out.push('<span class="g" style="--rc:var(--c-combat)">took a contract</span>');if(c.vp)out.push('<span class="g" style="--rc:var(--amber)">'+icon('star',1.4)+'+'+c.vp+' favor</span>');return out.join('')}
 function played(p,hidden){const list=hidden?[]:(p.turnPlayed||[]);
  return '<aside class="played"><div class="phead"><h2>PLAYED</h2><span class="eyebrow">'+list.length+' this turn</span></div>'
  +(list.length?'<ol>'+list.map(k=>'<li class="'+E.CARDS[k].cat+'"><img class="px" src="'+SP.cardURL(k)+'" width="44" height="26" alt=""><div><b>'+E.CARDS[k].n+'</b><div class="gs">'+gains(k)+'</div></div></li>').join('')+'</ol>'
@@ -354,7 +363,7 @@ function rules(){modal('<div class="eyebrow">How Galaxy Trade Lanes works</div><
  +'<p><b class="acc">Taking back.</b> Back takes back your last card play, one step at a time, until you buy, deliver, patrol, cash in, scrap, hit a boss or end your turn. A card that drew cards cannot be taken back, since you have seen the new cards. With other human captains in the game, every one of them must agree; against computer captains it is instant.</p>'
  +'<p><b class="acc">Deals.</b> One deal (purchase) per turn; Brokerage adds one. Bought cards go to your discard pile and have no immediate effect.</p>'
  +'<p><b class="acc">Combat.</b> Combat covers escort requirements. Or spend 3 combat and 1 fuel for a pirate patrol worth +5 favor, once per turn. There are no dice.</p>'
- +'<p><b class="acc">Buyout.</b> Costs 6. Take up to 2 favor from a rival, draw a card, and scrap the card.</p>'
+ +'<p><b class="acc">Buyout Contract.</b> Costs 7. An order card: take a contract another captain already delivered. Pay its resources (no cargo space needed); its favor moves from them to you, and the card is scrapped.</p>'
  +'<p><b class="acc">Pirate threats.</b> Every '+E.BOSS_EVERY+' rounds a pirate boss blockades the lanes (each pirate patrol pushes the next one back '+E.PATROL_DELAY+' round, at most '+E.MAX_DELAY+' rounds per boss): no contracts can be delivered until it is beaten. Spend combat (1 damage each) or hire mercenaries (usually '+E.MERC+' credits per damage) on your turn. When it falls, every captain earns +1 favor per damage dealt (some bosses pay more) and the final blow earns +'+E.FINAL_BLOW+'. If it survives (usually '+E.BOSS_ROUNDS+' rounds) it raids every captain for '+E.RAID+' favor (double for whoever dealt the least damage) and leaves. Each boss is drawn at random and has its own ability.</p>'
  +'<p><b class="acc">Weapons Officer.</b> Costs 5. An order card: gain 2 combat and draw a card; combat you spend on a boss that turn deals double damage.</p>'
  +'<p><b class="acc">Salvage Crew.</b> Costs 5. An order card: scrap 1 other card from your hand for free (this does not use your once-per-turn scrap), then draw 2.</p>'
@@ -398,7 +407,7 @@ function encyclopedia(sec){sec=sec||'cards';
   +'<li><img class="px" src="'+SP.iconURL('cr')+'" width="40" height="40" alt=""><div><b>Scrap a card</b><span>Pay 1 credit to remove one unplayed card in your hand from your deck for good. Once per turn. A smaller deck draws your best cards more often.</span></div><strong>'+icon('cr',1.6)+'1</strong></li>'
   +'<li><img class="px" src="'+SP.iconURL('cargo')+'" width="40" height="40" alt=""><div><b>Cargo space</b><span>You have 1 space each turn. Ore and tech need space to deliver. Hold Rig, Barge and Process Deck add more.</span></div><strong>'+icon('cargo',1.6)+'1</strong></li></ul>';
  modal('<div class="eyebrow">Galaxy Trade Lanes</div><h2>Encyclopedia</h2><div class="dtabs">'+tabs.map(([k,l])=>'<button class="sm'+(k===sec?' on':'')+'" data-a="enc" data-sec="'+k+'">'+l+'</button>').join('')+'</div>'+h+'<div class="btns"><button class="primary" data-a="close">Back</button></div>',true)}
-function viewDone(){modal('<div class="eyebrow">All captains · this run</div><h2>Deliveries.</h2>'+(s.done.length?[...s.done].reverse().map(c=>'<div class="done"><div><div class="eyebrow">Round '+c.round+' · '+esc(c.captain)+'</div><b>'+esc(c.name)+'</b> <span class="mute">to '+esc(c.dest)+'</span></div><strong>+'+c.profit+'</strong></div>').join(''):'<p class="mute">No deliveries yet.</p>')+'<div class="btns"><button class="primary" data-a="close">Back</button></div>')}
+function viewDone(){modal('<div class="eyebrow">All captains · this run</div><h2>Deliveries.</h2>'+(s.done.length?[...s.done].reverse().map(c=>'<div class="done"><div><div class="eyebrow">Round '+c.round+' · '+esc(c.captain)+(c.fromName?' · bought out from '+esc(c.fromName)+' in round '+c.boughtRound:'')+'</div><b>'+esc(c.name)+'</b> <span class="mute">to '+esc(c.dest)+'</span></div><strong>+'+c.profit+'</strong></div>').join(''):'<p class="mute">No deliveries yet.</p>')+'<div class="btns"><button class="primary" data-a="close">Back</button></div>')}
 function viewLog(){modal('<div class="eyebrow">Latest 50 events</div><h2>Run log.</h2><div class="log">'+s.log.map(t=>'<div>'+esc(t)+'</div>').join('')+'</div><div class="btns"><button class="primary" data-a="close">Back</button></div>')}
 function closeDlg(){if(document.querySelector('#dialog .undodlg'))return;if(screen==='game'&&s&&(s.phase==='handoff'||s.over||document.querySelector('#dialog [data-a=bossok]'))){if(document.querySelector('#dialog [data-a=bossok]'))return;phase()}else hide()}
 
