@@ -1,7 +1,7 @@
 {
   "name": "galaxy-trade-lanes",
   "productName": "Galaxy Trade Lanes",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Galaxy Trade Lanes: Cargo & Credits, a pixel-art space freight deck-builder",
   "private": true,
   "main": "main.js",

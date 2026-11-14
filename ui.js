@@ -470,6 +470,8 @@ function soundChange(e){const id=e.target.id;if(!/^(snd|vol)-(all|mus|fx)$/.test
   if(id==='snd-all'&&v&&musicWanted&&!Music.on)Music.start()}catch(x){notify('This browser blocked audio.')}
  musicPref();musicUI();return true}
 document.addEventListener('input',e=>{if(e.target.type==='range')soundChange(e)});
+// battle music while a pirate boss blockades the lanes (works the same in every build, online included)
+setInterval(()=>{try{Music.setMode(screen==='game'&&s&&s.boss&&!s.over?'battle':'calm')}catch(e){}},400);
 document.addEventListener('change',e=>{if(soundChange(e))e.stopImmediatePropagation()},true);
 document.addEventListener('click',e=>{
  const b=e.target.closest('[data-a]');if(!b||b.disabled)return;

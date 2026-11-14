@@ -83,7 +83,7 @@ The desktop screen (browser, online and desktop-artifact builds) is laid out for
 |---|---|
 | `engine.js` | Game rules: decks, cards, contracts, buying, scoring, computer players. No graphics. |
 | `sprites.js` | Draws all pixel art in code (cards, destinations, hero ship, icons). |
-| `music.js` | The background soundtrack, synthesized live with the Web Audio API. |
+| `music.js` | The soundtrack (calm theme and pirate battle theme) and sound effects, synthesized live with the Web Audio API. |
 | `ui.js` | Screens, buttons, dialogs, setup, saving, records. |
 | `style.css` | Layout and look. |
 | `head.html` | Page title and font links. |
@@ -129,6 +129,7 @@ node preview.cjs                    # art preview sheets into out/
 - Pirate threats (setup option, on by default): a boss arrives every 5 rounds (counted from the last boss's arrival, starting in round 5). Each pirate patrol pushes the next boss back 1 round, at most 2 rounds per boss (so a 16-round run always gets at least 2 bosses). Each boss is drawn at random (no repeats) from six with their own ability: Blackwake Dreadnought (no tricks), Red Maw Marauder (raid takes 8), Iron Corsair Armada (mercenaries cost 3), Void Wraith (only 2 rounds, thin hull), Scrap Hive Swarm (repairs 1 hull per captain each round), Siren of Lumen Gate (+2 favor per damage, tougher hull). While a boss is active no contracts can be delivered; the boss panel shows rounds and captain turns left. Spend combat (1 damage each) or hire mercenaries (usually 2 credits per damage). Beaten: +1 favor per damage dealt (Siren: +2) and +5 for the final blow. Not beaten in time: it raids every captain, and the captain(s) who dealt the least damage lose double. Later bosses have more hull; computer captains beat roughly 66–79% of bosses in testing. Each human captain confirms a results screen afterwards.
 - Weapons Officer (costs 5): an action card that gives 2 combat and draws 1; combat spent on a boss that turn deals double damage.
 - Sound: the **Sound** button opens a panel with three separate switches and volumes: **All sound** (master), **Music** (soundtrack and victory fanfare) and **Effects** (cards, deliveries, patrols, bosses, menus), plus Test effects. Settings are remembered in the browser. All audio is synthesized in `music.js`.
+- Battle music: while a pirate boss blockades the lanes, the soundtrack switches at once to a battle theme. It uses the same key, instruments and arpeggio shape as the main theme, at 108 BPM in 16th notes, with darker chords, a driving bass, snare, toms, timpani, brass stabs and a brass melody, in a 16-bar (about 36 s) loop. When the boss is beaten or leaves, the battle bar finishes and the calm theme returns from its gentle opening. The battle mix sits about 3 dB above the calm theme. Preview: `media/battle-theme-preview.mp3` (calm, boss arrives, battle, calm). `tools/teaser/audio.cjs` accepts `battle` and `calm` cues for trailers.
 - Runs saved before a new card was added get that card fully stocked in the market when loaded (`Engine.migrate`).
 - Scrap one card from hand for 1 credit, once per turn.
 - Unspent resources vanish at end of turn. Highest favor after the set rounds wins, or race to a favor target with equal turns for everyone.
