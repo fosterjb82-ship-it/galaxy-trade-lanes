@@ -609,6 +609,35 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .hgrid .pc.bo .art{aspect-ratio:88/34}
 .hgrid .pc.bo .pb{gap:4px}
 .hgrid .pc.bo p{font-size:13px;line-height:1.3}
+/* ---------- card backs (crew deck, contracts, market) and logo ---------- */
+.pc.cback{--bk:#f5a52d;--bk2:#94410c;position:relative;container-type:inline-size;display:flex;align-items:center;justify-content:center;padding:10px;
+ background:var(--tile) 0 0/48px 48px repeat;image-rendering:pixelated;border:3px solid #000;
+ box-shadow:inset 0 0 0 3px var(--bk),inset 0 0 0 6px #070b14,inset 0 0 0 8px var(--bk2),inset 0 0 40px 10px rgba(3,5,11,.75)}
+.pc.cback.k-contract{--bk:#a384f0;--bk2:#4d3190}
+.pc.cback.k-market{--bk:#4cd6ae;--bk2:#0f6a5c}
+.cbin{display:flex;flex-direction:column;align-items:center;gap:4cqw;text-align:center;min-width:0}
+.cbin img{width:58cqw;height:auto;aspect-ratio:1;image-rendering:pixelated;filter:drop-shadow(0 .8cqw 0 #000)}
+.cbin b{font:700 11.5cqw/1 var(--disp);letter-spacing:.05em;color:var(--bk);text-shadow:0 .6cqw 0 #000;white-space:nowrap}
+.cbin small{font:500 5.6cqw/1.2 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#c9d4ec;opacity:.85}
+.pc.cback.soldout{opacity:.72}
+.pc.cback.soldout .cbin small{color:var(--bk);opacity:1}
+/* the hand turns face up when the captain begins */
+@keyframes reveal{0%{transform:perspective(900px) rotateY(88deg) scale(.96);filter:brightness(1.6)}100%{transform:none;filter:none}}
+.pc.reveal{animation:reveal .45s cubic-bezier(.2,.8,.3,1) both}
+@media (prefers-reduced-motion:reduce){.pc.reveal{animation:none}}
+/* handoff: a fanned hand of backs */
+.handfan{display:flex;justify-content:center;margin:14px 0 4px;height:132px}
+.handfan .pc.cback{width:92px;height:128px;flex:none;margin:0 -14px;padding:6px;transform-origin:50% 120%;box-shadow:inset 0 0 0 2px var(--bk),inset 0 0 0 4px #070b14,inset 0 0 0 5px var(--bk2),0 6px 14px rgba(0,0,0,.5)}
+.handfan .pc.cback:nth-child(1){transform:rotate(-14deg) translateY(10px)}.handfan .pc.cback:nth-child(2){transform:rotate(-7deg) translateY(3px)}
+.handfan .pc.cback:nth-child(4){transform:rotate(7deg) translateY(3px)}.handfan .pc.cback:nth-child(5){transform:rotate(14deg) translateY(10px)}
+/* contract deck pile */
+.cdeck i{background:var(--tile) 0 0/12px 12px repeat;image-rendering:pixelated;box-shadow:inset 0 0 0 1px #a384f0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.cdeck i img{width:12px;height:12px;image-rendering:pixelated}
+/* header logo */
+.brand{display:grid;grid-template-columns:auto auto;justify-content:start;column-gap:12px;align-items:center}
+.brand .blogo{grid-row:1/3;width:56px;height:56px;image-rendering:pixelated}
+.cbin b{font-size:10.5cqw;letter-spacing:.02em}
+.handfan .cbin b{font-size:10cqw;letter-spacing:0}
 </style>
 <div id="app"><header class="top"><div class="brand">SMUGGLERS RUN<small>A FREIGHT DECK-BUILDER</small></div><div class="status" id="status"></div><nav><button id="snd" data-a="sound">Sound</button><button data-a="rules">Rules</button><button data-a="enc">Cards</button><button data-a="records">Records</button><button data-a="new">New run</button></nav></header><main id="stage"></main></div>
 <div id="overlay" class="overlay" hidden><section id="dialog" class="dialog notch" tabindex="-1" role="dialog" aria-modal="true" aria-label="Game dialog"></section></div>
@@ -1240,12 +1269,35 @@ const ICON_MAP={
 };
 function icon(k){const m=ICON_MAP[k],s=new S(10,10);m.m.forEach((row,y)=>[...row].forEach((ch,x)=>{if(m.c[ch])s.set(x,y,m.c[ch])}));return s}
 
+/* ---- Smugglers Run logo: a smuggler's ship making its run past a planet, in an amber ring ---- */
+function logo(){const N=48,s=new S(N,N),c=N/2-.5,R=21,inC=(x,y,r)=>Math.hypot(x-c,y-c)<=r;
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(inC(x,y,R))s.set(x,y,h2(x,y,3)<.08?PAL.space[2]:PAL.space[1]);
+ [[13,11],[30,8],[37,13],[9,21],[17,8],[24,13],[40,22],[11,30]].forEach(([x,y],i)=>s.set(x,y,i%3?PAL.steel[4]:PAL.steel[6]));
+ s.set(34,10,PAL.amber[6]);[[33,10],[35,10],[34,9],[34,11]].forEach(([x,y])=>s.set(x,y,PAL.amber[4]));
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(!inC(x,y,R-.5))continue;const d=Math.hypot(x-42,y-48);if(d<18){const e=d/18;s.set(x,y,e>.93?PAL.teal[5]:e>.84?PAL.teal[3]:e>.6?PAL.teal[2]:PAL.teal[1])}}
+ const a=-.62,ca=Math.cos(a),sa=Math.sin(a),T=([x,y])=>[23+x*ca-y*sa,27+x*sa+y*ca],P=(pts,col)=>s.poly(pts.map(T),col);
+ [[-11,-5,-26,-5,PAL.amber[4]],[-11,0,-30,0,PAL.teal[4]],[-11,5,-24,5,PAL.teal[3]]].forEach(([x0,y0,x1,y1,col])=>{const A=T([x0,y0]),B=T([x1,y1]);s.line(A[0],A[1],B[0],B[1],col)});
+ P([[3,-3],[-6,-11],[-10,-11],[-7,-3]],PAL.steel[2]);P([[3,3],[-6,11],[-10,11],[-7,3]],PAL.steel[3]);
+ P([[-5,-10],[-9,-10],[-9,-9],[-5,-9]],PAL.red[4]);P([[-5,10],[-9,10],[-9,9],[-5,9]],PAL.red[4]);
+ P([[16,0],[6,-4],[-9,-4],[-11,0],[-9,4],[6,4]],PAL.steel[4]);P([[16,0],[6,-4],[-9,-4],[-9,-2],[6,-2]],PAL.steel[5]);
+ P([[11,-1],[6,-3],[3,-3],[3,1],[6,1]],PAL.teal[4]);P([[10,-1],[6,-2],[5,-2],[6,-1]],PAL.teal[6]);
+ P([[-2,2],[-7,2],[-7,7],[-2,7]],PAL.rust[3]);P([[-2,2],[-7,2],[-7,3],[-2,3]],PAL.rust[5]);
+ P([[-11,-2],[-15,-1],[-17,0],[-15,1],[-11,2]],PAL.amber[4]);P([[-11,-1],[-14,0],[-11,1]],PAL.amber[6]);
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(!inC(x,y,R))s.d[(y*N+x)*4+3]=0;           // keep everything inside the ring
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){const d=Math.hypot(x-c,y-c);if(d>R&&d<=R+2.4)s.set(x,y,y<c-6?PAL.amber[5]:y<c+6?PAL.amber[4]:PAL.amber[3]);else if(d>R-1&&d<=R)s.set(x,y,PAL.amber[1])}
+ s.outline(OUT);return s}
+/* ---- card backs: a 16x16 tile repeated across the back, tinted by deck (crew = your deck, contract, market) ---- */
+const BACK={crew:PAL.amber,contract:PAL.violet,market:PAL.teal};
+function backTile(kind){const r=BACK[kind]||PAL.amber,s=new S(16,16);s.rect(0,0,16,16,PAL.space[1]);
+ for(let i=0;i<16;i++){s.set(i,i,r[1]);s.set((i+8)%16,i,r[1])}                         // fine diagonal lattice
+ s.set(8,8,r[3]);s.set(0,0,r[3]);s.set(7,8,r[2]);s.set(9,8,r[2]);s.set(8,7,r[2]);s.set(8,9,r[2]);
+ s.set(4,12,PAL.steel[3]);s.set(13,3,PAL.steel[4]);return s}
 const cache={};
 function toURL(s){const c=document.createElement('canvas');c.width=s.w;c.height=s.h;const g=c.getContext('2d'),id=g.createImageData(s.w,s.h);id.data.set(s.d);g.putImageData(id,0,0);return c.toDataURL()}
 function memo(key,fn){return cache[key]||(cache[key]=toURL(fn()))}
-return {S,PAL,scene,cardArt,hero,icon,boss,ship,SHIP_ART,patrolArt,cashArt,EMB,SCENES,
+return {S,PAL,logo,backTile,BACK,scene,cardArt,hero,icon,boss,ship,SHIP_ART,patrolArt,cashArt,EMB,SCENES,
  sceneURL:(d,seed)=>memo('s:'+d+':'+(seed%4),()=>scene(d,(seed%4)+1)),
- cardURL:k=>memo('c:'+k,()=>cardArt(k)),bossURL:n=>memo('b:'+n,()=>boss(n)),shipURL:k=>memo('ship:'+k,()=>ship(k)),moveURL:k=>memo('m:'+k,()=>k==='cash'?cashArt():patrolArt()),heroURL:()=>memo('hero',hero),iconURL:k=>memo('i:'+k,()=>icon(k))};
+ cardURL:k=>memo('c:'+k,()=>cardArt(k)),bossURL:n=>memo('b:'+n,()=>boss(n)),shipURL:k=>memo('ship:'+k,()=>ship(k)),moveURL:k=>memo('m:'+k,()=>k==='cash'?cashArt():patrolArt()),heroURL:()=>memo('hero',hero),logoURL:()=>memo('logo',logo),backURL:k=>memo('back:'+k,()=>backTile(k)),iconURL:k=>memo('i:'+k,()=>icon(k))};
 })();
 if(typeof module!=='undefined')module.exports=Sprites;
 const Music=(function(){
@@ -1559,6 +1611,7 @@ function bossPanel(compact){const b=s.boss,p=E.me(s),on=myTurn();
   +'<p class="mute">Team up: every captain spends combat or credits to damage it. Beaten: <b class="acc">+'+(b.bounty||1)+' favor per damage</b> you dealt, <b class="acc">+'+E.FINAL_BLOW+'</b> for the final blow. Not beaten by the end of round '+b.until+': it raids every captain for '+(b.raid||E.RAID)+' favor, and <b class="down">double ('+2*(b.raid||E.RAID)+')</b> from whoever dealt the least damage.</p>'
   +'<div class="bdmg">'+s.players.map((t,i)=>'<span'+(i===s.current?' class="cur"':'')+'>'+esc(t.name)+' <b>'+b.dmg[i]+'</b></span>').join('')+'</div>'+btns+'</div></section>'}
 function cardEl(k,idx,market){const c=E.CARDS[k],p=E.me(s),on=myTurn();
+ if(market&&s.market[k]<1)return backEl('market',{cls:'soldout',label:'Sold out · '+c.n,attrs:' data-mk="'+k+'"'});
  let h='<article class="pc '+c.cat+(k==='buyout'&&!market?' bo':'')+(market&&on&&p.buys>0&&s.market[k]>0&&p.pool.cr>=c.cost?' can':'')+' notch"'+(market?' data-mk="'+k+'"':' data-hand="'+idx+'"')+'><div class="art">'+px(SP.cardURL(k),AW,AH)+gainBadge(k)
  +(market?'<span class="badge tl">'+icon('cr',1.6)+c.cost+'</span><span class="badge tr">×'+s.market[k]+'</span>'+(isSpec(k)&&s.marketMode!=='full'?'<span class="spectag">Specialist</span>':''):'')+'</div>'
  +'<div class="pb"><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><h3>'+c.n+'</h3>'+(market?'<div class="fx">'+shortFx(k)+'</div>':'')+'<p>'+c.t+'</p>';
@@ -1593,7 +1646,13 @@ function moveTiles(p,on){const canP=on&&!p.patrolled&&p.pool.combat>=3&&p.pool.f
 /* ---------- animations: cards dealt from your draw pile, contracts from the contract deck ---------- */
 const calm=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){return false}};
 let animPrev=null;
-function cdeckPile(){return '<span class="cdeck" title="Contract deck: '+s.cdeck.length+' left"><i></i><i></i><i></i><b>'+s.cdeck.length+'</b></span>'}
+function cdeckPile(){return '<span class="cdeck" title="Contract deck: '+s.cdeck.length+' left" style="--tile:url('+SP.backURL('contract')+')"><i></i><i></i><i><img class="px" src="'+SP.logoURL()+'" alt=""></i><b>'+s.cdeck.length+'</b></span>'}
+/* card backs: crew (every captain's own deck), contract and market, each with the logo and title */
+const BACKLABEL={crew:'Crew deck',contract:'Contract',market:'Market'};
+function backEl(kind,o){o=o||{};return '<div class="pc cback k-'+kind+' notch'+(o.cls?' '+o.cls:'')+'" style="--tile:url('+SP.backURL(kind)+')'+(o.style?';'+o.style:'')+'"'+(o.attrs||'')+'><div class="cbin"><img class="px" src="'+SP.logoURL()+'" alt=""><b>SMUGGLERS RUN</b><small>'+(o.label||BACKLABEL[kind])+'</small></div></div>'}
+const backs=(n,kind)=>Array.from({length:n},()=>backEl(kind||'crew')).join('');
+(function brandLogo(){try{document.querySelectorAll('.brand').forEach(b=>{if(!b.querySelector('.blogo'))b.insertAdjacentHTML('afterbegin','<img class="blogo px" src="'+SP.logoURL()+'" alt="">')});
+ const l=document.createElement('link');l.rel='icon';l.href=SP.logoURL();document.head.appendChild(l)}catch(e){}})();
 function animBefore(){const out={};document.querySelectorAll('.ctr[data-cid]').forEach(el=>{const r=rectZ(el);if(r.width)out[el.dataset.cid]={html:el.outerHTML,r}});return out}
 const mid=el=>{if(!el)return null;const r=el.getBoundingClientRect(),z=zoomK();return r.width?{x:(r.left+r.width/2)/z,y:(r.top+r.height/2)/z}:null};
 const rectZ=el=>{const r=el.getBoundingClientRect(),z=zoomK();return {left:r.left/z,top:r.top/z,width:r.width/z,height:r.height/z}};
@@ -1609,6 +1668,7 @@ function animAfter(snap){if(screen!=='game'||!s)return;
  const p=E.me(s),show=myTurn(),hand=show?p.hand.slice():null,board=s.board.map(c=>c&&c.id),key=s.id+':'+s.round+':'+s.current;
  const cur=E.me(s),tp=(cur.turnPlayed||[]).length,profits=s.players.map(x=>x.profit);
  const prev=animPrev;animPrev={id:s.id,key,hand,board,evn:s.evn||0,profits,tp};if(!prev||prev.id!==s.id)return;
+ if(prev.key===key&&prev.hand===null&&hand&&!calm())document.querySelectorAll('.pc[data-hand]').forEach((el,i)=>{el.classList.add('reveal');el.style.animationDelay=(i*90)+'ms'});
  const evAll=(s.events||[]).filter(e=>e.n>(prev.evn||0)),burst=evAll.length>10||s.over,still=calm()||burst;
  // contracts that left the board, and the ones dealt in their place
  const gone=prev.board.filter(x=>!board.includes(x)),fresh=board.filter(x=>!prev.board.includes(x));
@@ -1680,9 +1740,9 @@ function feedPanel(){const all=(s.events||[]).slice().reverse(),now=e=>e.n>(s.fe
   +(rows?'<ol id="feedlog">'+rows+'</ol>':'<p class="mute">Every move by every captain appears here.</p>')+'</section>'}
 // ---------- 2: watching another captain's table ----------
 function tableCard(k,i){const c=E.CARDS[k];return '<article class="pc '+c.cat+' notch tcard" data-tp="'+i+'" data-k="'+k+'"><div class="art">'+px(SP.cardURL(k),AW,AH)+gainBadge(k)+'</div><div class="pb"><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><h3>'+c.n+'</h3><p>'+c.t+'</p></div></article>'}
-function watchBand(p){const tp=p.turnPlayed||[],backs=p.hand.length,cpu=playingBack();
- return '<section class="band hband watch"><div class="hmain"><div class="bhead2"><h2>'+esc(p.name).toUpperCase()+'\'S TABLE</h2><span class="eyebrow">'+tp.length+' played · '+backs+' in hand</span>'+poolStrip(p)+'</div>'
-  +'<div class="hwrap"><div class="hgrid" style="--n:'+Math.max(5,tp.length+backs)+'">'+tp.map(tableCard).join('')+Array.from({length:backs},()=>'<div class="pc back notch"><i></i></div>').join('')+'</div></div></div>'
+function watchBand(p){const tp=p.turnPlayed||[],nb=p.hand.length,cpu=playingBack();
+ return '<section class="band hband watch"><div class="hmain"><div class="bhead2"><h2>'+esc(p.name).toUpperCase()+'\'S TABLE</h2><span class="eyebrow">'+tp.length+' played · '+nb+' in hand</span>'+poolStrip(p)+'</div>'
+  +'<div class="hwrap"><div class="hgrid" style="--n:'+Math.max(5,tp.length+nb)+'">'+tp.map(tableCard).join('')+backs(p.hand.length)+'</div></div></div>'
   +'<div class="hside3 watchside"><div class="whois">'+ava(p,96)+'<span class="eyebrow">Now playing</span><b>'+esc(p.name)+'</b><span class="mute">'+esc(shipName(p.ship))+'</span><span class="mute">'+(p.bot?'Computer captain':'Watch their moves in the feed on the left.')+'</span></div>'
   +(cpu?'<button data-a="cpuspeed">Speed: '+SPEED_NAMES[s.cpuSpeed||'normal']+'</button><button class="primary" data-a="cpuskip">Skip to my turn</button>':'')+'</div></section>'}
 function poolStrip(p){return '<div class="pstrip" aria-label="Pool">'+E.RES.map(r=>'<span class="ps'+(p.pool[r]?'':' zero')+'" style="--rc:var(--c-'+r+')" title="'+E.RLABEL[r]+'">'+icon(r,2.6)+'<b>'+p.pool[r]+'</b><i>'+E.RLABEL[r]+'</i></span>').join('')+'</div>'}
@@ -1729,7 +1789,7 @@ function render(){
  const p=E.me(s),on=myTurn(),hidden=!on;
  $('status').innerHTML=(s.over?'Run complete':'Round <b>'+s.round+(s.winMode==='rounds'?' / '+s.maxRounds:'')+'</b> · <b>'+esc(p.name)+'</b>')+(s.finalRound&&!s.over?' · <b class="acc">final round</b>':'')+(s.winMode==='profit'?' · first to '+s.target:'');
  const watching=hidden&&!s.over&&s.phase==='action'&&(ME!==null||p.bot);
- const hasRes=p.hand.some(k=>E.CARDS[k]&&E.CARDS[k].cat==='res'),playable=!hidden&&p.hand.some((k,i)=>E.canPlay(s,i)),mode=watching?'play':playable?'play':'shop';
+ const hasRes=p.hand.some(k=>E.CARDS[k]&&E.CARDS[k].cat==='res'),playable=!hidden&&p.hand.some((k,i)=>E.canPlay(s,i)),backsUp=hidden&&!watching&&!s.over&&p.hand.length>0,mode=watching||playable||backsUp?'play':'shop';
  const rail='<aside class="rail"><section class="panel plate notch"><div class="plateid">'+ava(p,64)+'<div><div class="eyebrow">'+(p.bot?'Computer captain':'Active captain')+'</div><h2>'+esc(p.name)+'</h2></div></div><div class="profit">'+icon('star',2.4)+'<b>'+p.profit+'</b><span class="eyebrow">Favor</span></div>'
   +'<div class="chips"><div class="chip"><span class="eyebrow">Deals</span><b>'+p.buys+'</b></div><div class="chip"><span class="eyebrow">Orders</span><b>'+(s.actionLimit?p.actions:'∞')+'</b></div></div></section>'
   +feedPanel()+moveTiles(p,on)
@@ -1742,7 +1802,7 @@ function render(){
  const left=!hidden&&p.hand.length?'<span class="hleft"><span class="eyebrow">Left in hand · no orders left</span>'+p.hand.map((k,i)=>'<span class="hchip '+E.CARDS[k].cat+'">'+E.CARDS[k].n+(on&&!p.scrapped&&p.pool.cr>=1?'<button class="sm" data-a="scrap" data-id="'+i+'">Scrap · 1 cr</button>':'')+'</span>').join('')+'</span>':'';
  const msg=hidden?(ME!==null&&!s.over?esc(p.name)+' is taking their turn. Your hand appears when it is your turn.':s.over?'The run is over.':'Hand hidden until the captain begins.'):'Hand played out. Deliver, buy, or end your turn.';
  const hband=watching?'':'<section class="band hband'+(mode==='shop'?' slim':'')+'"><div class="hmain"><div class="bhead2"><h2>YOUR HAND</h2><span class="eyebrow">'+(hidden?'hidden':p.hand.length+' card'+(p.hand.length===1?'':'s'))+'</span>'+(mode==='shop'?(left||'<span class="hmsg">'+msg+'</span>'):'')+pool+'</div>'
-  +(mode==='play'?'<div class="hwrap"><div class="hgrid" style="--n:'+p.hand.length+'">'+p.hand.map((k,i)=>cardEl(k,i,false)).join('')+'</div></div>':'')+'</div>'
+  +(mode==='play'?'<div class="hwrap"><div class="hgrid" style="--n:'+p.hand.length+'">'+(hidden?backs(p.hand.length):p.hand.map((k,i)=>cardEl(k,i,false)).join(''))+'</div></div>':'')+'</div>'
   +'<div class="hside3"><button data-a="res"'+(on&&hasRes?'':' disabled')+'>Play resources</button>'+backBtn(on)+'<button class="primary endb" data-a="'+(s.over?'new':'endAsk')+'"'+(!s.over&&!on?' disabled':'')+'>'+(s.over?'New run':'End turn')+'</button>'+played(p,hidden)+'</div></section>';
  $('stage').innerHTML='<div class="desk-shell" data-mode="'+mode+'">'+rail+'<div class="bands">'+cband+mband+(watching?watchBand(p):hband)+'</div></div>';
  {const fl2=$('feedlog');if(fl2&&feedTop)fl2.scrollTop=feedTop}
@@ -1769,7 +1829,7 @@ function bossReport(){
 function phase(){
  if(screen!=='game')return;if(s.undoReq&&!s.over){undoDialog();return}bossNews();if(bossReport())return;const p=E.me(s);
  if(s.over){victory(vicSeat);return}
- if(s.phase==='handoff'){if(!p.bot){const alarm=s.boss&&!s.boss.alerted;if(alarm)s.boss.alerted=true;Music.sfx(alarm?'boss':'turn')};modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Final round':'Next captain')+'</div><h2 class="upname">'+ava(p,56)+esc(p.name)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' favor</p>'+(s.boss?'<div class="threat soon">'+icon('combat',1.6)+'<span><b>'+esc(s.boss.name)+'</b> is blockading the lanes: '+s.boss.hp+' / '+s.boss.max+' hull left, '+(s.boss.until-s.round+1)+' round(s) to beat it.</span></div>':'')+'<div class="btns"><button class="primary" data-a="begin">Begin turn</button></div>');return}
+ if(s.phase==='handoff'){if(!p.bot){const alarm=s.boss&&!s.boss.alerted;if(alarm)s.boss.alerted=true;Music.sfx(alarm?'boss':'turn')};modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Final round':'Next captain')+'</div><h2 class="upname">'+ava(p,56)+esc(p.name)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' favor</p>'+(s.boss?'<div class="threat soon">'+icon('combat',1.6)+'<span><b>'+esc(s.boss.name)+'</b> is blockading the lanes: '+s.boss.hp+' / '+s.boss.max+' hull left, '+(s.boss.until-s.round+1)+' round(s) to beat it.</span></div>':'')+'<div class="handfan" aria-hidden="true">'+backs(Math.min(5,p.hand.length))+'</div><div class="btns"><button class="primary" data-a="begin">Begin turn</button></div>');return}
  hide();
 }
 function rules(){modal('<div class="eyebrow">How Smugglers Run works</div><h2>Every purchase changes your next hand.</h2><div class="cols2">'

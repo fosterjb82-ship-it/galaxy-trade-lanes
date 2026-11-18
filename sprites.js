@@ -315,11 +315,34 @@ const ICON_MAP={
 };
 function icon(k){const m=ICON_MAP[k],s=new S(10,10);m.m.forEach((row,y)=>[...row].forEach((ch,x)=>{if(m.c[ch])s.set(x,y,m.c[ch])}));return s}
 
+/* ---- Smugglers Run logo: a smuggler's ship making its run past a planet, in an amber ring ---- */
+function logo(){const N=48,s=new S(N,N),c=N/2-.5,R=21,inC=(x,y,r)=>Math.hypot(x-c,y-c)<=r;
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(inC(x,y,R))s.set(x,y,h2(x,y,3)<.08?PAL.space[2]:PAL.space[1]);
+ [[13,11],[30,8],[37,13],[9,21],[17,8],[24,13],[40,22],[11,30]].forEach(([x,y],i)=>s.set(x,y,i%3?PAL.steel[4]:PAL.steel[6]));
+ s.set(34,10,PAL.amber[6]);[[33,10],[35,10],[34,9],[34,11]].forEach(([x,y])=>s.set(x,y,PAL.amber[4]));
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(!inC(x,y,R-.5))continue;const d=Math.hypot(x-42,y-48);if(d<18){const e=d/18;s.set(x,y,e>.93?PAL.teal[5]:e>.84?PAL.teal[3]:e>.6?PAL.teal[2]:PAL.teal[1])}}
+ const a=-.62,ca=Math.cos(a),sa=Math.sin(a),T=([x,y])=>[23+x*ca-y*sa,27+x*sa+y*ca],P=(pts,col)=>s.poly(pts.map(T),col);
+ [[-11,-5,-26,-5,PAL.amber[4]],[-11,0,-30,0,PAL.teal[4]],[-11,5,-24,5,PAL.teal[3]]].forEach(([x0,y0,x1,y1,col])=>{const A=T([x0,y0]),B=T([x1,y1]);s.line(A[0],A[1],B[0],B[1],col)});
+ P([[3,-3],[-6,-11],[-10,-11],[-7,-3]],PAL.steel[2]);P([[3,3],[-6,11],[-10,11],[-7,3]],PAL.steel[3]);
+ P([[-5,-10],[-9,-10],[-9,-9],[-5,-9]],PAL.red[4]);P([[-5,10],[-9,10],[-9,9],[-5,9]],PAL.red[4]);
+ P([[16,0],[6,-4],[-9,-4],[-11,0],[-9,4],[6,4]],PAL.steel[4]);P([[16,0],[6,-4],[-9,-4],[-9,-2],[6,-2]],PAL.steel[5]);
+ P([[11,-1],[6,-3],[3,-3],[3,1],[6,1]],PAL.teal[4]);P([[10,-1],[6,-2],[5,-2],[6,-1]],PAL.teal[6]);
+ P([[-2,2],[-7,2],[-7,7],[-2,7]],PAL.rust[3]);P([[-2,2],[-7,2],[-7,3],[-2,3]],PAL.rust[5]);
+ P([[-11,-2],[-15,-1],[-17,0],[-15,1],[-11,2]],PAL.amber[4]);P([[-11,-1],[-14,0],[-11,1]],PAL.amber[6]);
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(!inC(x,y,R))s.d[(y*N+x)*4+3]=0;           // keep everything inside the ring
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){const d=Math.hypot(x-c,y-c);if(d>R&&d<=R+2.4)s.set(x,y,y<c-6?PAL.amber[5]:y<c+6?PAL.amber[4]:PAL.amber[3]);else if(d>R-1&&d<=R)s.set(x,y,PAL.amber[1])}
+ s.outline(OUT);return s}
+/* ---- card backs: a 16x16 tile repeated across the back, tinted by deck (crew = your deck, contract, market) ---- */
+const BACK={crew:PAL.amber,contract:PAL.violet,market:PAL.teal};
+function backTile(kind){const r=BACK[kind]||PAL.amber,s=new S(16,16);s.rect(0,0,16,16,PAL.space[1]);
+ for(let i=0;i<16;i++){s.set(i,i,r[1]);s.set((i+8)%16,i,r[1])}                         // fine diagonal lattice
+ s.set(8,8,r[3]);s.set(0,0,r[3]);s.set(7,8,r[2]);s.set(9,8,r[2]);s.set(8,7,r[2]);s.set(8,9,r[2]);
+ s.set(4,12,PAL.steel[3]);s.set(13,3,PAL.steel[4]);return s}
 const cache={};
 function toURL(s){const c=document.createElement('canvas');c.width=s.w;c.height=s.h;const g=c.getContext('2d'),id=g.createImageData(s.w,s.h);id.data.set(s.d);g.putImageData(id,0,0);return c.toDataURL()}
 function memo(key,fn){return cache[key]||(cache[key]=toURL(fn()))}
-return {S,PAL,scene,cardArt,hero,icon,boss,ship,SHIP_ART,patrolArt,cashArt,EMB,SCENES,
+return {S,PAL,logo,backTile,BACK,scene,cardArt,hero,icon,boss,ship,SHIP_ART,patrolArt,cashArt,EMB,SCENES,
  sceneURL:(d,seed)=>memo('s:'+d+':'+(seed%4),()=>scene(d,(seed%4)+1)),
- cardURL:k=>memo('c:'+k,()=>cardArt(k)),bossURL:n=>memo('b:'+n,()=>boss(n)),shipURL:k=>memo('ship:'+k,()=>ship(k)),moveURL:k=>memo('m:'+k,()=>k==='cash'?cashArt():patrolArt()),heroURL:()=>memo('hero',hero),iconURL:k=>memo('i:'+k,()=>icon(k))};
+ cardURL:k=>memo('c:'+k,()=>cardArt(k)),bossURL:n=>memo('b:'+n,()=>boss(n)),shipURL:k=>memo('ship:'+k,()=>ship(k)),moveURL:k=>memo('m:'+k,()=>k==='cash'?cashArt():patrolArt()),heroURL:()=>memo('hero',hero),logoURL:()=>memo('logo',logo),backURL:k=>memo('back:'+k,()=>backTile(k)),iconURL:k=>memo('i:'+k,()=>icon(k))};
 })();
 if(typeof module!=='undefined')module.exports=Sprites;

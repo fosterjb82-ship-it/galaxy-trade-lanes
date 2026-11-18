@@ -39,7 +39,7 @@ Rebuild `../index.html` first (`bash ../build.sh`) after changing the game. `pre
 - **Instances:** only one copy runs at a time.
 - **Saves:** saves, records and sound settings are kept in the app's own storage. On Windows that is `%APPDATA%\Galaxy Trade Lanes`, the folder from before the game was renamed, so earlier saves carry over. They are separate from the browser version's.
 - **Links:** web links open in the system browser. The window never navigates away from the game.
-- **Icon:** `icon.png` and `icon.ico` are the game's cargo hauler ship.
+- **Icon:** `icon.png` and `icon.ico` are the Smugglers Run logo (drawn in `sprites.js`, `logo()`).
 
 ## Not done yet
 

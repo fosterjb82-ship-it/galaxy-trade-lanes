@@ -127,3 +127,7 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 .brand{font-size:21px;white-space:nowrap}
 .mback{grid-column:1/-1;min-height:46px}
 .ubtns button{min-height:44px}
+.brand .blogo{width:36px;height:36px}
+.brand{column-gap:8px}
+.grid .pc.cback{min-height:200px}
+.handfan{height:112px}.handfan .pc.cback{width:76px;height:106px;margin:0 -12px}
