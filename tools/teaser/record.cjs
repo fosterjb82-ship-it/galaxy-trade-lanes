@@ -49,7 +49,7 @@ async function capture(page,name,run){
  await page.evaluate(()=>{const P=E.me(s);P.hand=['house','pack','vault','deck','scrip'];P.profit=12;s.players[1].profit=14;s.players[2].profit=9;s.round=4;
   const t=E.TEMPLATES.find(x=>x.name==='Survey Mission');s.board[1]={...t,req:{...t.req},id:901};
   document.getElementById('center').scrollTop=0;render();
-  card('<img src="'+SP.heroURL()+'"><h1>GALAXY TRADE LANES</h1><h2>CARGO &amp; CREDITS</h2><p>Build the deck. Win the manifest.</p>')});
+  card('<img src="'+SP.heroURL()+'"><h1>SMUGGLERS RUN</h1><h2>A FREIGHT DECK-BUILDER</h2><p>Build the deck. Win the manifest.</p>')});
  await sleep(300);
  await capture(page,'a',async()=>{
   await sleep(2300);await page.evaluate(()=>card(''));await sleep(350);
@@ -87,7 +87,7 @@ async function capture(page,name,run){
 
  /* ---------- clip C: end card ---------- */
  await capture(recPage,'c',async()=>{
-  await recPage.evaluate(()=>{hide();cap('');card('<img src="'+SP.heroURL()+'" style="width:620px"><h1 style="font-size:96px">GALAXY TRADE LANES</h1><h2>CARGO &amp; CREDITS</h2><div class="cta">Game night · Join the crew</div>')});
+  await recPage.evaluate(()=>{hide();cap('');card('<img src="'+SP.heroURL()+'" style="width:620px"><h1 style="font-size:96px">SMUGGLERS RUN</h1><h2>A FREIGHT DECK-BUILDER</h2><div class="cta">Game night · Join the crew</div>')});
   await sleep(2900);
  });
  await b.close();})();

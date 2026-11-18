@@ -26,7 +26,7 @@ Builds the Windows app:
 npm run build:win
 ```
 
-This writes `dist/Galaxy Trade Lanes-win32-x64/` and `dist/GalaxyTradeLanes-<version>-win32-x64.zip`. It works from Windows, macOS or Linux, with no Wine needed. `build:mac` and `build:linux` build the other platforms. The macOS build has no app icon yet, because it would need an `icon.icns`.
+This writes `dist/Smugglers Run-win32-x64/` and `dist/SmugglersRun-<version>-win32-x64.zip`. It works from Windows, macOS or Linux, with no Wine needed. `build:mac` and `build:linux` build the other platforms. The macOS build has no app icon yet, because it would need an `icon.icns`.
 
 Rebuild `../index.html` first (`bash ../build.sh`) after changing the game. `prepare.cjs` copies whatever is there.
 
@@ -37,7 +37,7 @@ Rebuild `../index.html` first (`bash ../build.sh`) after changing the game. `pre
 - **Menus and devtools:** there is no menu bar. Devtools (Ctrl+Shift+I) work only when you run `npm start`.
 - **Sound:** the soundtrack starts without needing a click.
 - **Instances:** only one copy runs at a time.
-- **Saves:** saves, records and sound settings are kept in the app's own storage. On Windows that is `%APPDATA%\Galaxy Trade Lanes`. They are separate from the browser version's.
+- **Saves:** saves, records and sound settings are kept in the app's own storage. On Windows that is `%APPDATA%\Galaxy Trade Lanes`, the folder from before the game was renamed, so earlier saves carry over. They are separate from the browser version's.
 - **Links:** web links open in the system browser. The window never navigates away from the game.
 - **Icon:** `icon.png` and `icon.ico` are the game's cargo hauler ship.
 

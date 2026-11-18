@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Galaxy Trade Lanes: online game server.
+/* Smugglers Run: online game server.
    Runs the rules (../engine.js) for one table of 2-6 human captains and serves the online page.
    Browsers send moves with POST /api/act and wait for changes with GET /api/wait (long polling,
    which works through Cloudflare quick tunnels). Uses only Node.js built-ins.
@@ -183,7 +183,7 @@ setInterval(() => { const key = T.players.map(online).join(); if (key !== presen
 
 server.listen(PORT, () => {
   const local = 'http://localhost:' + PORT;
-  console.log('\n  GALAXY TRADE LANES · online table\n');
+  console.log('\n  SMUGGLERS RUN · online table\n');
   console.log('  Your link (open this yourself, you become the host):\n    ' + local + '/?host=' + T.hostKey + '\n');
   if (process.env.NO_TUNNEL) { console.log('  Tunnel skipped (NO_TUNNEL is set).\n'); return; }
   let cf;

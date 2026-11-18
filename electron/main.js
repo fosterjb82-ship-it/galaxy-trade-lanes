@@ -1,10 +1,14 @@
-// Galaxy Trade Lanes desktop app: a window around the desktop browser build.
+// Smugglers Run desktop app: a window around the desktop browser build.
 // The game itself is game/index.html, copied from ../index.html by prepare.cjs.
 const { app, BrowserWindow, Menu, shell, screen } = require('electron');
 const path = require('path');
 
 // The soundtrack starts with the title screen, before any click.
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
+// Saves stay in the folder used before the game was renamed (it was Galaxy Trade Lanes),
+// so earlier saves, records and sound settings carry over. Must run before the app is ready.
+app.setPath('userData', path.join(app.getPath('appData'), 'Galaxy Trade Lanes'));
 
 // One copy at a time: a second launch focuses the first window.
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -25,7 +29,7 @@ function createWindow() {
     minWidth: Math.min(MIN_W, area.width), minHeight: Math.min(MIN_H, area.height),
     useContentSize: true,
     backgroundColor: '#070b14',
-    title: 'Galaxy Trade Lanes',
+    title: 'Smugglers Run',
     icon: path.join(__dirname, 'icon.png'),
     show: false,
     autoHideMenuBar: true,

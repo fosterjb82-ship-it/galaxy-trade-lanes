@@ -1,5 +1,5 @@
 // Packages the Electron app for one platform: node build.cjs win32 | darwin | linux
-// Output: dist/Galaxy Trade Lanes-<platform>-x64/ and a zip of it.
+// Output: dist/Smugglers Run-<platform>-x64/ and a zip of it.
 // Building for Windows works from Linux or macOS too (no Wine needed).
 const { packager } = require('@electron/packager');
 const path = require('path');
@@ -21,22 +21,22 @@ const out = path.join(__dirname, 'dist');
     prune: true,
     asar: true,
     name: pkg.productName,
-    executableName: platform === 'win32' ? 'GalaxyTradeLanes' : 'galaxy-trade-lanes',
+    executableName: platform === 'win32' ? 'SmugglersRun' : 'smugglers-run',
     appVersion: pkg.version,
     icon: path.join(__dirname, 'icon'), // packager adds .ico / .icns / .png per platform
-    appCopyright: 'Galaxy Trade Lanes',
+    appCopyright: 'Smugglers Run',
     win32metadata: {
-      CompanyName: 'Galaxy Trade Lanes',
-      FileDescription: 'Galaxy Trade Lanes',
-      ProductName: 'Galaxy Trade Lanes',
-      InternalName: 'GalaxyTradeLanes',
+      CompanyName: 'Smugglers Run',
+      FileDescription: 'Smugglers Run',
+      ProductName: 'Smugglers Run',
+      InternalName: 'SmugglersRun',
     },
     // only the app itself goes into the package
     ignore: [/^\/node_modules($|\/)/, /^\/dist($|\/)/, /^\/fonts($|\/)/, /^\/build\.cjs$/, /^\/prepare\.cjs$/, /^\/icon\.ico$/, /^\/README\.md$/, /^\/\.gitignore$/],
   });
   console.log('packaged:', path.relative(__dirname, dir));
 
-  const zip = path.join(out, `GalaxyTradeLanes-${pkg.version}-${platform}-${arch}.zip`);
+  const zip = path.join(out, `SmugglersRun-${pkg.version}-${platform}-${arch}.zip`);
   fs.rmSync(zip, { force: true });
   try {
     execFileSync('zip', ['-qry', zip, path.basename(dir)], { cwd: out });

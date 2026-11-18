@@ -1,8 +1,8 @@
-# Galaxy Trade Lanes: Cargo & Credits
+# Smugglers Run
 
 A pixel-art space freight deck-builder for 2–6 captains (any mix of humans and computer players). Buy cards, load your hold, and race rival captains to the same public contracts. **Favor** (with the trade authorities) is the score.
 
-Planned series: **Galaxy Trade Lanes: Cargo & Credits** (this game) and **Galaxy Trade Lanes: Fleet Battles** (a future combat-focused game).
+Previously titled **Galaxy Trade Lanes: Cargo & Credits**. The repository, file names and browser storage keys (`gtl-…`) keep the old name, so existing saves and links keep working. The earlier plan for a series named Galaxy Trade Lanes (with a combat-focused **Fleet Battles**) predates the rename.
 
 ## Play it
 

@@ -1,8 +1,8 @@
 {
-  "name": "galaxy-trade-lanes",
-  "productName": "Galaxy Trade Lanes",
-  "version": "0.1.4",
-  "description": "Galaxy Trade Lanes: Cargo & Credits, a pixel-art space freight deck-builder",
+  "name": "smugglers-run",
+  "productName": "Smugglers Run",
+  "version": "0.2.0",
+  "description": "Smugglers Run, a pixel-art space freight deck-builder",
   "private": true,
   "main": "main.js",
   "scripts": {

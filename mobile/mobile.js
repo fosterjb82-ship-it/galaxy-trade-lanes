@@ -45,7 +45,7 @@ render=function(){
 function cashBtn(p,on){const n=Math.floor(p.pool.cr/E.CASH),ok=on&&n>0;
  return '<button class="mcash'+(ok?' lit':'')+'" data-a="cash"'+(ok?'':' disabled')+'>Cash in '+E.CASH+' credits → +1 favor<small>'+(ok?'You can do this '+n+(n===1?' time':' times')+' now':'Any time, as often as you can afford')+'</small></button>'}
 function menu(){
- modal('<div class="eyebrow">Galaxy Trade Lanes · phone build</div><h2>Menu</h2><div class="mmenu">'
+ modal('<div class="eyebrow">Smugglers Run · phone build</div><h2>Menu</h2><div class="mmenu">'
   +'<button data-a="sound">Sound settings</button>'
   +'<button data-a="rules">Rules</button><button data-a="enc">Encyclopedia</button><button data-a="records">Records</button>'
   +(screen==='game'?'<button data-a="new">New run</button>':'')

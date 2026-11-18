@@ -32,7 +32,7 @@ const CSS=`
   window.__cues=[];window.__t0=performance.now();const T=()=>(performance.now()-__t0)/1000;
   Music.sfx=(n,d)=>__cues.push([n,T()+(d||0)]);Music.victory=()=>__cues.push(['victory',T()]);
   cfg.bots=2;cfg.cpuSpeed='fast';cfg.names[0]='Captain Vega';renderSetup();
-  card('<img class="hero" src="'+SP.heroURL()+'"><h1>GALAXY TRADE LANES</h1><h2>CARGO &amp; CREDITS</h2>'+shipsRow())});
+  card('<img class="hero" src="'+SP.heroURL()+'"><h1>SMUGGLERS RUN</h1><h2>A FREIGHT DECK-BUILDER</h2>'+shipsRow())});
  await sleep(400);
  const tap=sel=>page.evaluate(s=>{const e=[...document.querySelectorAll(s)].find(x=>!x.disabled&&x.offsetParent!==null);if(e){e.click();return true}return false},sel);
 
@@ -81,7 +81,7 @@ const CSS=`
   cap('');settle()});
  await sleep(500);await page.evaluate(()=>cap('Every win, <b>broken down.</b>'));await sleep(4300);
  // 27-30 s end card
- await page.evaluate(()=>{cap('');card('<img class="hero" src="'+SP.heroURL()+'" style="width:760px"><h1 style="font-size:120px">GALAXY TRADE LANES</h1><h2>CARGO &amp; CREDITS</h2>'+shipsRow()+'<div class="cta">Play online with up to 6 friends</div>')});
+ await page.evaluate(()=>{cap('');card('<img class="hero" src="'+SP.heroURL()+'" style="width:760px"><h1 style="font-size:120px">SMUGGLERS RUN</h1><h2>A FREIGHT DECK-BUILDER</h2>'+shipsRow()+'<div class="cta">Play online with up to 6 friends</div>')});
  await sleep(3900);
 
  const dur=Date.now()/1000-t0;await cdp.send('Page.stopScreencast');await sleep(200);
