@@ -131,3 +131,6 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 .brand{column-gap:8px}
 .grid .pc.cback{min-height:200px}
 .handfan{height:112px}.handfan .pc.cback{width:76px;height:106px;margin:0 -12px}
+.dtiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.dtile h3{font-size:16px}.dtile p{font-size:12px}.dtile .dcount{font-size:22px;padding:2px 7px 0}
+.dtile .badge.gain{font-size:15px;gap:5px}.dtile .badge.gain img{width:15px;height:15px}

@@ -639,6 +639,25 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .brand .blogo{grid-row:1/3;width:56px;height:56px;image-rendering:pixelated}
 .cbin b{font-size:10.5cqw;letter-spacing:.02em}
 .handfan .cbin b{font-size:10cqw;letter-spacing:0}
+/* ---------- deck view tiles ---------- */
+.dpiles{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:4px 0 6px}
+.dpiles span{display:inline-flex;align-items:baseline;gap:6px;border:2px solid var(--line);background:var(--panel2);padding:3px 10px;font:500 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.dpiles span b{font:700 20px/1 var(--disp);color:var(--ink,#e8eefc);letter-spacing:0}
+.dpiles span.mute{border:0;background:none;padding:0;text-transform:none;letter-spacing:0;font:400 13px var(--body)}
+.dsub{margin:14px 0 8px}
+.dtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.dtile{display:flex;flex-direction:column;border:2px solid var(--line);background:var(--panel2);min-width:0}
+.dtile.res{border-color:#1f5a55}.dtile.act{border-color:#5a4a22}
+.dtile .art{position:relative;line-height:0}
+.dtile .art img.px{width:100%;height:auto;aspect-ratio:88/52;image-rendering:pixelated;display:block}
+.dtile .badge.gain{font-size:16px}
+.dtile .dcount{position:absolute;top:6px;right:6px;font:700 30px/1 var(--disp);color:var(--amber);background:#05080fe6;border:2px solid var(--amber);padding:3px 9px 1px;font-variant-numeric:tabular-nums;box-shadow:0 3px 0 #000}
+.dtile .pb{padding:8px 10px 10px;display:flex;flex-direction:column;gap:3px;flex:1}
+.dtile h3{font:600 19px/1.15 var(--disp);margin:0}
+.dtile p{font-size:13px;line-height:1.35;color:var(--mute);margin:0;flex:1}
+.dtile .where{font:500 11px/1.4 var(--mono);letter-spacing:.06em;color:var(--teal);margin-top:4px}
+.dtile.gone{opacity:.62;border-style:dashed}.dtile.gone .dcount{border-color:var(--coral);color:var(--coral)}
+.dtile .badge.gain{font-size:19px;gap:8px;padding:2px 8px 2px 4px;bottom:5px;left:5px}.dtile .badge.gain img{width:20px;height:20px}
 /* online table additions */
 .roster{display:inline-flex;flex-wrap:wrap;gap:4px 10px;vertical-align:middle}
 .who{position:relative;padding-left:11px;color:var(--mute)}
@@ -1600,7 +1619,7 @@ function showDetail(el,pinned){if(!s)return;const html=detailFor(el);if(!html)re
  if(!DESK){det.classList.add('phone');return}
  let left=r.right/z+16;if(left+dw>W-12)left=r.left/z-dw-16;if(left<12)left=Math.max(12,(W-dw)/2);
  det.style.left=left+'px';det.style.top=Math.max(12,Math.min(H-dh-12,(r.top+r.height/2)/z-dh/2))+'px'}
-const DSEL='.pc[data-hand],.pc[data-mk],.ctr[data-cid],.tcard[data-k],.vcard[data-did]';
+const DSEL='.pc[data-hand],.pc[data-mk],.ctr[data-cid],.tcard[data-k],.dtile[data-k],.vcard[data-did]';
 document.addEventListener('contextmenu',e=>{const el=e.target.closest&&e.target.closest(DSEL);if(!el)return;e.preventDefault();clearTimeout(dwell);showDetail(el,true)});
 document.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const el=e.target.closest&&e.target.closest(DSEL);
  if(el===dwellEl)return;clearTimeout(dwell);dwellEl=el;if(det&&!det.classList.contains('pinned')&&det._src!==el)hideDetail();
@@ -1868,8 +1887,26 @@ function rules(){modal('<div class="eyebrow">How Smugglers Run works</div><h2>Ev
  +'<p><b class="acc">Ending.</b> Unused resources vanish, hand and played cards go to discard, you draw 5. Discard reshuffles only when the draw pile runs out.</p>'
  +'<p><b class="acc">Winning.</b> Highest favor after the set rounds, or the round in which someone reaches the target. Everyone gets equal turns and ties share the win.</p></div><div class="btns"><button class="primary" data-a="close">Back</button></div>',true)}
 function showRecords(){const a=records();modal('<div class="eyebrow">This browser · best 30</div><h2>Captain records.</h2>'+(a.length?'<table class="t"><thead><tr><th>CAPTAIN</th><th>FAVOR</th><th>RANK</th><th>ROUND</th><th>MODE</th></tr></thead><tbody>'+a.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+r.profit+'</td><td>#'+r.rank+'</td><td>'+r.round+'</td><td>'+(r.mode==='profit'?'target':'rounds')+' / '+(r.limit===0?'unlimited orders':'2 orders')+'</td></tr>').join('')+'</tbody></table>':'<p class="mute">Finish a run to record a score.</p>')+'<div class="btns"><button class="primary" data-a="close">Back</button></div>')}
-function viewDeck(){const p=s.players[viewer()],c={};[...p.hand,...p.deck,...p.discard,...p.played].forEach(k=>c[k]=(c[k]||0)+1);
- modal('<div class="eyebrow">'+esc(p.name)+' · deck inventory</div><h2>'+E.deckSize(p)+' cards.</h2><table class="t">'+Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,n])=>'<tr><td>'+E.CARDS[k].n+'</td><td class="mute">'+E.CARDS[k].t+'</td><td>×'+n+'</td></tr>').join('')+'</table><p class="mute" style="margin-top:10px">All piles combined. Draw order stays hidden.</p><div class="btns"><button class="primary" data-a="close">Back</button></div>')}
+/* ---------- deck views: one tile per card type, with art and a count ---------- */
+function deckCounts(p){const c={};[...p.hand,...p.deck,...p.discard,...p.played].forEach(k=>c[k]=(c[k]||0)+1);return c}
+const deckSort=(a,b)=>(E.CARDS[a[0]].cost===0)-(E.CARDS[b[0]].cost===0)||E.CARDS[b[0]].cost-E.CARDS[a[0]].cost||b[1]-a[1]||E.CARDS[a[0]].n.localeCompare(E.CARDS[b[0]].n);
+function deckTile(k,n,where,gone){const c=E.CARDS[k];
+ return '<article class="dtile '+c.cat+(gone?' gone':'')+' notch" data-k="'+k+'"><div class="art">'+px(SP.cardURL(k),AW,AH)+gainBadge(k)+'<span class="dcount" aria-label="'+n+' in deck">×'+n+'</span></div>'
+  +'<div class="pb"><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+(c.cost?c.kind:'Starter')+'</div><h3>'+c.n+'</h3><p>'+c.t+'</p>'+(where?'<small class="where">'+where+'</small>':'')+'</div></article>'}
+// where each card is right now, for the captain's own deck (draw order stays hidden)
+function whereText(p,k){const pl=[['draw',p.deck],['in hand',p.hand],['played',p.played],['discard',p.discard]].map(([l,a])=>[l,a.filter(x=>x===k).length]).filter(([,n])=>n);return pl.map(([l,n])=>n+' '+l).join(' · ')}
+function deckGroups(p,own){const rows=Object.entries(deckCounts(p)).sort(deckSort),bought=rows.filter(([k])=>E.CARDS[k].cost>0),start=rows.filter(([k])=>E.CARDS[k].cost===0),sum=r=>r.reduce((a,x)=>a+x[1],0);
+ const grid=(title,r)=>r.length?'<h3 class="dsub">'+title+' · '+sum(r)+'</h3><div class="dtiles">'+r.map(([k,n])=>deckTile(k,n,own?whereText(p,k):'')).join('')+'</div>':'';
+ return grid('Bought',bought)+grid('Starter cards',start)}
+function scrapTiles(p){const sc=p.scrappedCards||[],c={};sc.forEach(k=>c[k]=(c[k]||0)+1);if(!sc.length)return '';
+ return '<h3 class="dsub">Scrapped · '+sc.length+'</h3><p class="mute">Removed from the deck for good (scrapped from hand, by Salvage Crew, or a Buyout Contract used up when played).</p><div class="dtiles">'
+  +Object.entries(c).sort(deckSort).map(([k,n])=>deckTile(k,n,'',true)).join('')+'</div>'}
+function viewDeck(){const p=s.players[viewer()];
+ const piles=[['Draw',p.deck.length],['Hand',p.hand.length],['Played',p.played.length],['Discard',p.discard.length]];
+ modal('<div class="eyebrow">'+esc(p.name)+' · your deck</div><h2>'+E.deckSize(p)+' cards.</h2>'
+  +'<div class="dpiles">'+piles.map(([l,n])=>'<span><b>'+n+'</b>'+l+'</span>').join('')+'<span class="mute">Draw order stays hidden. '+(DESK?'Right-click':'Press and hold')+' a card for its full view.</span></div>'
+  +deckGroups(p,true)+scrapTiles(p)
+  +'<div class="btns"><button class="primary" data-a="close">Back</button></div>',true)}
 function viewDecks(i){
  const order=s.players.map((t,j)=>j).sort((a,b)=>s.players[b].profit-s.players[a].profit);
  if(i===null||!s.players[i])i=order[0];
@@ -1879,14 +1916,8 @@ function viewDecks(i){
  modal('<div class="eyebrow">'+(s.over?'Run complete':'Round '+s.round)+' · captains\' decks</div><h2>'+esc(p.name)+'</h2>'
   +'<div class="dtabs">'+order.map(j=>'<button class="sm'+(j===i?' on':'')+'" data-a="decks" data-id="'+j+'">'+esc(s.players[j].name)+' · '+s.players[j].profit+'</button>').join('')+'</div>'
   +'<p class="mute">#'+rank+' · '+p.profit+' favor · '+p.completed+' deliveries · '+E.deckSize(p)+' cards ('+bought+' bought)'+(p.bossDmg?' · '+p.bossDmg+' boss damage':'')+'</p>'
-  +'<ul class="dlist">'+rows.map(([k,n])=>{const d=E.CARDS[k];return '<li class="'+d.cat+'"><img class="px" src="'+SP.cardURL(k)+'" width="66" height="39" alt=""><div><b>'+d.n+'</b><span class="mute">'+d.t+'</span></div><strong>×'+n+'</strong></li>'}).join('')+'</ul>'
-  +scrapList(p)
+  +deckGroups(p,false)+scrapTiles(p)
   +'<div class="btns"><button class="primary" data-a="close">Back</button></div>',true)}
-function scrapList(p){const sc=p.scrappedCards||[],c={};sc.forEach(k=>c[k]=(c[k]||0)+1);
- const by=sc.filter(k=>k!=='buyout').length,bo=sc.length-by;
- return '<h3 class="dsub">Scrapped · '+sc.length+'</h3>'+(sc.length?'<p class="mute">'+by+' scrapped from hand for 1 credit each'+(bo?' · '+bo+' Buyout'+(bo>1?'s':'')+' used up when played':'')+'</p><ul class="dlist">'
-  +Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,n])=>'<li class="'+E.CARDS[k].cat+' gone"><img class="px" src="'+SP.cardURL(k)+'" width="66" height="39" alt=""><div><b>'+E.CARDS[k].n+'</b><span class="mute">'+(k==='buyout'?'Used up when played':'Removed from the deck')+'</span></div><strong>×'+n+'</strong></li>').join('')+'</ul>'
-  :'<p class="mute">'+esc(p.name)+' never scrapped a card.</p>')}
 function encyclopedia(sec){sec=sec||'cards';
  const card=k=>{const c=E.CARDS[k];return '<li class="'+c.cat+'"><img class="px" src="'+SP.cardURL(k)+'" width="88" height="52" alt=""><div><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><b>'+c.n+'</b><span>'+c.t+'</span><small class="mute">'+(c.cat==='res'?'Free to play: does not use an order.':'Uses 1 order (2 per turn by default).')+'</small></div><strong>'+(c.cost?icon('cr',1.6)+c.cost:'Start')+'</strong></li>'};
  const req=t=>Object.entries(t.req).map(([r,n])=>'<span class="tok met" style="--rc:var(--c-'+r+')">'+icon(r,1.6)+n+'</span>').join('')+(E.need(t)?'<span class="tok met" style="--rc:var(--c-cargo)">'+icon('cargo',1.6)+E.need(t)+'</span>':'');
