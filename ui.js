@@ -125,6 +125,13 @@ document.addEventListener('pointerdown',e=>{clearTimeout(dwell);
 document.addEventListener('click',e=>{if(pressFired){pressFired=false;e.preventDefault();e.stopPropagation()}},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&det){hideDetail();e.stopPropagation()}},true);
 addEventListener('scroll',()=>{if(det&&!det.classList.contains('pinned'))hideDetail()},true);
+// desktop: the countdown to the next pirate boss, as a tile the size of a contract (which boss stays secret)
+function threatTile(){const n=E.nextThreat(s);if(!n||s.over||s.boss)return '';const k=n-s.round,dl=E.delayLeft(s);
+ return '<article class="pc ttile notch'+(k<=1?' soon':'')+'" title="Next pirate boss: round '+n+'"><div class="art">'+px(SP.bossURL('dread'),AW,AH)+'<div class="tq">?</div>'
+  +'<span class="badge tcnt"><b>'+k+'</b>round'+(k===1?'':'s')+'</span>'+(k<=1?'<div class="go blk">NEXT ROUND!</div>':'')+'</div>'
+  +'<div class="pb"><h3>Pirate boss</h3><div class="dest">Arrives in round '+n+' · blocks all contracts</div>'
+  +'<div class="tpips" aria-hidden="true">'+Array.from({length:Math.max(k,E.BOSS_EVERY)},(_,i)=>'<i'+(i<k?' class="on"':'')+'></i>').join('')+'</div>'
+  +'<p class="tnote">'+icon('combat',1.6)+(dl?'Pirate patrol pushes it back 1 round · '+dl+' more possible':'Patrols cannot delay it any further')+'</p></div></article>'}
 function ctrCard(c){const p=E.me(s),ready=myTurn()&&E.canComplete(s,c),nd=E.need(c);
  return '<article class="pc ctr notch'+(ready?' ready':'')+'" data-cid="'+c.id+'"><div class="art">'+px(SP.sceneURL(c.dest,c.id),AW,AH)+'<span class="badge profit">'+icon('star',1.6)+'+'+c.profit+'</span>'+(ready?'<div class="go">READY TO DELIVER</div>':'')+(s.boss?'<div class="go blk">BLOCKADED</div>':'')+'</div>'
  +'<div class="pb"><h3>'+esc(c.name)+'</h3><div class="dest">To '+esc(c.dest)+' · '+(c.req.combat?'Armed':'Freight')+'</div>'
@@ -343,8 +350,8 @@ function render(){
   +'<section class="panel notch"><div class="eyebrow">Standings</div>'+standings()+'</section>'
   +'<section class="panel notch"><div class="eyebrow">Your deck</div><div class="piles"><div><b>'+p.deck.length+'</b><span class="eyebrow">Draw</span></div><div><b>'+p.discard.length+'</b><span class="eyebrow">Discard</span></div><div><b>'+E.deckSize(p)+'</b><span class="eyebrow">Total</span></div></div><div class="links"><button data-a="deck">Deck</button><button data-a="done">Deliveries</button><button data-a="log">Log</button></div></section></aside>';
  const pool=poolStrip(p);
- const cband='<section class="band cband'+(s.boss?' boss-on':'')+'"><div class="bhead2"><h2>CONTRACT BOARD</h2>'+cdeckPile()+'<span class="eyebrow">First to pay claims it · refills at once · '+s.done.length+' delivered</span>'+(s.boss?'':bossPanel())+'</div>'
-  +'<div class="cbody">'+(s.boss?bossPanel():'')+'<div class="cwrap"><div class="cgrid" style="--n:'+s.board.length+'">'+s.board.map(ctrCard).join('')+'</div></div></div></section>';
+ const cband='<section class="band cband'+(s.boss?' boss-on':'')+'"><div class="bhead2"><h2>CONTRACT BOARD</h2>'+cdeckPile()+'<span class="eyebrow">First to pay claims it · refills at once · '+s.done.length+' delivered</span></div>'
+  +'<div class="cbody">'+(s.boss?bossPanel():'')+'<div class="cwrap"><div class="cgrid" style="--n:'+(s.board.length+(threatTile()?1:0))+'">'+s.board.map(ctrCard).join('')+threatTile()+'</div></div></div></section>';
  const mband='<section class="band mband'+(mode==='play'?' mini':'')+'"><div class="bhead2"><h2>CARD MARKET</h2><span class="eyebrow">'+(s.marketMode==='full'?'All 16 cards':E.CORE.length+' core + '+(E.offered(s).length-E.CORE.length)+' specialists this game')+' · '+(mode==='play'?'hover a card for its full text · ':'')+'bought cards go to your discard pile</span></div><div class="mgrid" style="--mc:'+E.offered(s).length+';--mc2:'+Math.ceil(E.offered(s).length/2)+'">'+marketList().map(k=>cardEl(k,0,true)).join('')+'</div></section>';
  const left=!hidden&&p.hand.length?'<span class="hleft"><span class="eyebrow">Left in hand · no orders left</span>'+p.hand.map((k,i)=>'<span class="hchip '+E.CARDS[k].cat+'">'+E.CARDS[k].n+(on&&!p.scrapped&&p.pool.cr>=1?'<button class="sm" data-a="scrap" data-id="'+i+'">Scrap · 1 cr</button>':'')+'</span>').join('')+'</span>':'';
  const msg=hidden?(ME!==null&&!s.over?esc(p.name)+' is taking their turn. Your hand appears when it is your turn.':s.over?'The run is over.':'Hand hidden until the captain begins.'):'Hand played out. Deliver, buy, or end your turn.';
