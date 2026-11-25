@@ -12,7 +12,7 @@ const CARDS={
  pack:{n:'Plasma Pack',cat:'res',kind:'Propulsion',g:{fuel:3},cost:2,t:'Gain 3 fuel.'},
  borer:{n:'Ore Borer',cat:'res',kind:'Mining',g:{ore:2},cost:3,t:'Gain 2 ore.'},
  vault:{n:'Data Vault',cat:'res',kind:'Research',g:{tech:2},cost:3,t:'Gain 2 tech.'},
- quarter:{n:'Quartermaster',cat:'act',kind:'Crew',g:{},draw:2,cost:2,t:'Draw 2 cards.'},
+ quarter:{n:'Quartermaster',cat:'act',kind:'Crew',g:{},draw:2,refund:1,cost:3,t:'Draw 2 cards. Gain back the order you spent.'},
  barge:{n:'Barge',cat:'act',kind:'Storage',g:{cargo:4},cost:2,t:'Gain 4 cargo space this turn.'},
  gunship:{n:'Gunship',cat:'act',kind:'Combat',g:{combat:3},cost:3,t:'Gain 3 combat for escorts or a patrol.'},
  probe:{n:'Scout Probe',cat:'act',kind:'Recon',g:{fuel:1,tech:1},draw:1,cost:4,t:'Gain 1 fuel and 1 tech. Draw a card.'},
@@ -173,6 +173,7 @@ function play(s,i,target){
  }else{p.played.push(k);ev(s,{t:'play',k})}
  Object.entries(c.g).forEach(([r,n])=>p.pool[r]+=n);
  if(c.buys)p.buys+=c.buys;
+ if(c.refund&&c.cat==='act'&&s.actionLimit)p.actions+=c.refund;   // e.g. Quartermaster: needs a free order, then returns it
  if(c.dbl)p.dbl=true;
  if(c.draw)draw(s,p,c.draw);
  if(c.vp){p.profit+=c.vp;score(p,'charter',c.vp);log(s,p.name+' played '+c.n+' for +'+c.vp+' favor.')}
