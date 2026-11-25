@@ -8,7 +8,7 @@ render=function(){
  const body=document.querySelector('.mbody');if(body&&shownTab)tabScroll[shownTab]=body.scrollTop;
  const p=E.me(s),on=s.phase==='action'&&!s.over,hidden=!on;
  const key=s.round+':'+s.current;if(key!==turnKey){turnKey=key;tab='hand';tabScroll={}}
- $('status').innerHTML=(s.over?'Run complete':'Round <b>'+s.round+(s.winMode==='rounds'?' / '+s.maxRounds:'')+'</b> · <b>'+esc(p.name)+'</b>')+(s.finalRound&&!s.over?' · <b class="acc">final round</b>':'')+(s.winMode==='profit'?' · first to '+s.target:'');
+ $('status').innerHTML=(s.over?'Run complete':'Round <b>'+s.round+(s.winMode==='rounds'?' / '+s.maxRounds:'')+'</b> · <b>'+esc(p.name)+'</b>')+(s.finalRound&&!s.over?' · <b class="acc">target reached</b>':'')+(s.winMode==='profit'?' · first to '+s.target:'');
 
  const sum='<div class="msum"><div class="mrow"><div class="mprof">'+ava(p,34)+icon('star',2.2)+'<b>'+p.profit+'</b></div>'
   +'<div class="mchip"><span class="eyebrow">Deals</span><b>'+p.buys+'</b></div><div class="mchip"><span class="eyebrow">Orders</span><b>'+(s.actionLimit?p.actions:'∞')+'</b></div>'

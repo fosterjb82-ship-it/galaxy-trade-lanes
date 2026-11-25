@@ -136,7 +136,7 @@ node preview.cjs                    # art preview sheets into out/
 - Battle music: while a pirate boss blockades the lanes, the soundtrack switches at once to a battle theme. It uses the same key, instruments and arpeggio shape as the main theme, at 108 BPM in 16th notes, with darker chords, a driving bass, snare, toms, timpani, brass stabs and a brass melody, in a 16-bar (about 36 s) loop. When the boss is beaten or leaves, the battle bar finishes and the calm theme returns from its gentle opening. The battle mix sits about 3 dB above the calm theme. Preview: `media/battle-theme-preview.mp3` (calm, boss arrives, battle, calm). `tools/teaser/audio.cjs` accepts `battle` and `calm` cues for trailers.
 - Runs saved before a new card was added get that card fully stocked in the market when loaded (`Engine.migrate`).
 - Scrap one card from hand for 1 credit, once per turn.
-- Unspent resources vanish at end of turn. Highest favor after the set rounds wins, or race to a favor target with equal turns for everyone.
+- Unspent resources vanish at end of turn. Highest favor after the set rounds wins. In a race to a favor target, the target is checked at the end of each round, after any pirate raid: if anyone holds it then, the run ends and the highest favor wins (everyone gets equal turns). Reaching it mid-round only flags "target reached"; if a Buyout Contract or a raid takes the favor away before the round ends, the race goes on. Tested in `tests/target.test.cjs`.
 
 ## Notes for continuing in Claude Code
 

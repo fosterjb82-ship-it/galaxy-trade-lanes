@@ -146,7 +146,12 @@ function create(o={}){
  return s;
 }
 function begin(s){if(s.over||s.phase!=='handoff')return false;s.phase='action';me(s).news=[];s.feedFrom=s.evn||0;log(s,me(s).name+' begins a turn.');return true}
-function checkTarget(s){if(s.winMode==='profit'&&s.finalRound===null&&me(s).profit>=s.target){s.finalRound=s.round;log(s,'Favor target reached. Round '+s.round+' is the last round.')}}
+// Race to a favor target: finalRound marks "someone holds the target this round". It is only provisional:
+// the run ends at the end of the round if anyone still holds it then (a Buyout Contract or a raid can take it away).
+function holders(s){return s.players.filter(p=>p.profit>=s.target)}
+function checkTarget(s){if(s.winMode!=='profit')return;const h=holders(s);
+ if(h.length&&s.finalRound!==s.round){s.finalRound=s.round;log(s,h.map(p=>p.name).join(' and ')+' reached the favor target. The run ends after this round if anyone still holds it.')}
+ else if(!h.length&&s.finalRound===s.round){s.finalRound=null;log(s,'Nobody holds the favor target any more. The race goes on.')}}
 function canPlay(s,i){const p=me(s);return live(s)&&Number.isInteger(i)&&i>=0&&i<p.hand.length&&(CARDS[p.hand[i]].cat==='res'||s.actionLimit===0||p.actions>0)&&(p.hand[i]!=='buyout'||buyoutTargets(s).length>0)}
 // Buyout Contract: contracts other captains delivered that the active captain can pay for right now
 function buyoutTargets(s){const p=me(s);return s.done.filter(d=>d.player!==s.current&&Object.entries(d.req).every(([r,n])=>p.pool[r]>=n)&&p.pool.cargo>=need(d))}
@@ -226,7 +231,7 @@ function hit(s,n){const p=me(s),b=s.boss,d=Math.min(n,b.hp);b.hp-=d;b.dmg[s.curr
   s.bossDone.push({name:b.name,key:b.key,bounty:b.bounty||1,no:b.no,won:true,round:s.round,max:b.max,dmg:b.dmg.slice(),final:s.current,change:reward,profit:s.players.map(t=>t.profit),seen:bots(s)});
   ev(s,{t:'bossdown',boss:b.name});
   log(s,p.name+' landed the final blow on '+b.name+' (+'+FINAL_BLOW+'). Captains earn +'+(b.bounty||1)+' favor per damage dealt. Contracts are open again.');
-  s.boss=null;bossLeft(s,b);s.players.forEach((t,i)=>{if(b.dmg[i]){s.current=i;checkTarget(s)}});s.current=s.players.indexOf(p)}
+  s.boss=null;bossLeft(s,b);checkTarget(s)}
  return d}
 const bots=s=>s.players.map((t,i)=>t.bot?i:-1).filter(i=>i>=0);
 // boss results a human captain has not confirmed yet
@@ -252,9 +257,13 @@ function end(s){
  s.current++;
  if(s.current>=s.players.length){
   s.current=0;
-  if(s.winMode==='rounds'?s.round>=s.maxRounds:s.finalRound===s.round){s.over=true;s.phase='over';log(s,'The run is over. Highest favor wins.');return true}
+  if(s.winMode==='rounds'&&s.round>=s.maxRounds){s.over=true;s.phase='over';log(s,'The run is over. Highest favor wins.');return true}
   if(s.boss&&s.round>=s.boss.until)raid(s);
   else if(s.boss&&s.boss.regen&&s.boss.hp<s.boss.max){const r=Math.min(s.boss.regen,s.boss.max-s.boss.hp);s.boss.hp+=r;log(s,s.boss.name+' repaired '+r+' hull.')}
+  // race mode: the target is checked here, at the end of the round, after any raid
+  if(s.winMode==='profit'){const h=holders(s);
+   if(h.length){s.finalRound=s.round;s.over=true;s.phase='over';log(s,'End of round '+s.round+': '+h.map(p=>p.name).join(' and ')+' '+(h.length>1?'hold':'holds')+' the favor target. The run is over. Highest favor wins.');return true}
+   if(s.finalRound!==null){s.finalRound=null;log(s,'End of round '+s.round+': nobody holds the favor target. The race goes on.')}}
   s.round++;
   spawn(s);
  }
