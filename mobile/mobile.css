@@ -134,3 +134,7 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 .dtiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .dtile h3{font-size:16px}.dtile p{font-size:12px}.dtile .dcount{font-size:22px;padding:2px 7px 0}
 .dtile .badge.gain{font-size:15px;gap:5px}.dtile .badge.gain img{width:15px;height:15px}
+.bobox{padding:14px 12px 10px}.borow{grid-template-columns:1fr 1fr;gap:10px}.bocard{grid-column:1/-1;grid-row:1;max-width:240px;margin:0 auto 6px}
+.bowho b{font-size:18px}.bowho em{font-size:22px}.bowho .ava{width:60px;height:60px}.bostamp{font-size:24px}.bobox p{font-size:14px}
+.bocard{max-width:200px}.bostamp{font-size:13cqw}
+.bocard{width:200px;max-width:100%}

@@ -128,7 +128,12 @@ const SFX={
  deal:t=>{const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=noise;f.type='lowpass';f.frequency.setValueAtTime(3200,t);f.frequency.exponentialRampToValueAtTime(400,t+.12);
   env(g,t,.002,.32,.01,.12);s.connect(f);f.connect(g);g.connect(fx);s.start(t,Math.random()*.5);s.stop(t+.18);tone(150,t,.12,'sine',.12,70);tone(hz(84),t+.05,.18,'triangle',.05)},
  boss:t=>{tone(hz(40),t,1.1,'sawtooth',.12,hz(38));tone(hz(47),t+.05,1.0,'sawtooth',.08,hz(45));tone(hz(52),t+.5,.9,'square',.05,hz(50))},
- hit:t=>{tone(180,t,.25,'sawtooth',.14,40);tone(900,t,.08,'square',.05,200)}
+ hit:t=>{tone(180,t,.25,'sawtooth',.14,40);tone(900,t,.08,'square',.05,200)},
+ // Buyout Contract: coins spill, a low brass sting, then a stamp
+ buyout:t=>{[96,93,91,88,84].forEach((m,i)=>tone(hz(m),t+i*.055,.16,'square',.05));
+  tone(hz(45),t+.3,1.3,'sawtooth',.15,hz(40));tone(hz(52),t+.32,1.2,'sawtooth',.1,hz(47));tone(hz(57),t+.34,1.1,'square',.06,hz(52));
+  const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain(),t2=t+.3;s.buffer=noise;f.type='lowpass';f.frequency.setValueAtTime(1800,t2);f.frequency.exponentialRampToValueAtTime(100,t2+.5);
+  env(g,t2,.004,.3,.03,.45);s.connect(f);f.connect(g);g.connect(fx);s.start(t2);s.stop(t2+.6);tone(80,t+1.05,.35,'sine',.32,38);tone(400,t+1.05,.06,'square',.05,120)}
 };
 function sfx(name,delay){if(!fxOn||!allOn||!SFX[name])return;try{if(!ctx)build();if(ctx.state!=='running')ctx.resume()}catch(e){return}
  if(!fx){fx=ctx.createGain();const c=ctx.createDynamicsCompressor();fx.connect(c);c.connect(allG);fx.connect(verb)}

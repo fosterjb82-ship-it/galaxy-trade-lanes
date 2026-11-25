@@ -177,6 +177,21 @@ function moveTiles(p,on){const canP=on&&!p.patrolled&&p.pool.combat>=3&&p.pool.f
 /* ---------- animations: cards dealt from your draw pile, contracts from the contract deck ---------- */
 const calm=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){return false}};
 let animPrev=null;
+/* ---------- Buyout Contract: a table-wide announcement everyone sees ---------- */
+let boQueue=[],boShowing=false;
+function buyoutNews(e){boQueue.push(e);if(!boShowing)nextBuyout()}
+function nextBuyout(){const e=boQueue.shift();if(!e||!s){boShowing=false;boQueue=[];return}boShowing=true;
+ const by=s.players[e.who]||{name:'?'},from=s.players[e.v]||{name:'?'},lost=e.lost??e.amt,d=s.done.find(x=>x.id===e.id)||{name:e.name,dest:'',req:{},profit:e.amt,id:0};
+ const pay=Object.entries(d.req||{}).filter(([,n])=>n).map(([r,n])=>tok(r,n,true)).join('')+(E.need(d)?tok('cargo',E.need(d),true):'');
+ const el=document.createElement('div');el.className='bobanner';el.setAttribute('role','alert');
+ el.innerHTML='<div class="bobox notch"><div class="boeye">Buyout Contract · round '+(e.r||s.round)+'</div><h2>CONTRACT BOUGHT OUT</h2>'
+  +'<div class="borow"><div class="bowho lose">'+ava(from,96)+'<b>'+esc(from.name)+'</b><em>−'+lost+' favor</em></div>'
+  +'<div class="bocard"><article class="pc ctr notch"><div class="art">'+px(SP.sceneURL(d.dest,d.id),AW,AH)+'<span class="badge profit">'+icon('star',1.6)+'+'+d.profit+'</span></div><div class="pb"><h3>'+esc(d.name)+'</h3><div class="dest">To '+esc(d.dest)+'</div></div><div class="bostamp">BOUGHT OUT</div></article></div>'
+  +'<div class="bowho win">'+ava(by,96)+'<b>'+esc(by.name)+'</b><em>+'+e.amt+' favor</em></div></div>'
+  +'<p>'+esc(by.name)+' paid '+pay+' to take <b>'+esc(d.name)+'</b> from '+esc(from.name)+'.</p><small>Click to dismiss</small></div>';
+ document.body.append(el);Music.sfx('buyout');
+ const close=()=>{if(!el.isConnected||el.classList.contains('out'))return;el.classList.add('out');setTimeout(()=>{el.remove();nextBuyout()},320)};
+ el.addEventListener('click',close);setTimeout(close,5600)}
 function cdeckPile(){return '<span class="cdeck" title="Contract deck: '+s.cdeck.length+' left" style="--tile:url('+SP.backURL('contract')+')"><i></i><i></i><i><img class="px" src="'+SP.logoURL()+'" alt=""></i><b>'+s.cdeck.length+'</b></span>'}
 /* card backs: crew (every captain's own deck), contract and market, each with the logo and title */
 const BACKLABEL={crew:'Crew deck',contract:'Contract',market:'Market'};
@@ -201,6 +216,7 @@ function animAfter(snap){if(screen!=='game'||!s)return;
  const prev=animPrev;animPrev={id:s.id,key,hand,board,evn:s.evn||0,profits,tp};if(!prev||prev.id!==s.id)return;
  if(prev.key===key&&prev.hand===null&&hand&&!calm())document.querySelectorAll('.pc[data-hand]').forEach((el,i)=>{el.classList.add('reveal');el.style.animationDelay=(i*90)+'ms'});
  const evAll=(s.events||[]).filter(e=>e.n>(prev.evn||0)),burst=evAll.length>10||s.over,still=calm()||burst;
+ evAll.filter(e=>e.t==='buyout'&&e.name).forEach(e=>{buyoutNews(e);[[e.v,'robbed'],[e.who,'gainer']].forEach(([i,c])=>{const r=document.querySelector('.stand[data-seat="'+i+'"]');if(r)r.classList.add(c)})});
  // contracts that left the board, and the ones dealt in their place
  const gone=prev.board.filter(x=>!board.includes(x)),fresh=board.filter(x=>!prev.board.includes(x));
  const to=mid(document.querySelector('.plate .profit,.mprof')),deck=mid(document.querySelector('.cdeck'));
@@ -360,7 +376,8 @@ function bossReport(){
 function phase(){
  if(screen!=='game')return;if(s.undoReq&&!s.over){undoDialog();return}bossNews();if(bossReport())return;const p=E.me(s);
  if(s.over){victory(vicSeat);return}
- if(s.phase==='handoff'){if(!p.bot){const alarm=s.boss&&!s.boss.alerted;if(alarm)s.boss.alerted=true;Music.sfx(alarm?'boss':'turn')};modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Final round':'Next captain')+'</div><h2 class="upname">'+ava(p,56)+esc(p.name)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' favor</p>'+(s.boss?'<div class="threat soon">'+icon('combat',1.6)+'<span><b>'+esc(s.boss.name)+'</b> is blockading the lanes: '+s.boss.hp+' / '+s.boss.max+' hull left, '+(s.boss.until-s.round+1)+' round(s) to beat it.</span></div>':'')+'<div class="handfan" aria-hidden="true">'+backs(Math.min(5,p.hand.length))+'</div><div class="btns"><button class="primary" data-a="begin">Begin turn</button></div>');return}
+ if(s.phase==='handoff'){if(!p.bot){const alarm=s.boss&&!s.boss.alerted;if(alarm)s.boss.alerted=true;Music.sfx(alarm?'boss':'turn')};modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Final round':'Next captain')+'</div><h2 class="upname">'+ava(p,56)+esc(p.name)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' favor</p>'+(s.boss?'<div class="threat soon">'+icon('combat',1.6)+'<span><b>'+esc(s.boss.name)+'</b> is blockading the lanes: '+s.boss.hp+' / '+s.boss.max+' hull left, '+(s.boss.until-s.round+1)+' round(s) to beat it.</span></div>':'')+((p.news||[]).length&&!p.bot?'<div class="hnews">'+p.news.map(n=>'<div class="threat bonews">'+icon('star',1.6)+'<span><b>'+esc((s.players[n.by]||{}).name||'A rival')+'</b> bought out your <b>'+esc(n.name)+'</b> in round '+n.round+': <b class="down">−'+n.amt+' favor</b>.</span></div>').join('')+'</div>':'')
+  +'<div class="handfan" aria-hidden="true">'+backs(Math.min(5,p.hand.length))+'</div><div class="btns"><button class="primary" data-a="begin">Begin turn</button></div>');return}
  hide();
 }
 function rules(){modal('<div class="eyebrow">How Smugglers Run works</div><h2>Every purchase changes your next hand.</h2><div class="cols2">'

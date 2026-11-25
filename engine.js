@@ -145,7 +145,7 @@ function create(o={}){
  log(s,'The contract board is open.');
  return s;
 }
-function begin(s){if(s.over||s.phase!=='handoff')return false;s.phase='action';s.feedFrom=s.evn||0;log(s,me(s).name+' begins a turn.');return true}
+function begin(s){if(s.over||s.phase!=='handoff')return false;s.phase='action';me(s).news=[];s.feedFrom=s.evn||0;log(s,me(s).name+' begins a turn.');return true}
 function checkTarget(s){if(s.winMode==='profit'&&s.finalRound===null&&me(s).profit>=s.target){s.finalRound=s.round;log(s,'Favor target reached. Round '+s.round+' is the last round.')}}
 function canPlay(s,i){const p=me(s);return live(s)&&Number.isInteger(i)&&i>=0&&i<p.hand.length&&(CARDS[p.hand[i]].cat==='res'||s.actionLimit===0||p.actions>0)&&(p.hand[i]!=='buyout'||buyoutTargets(s).length>0)}
 // Buyout Contract: contracts other captains delivered that the active captain can pay for right now
@@ -168,6 +168,7 @@ function play(s,i,target){
   Object.entries(bo.req).forEach(([r,n])=>p.pool[r]-=n);p.pool.cargo-=need(bo);
   v.profit-=lost;p.profit+=amt;v.completed--;p.completed++;score(p,'buyout',amt);score(v,'stolen',-lost);
   Object.assign(bo,{player:s.current,captain:p.name,from,fromName:v.name,boughtRound:s.round});
+  (v.news=v.news||[]).push({t:'buyout',by:s.current,name:bo.name,amt:lost,round:s.round});   // shown on their next turn screen
   s.trash.push(k);(p.scrappedCards=p.scrappedCards||[]).push(k);
   log(s,p.name+' bought out '+bo.name+' from '+v.name+' for +'+amt+' favor.');ev(s,{t:'buyout',k,v:from,amt,lost,name:bo.name,id:bo.id});
  }else{p.played.push(k);ev(s,{t:'play',k})}
