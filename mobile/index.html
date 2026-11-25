@@ -2280,7 +2280,7 @@ render=function(){
  if(screen!=='game'){renderSetup();return}
  const snap=animBefore();
  const body=document.querySelector('.mbody');if(body&&shownTab)tabScroll[shownTab]=body.scrollTop;
- const p=E.me(s),on=s.phase==='action'&&!s.over,hidden=!on;
+ const p=E.me(s),on=myTurn(),hidden=!on;   // not during a computer captain's turn
  const key=s.round+':'+s.current;if(key!==turnKey){turnKey=key;tab='hand';tabScroll={}}
  $('status').innerHTML=(s.over?'Run complete':'Round <b>'+s.round+(s.winMode==='rounds'?' / '+s.maxRounds:'')+'</b> · <b>'+esc(p.name)+'</b>')+(s.finalRound&&!s.over?' · <b class="acc">target reached</b>':'')+(s.winMode==='profit'?' · first to '+s.target:'');
 
