@@ -47,8 +47,8 @@ const BOSS_KEYS=Object.keys(BOSSES),STAGE_HP=[2.4,5.2,6.2];
 const BOSS_EVERY=5,PATROL_DELAY=1,MAX_DELAY=2; // a boss every 5 rounds; each pirate patrol pushes the next one back 1 round, at most 2 rounds per boss
 const BOSS_ROUNDS=3,RAID=5,FINAL_BLOW=5;
 const MARKET=['deal','house','pack','borer','vault','quarter','barge','gunship','probe','broker','deck','wing','buyout','salvage','weapons','charter'];
-// Standard market: these 8 core cards every game, plus 4 random specialists (at least one costing 5+ and one extra combat card). 'full' offers all 16.
-const CORE=['deal','house','pack','borer','vault','gunship','barge','quarter'],SPECIALISTS=MARKET.filter(k=>!CORE.includes(k)),SPECIAL_COUNT=4;
+// Standard market: these 6 core cards every game, plus 6 random specialists (at least one costing 5+ and one extra combat card). 'full' offers all 16.
+const CORE=['deal','pack','barge','vault','borer','gunship'],SPECIALISTS=MARKET.filter(k=>!CORE.includes(k)),SPECIAL_COUNT=6;
 function pickSpecialists(s){const pool=shuffle(s,SPECIALISTS.slice()),pick=pool.slice(0,SPECIAL_COUNT);
  // guarantees: one card costing 5+ (something to save for) and one extra combat card (bosses need combat)
  const ensure=(test,keep)=>{if(pick.some(test))return;const alt=pool.find(k=>!pick.includes(k)&&test(k));if(!alt)return;const i=pick.findIndex(k=>!keep(k));if(i>=0)pick[i]=alt};

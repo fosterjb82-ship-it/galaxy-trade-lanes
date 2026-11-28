@@ -41,7 +41,7 @@ function joinScreen(msg){screen='setup';hide();$('status').innerHTML='';
 
 const SETTINGS=[['actionLimit','Orders per turn',[[2,'Two orders (recommended)'],[0,'Unlimited']]],['winMode','Victory',[['rounds','Highest favor after set rounds'],['profit','Race to a favor target']]],
  ['rounds','Run length',[[10,'10 rounds'],[12,'12 rounds'],[16,'16 rounds (recommended)'],[20,'20 rounds']]],['target','Favor target',[[50,'50 favor'],[80,'80 favor'],[120,'120 favor']]],
- ['boardSize','Contract board',[[3,'3 contracts'],[4,'4 contracts'],[5,'5 contracts']]],['market','Card market',[['standard','Standard: 8 core + 4 random specialists'],['full','Full: all 16 cards']]],['threats','Pirate threats',[[true,'On: boss battles (recommended)'],[false,'Off']]]];
+ ['boardSize','Contract board',[[3,'3 contracts'],[4,'4 contracts'],[5,'5 contracts']]],['market','Card market',[['standard','Standard: 6 core + 6 random specialists'],['full','Full: all 16 cards']]],['threats','Pirate threats',[[true,'On: boss battles (recommended)'],[false,'Off']]]];
 function lobbyScreen(p){screen='setup';const host=p.you.host,S=p.settings;
  const fields=SETTINGS.filter(([k])=>!(k==='rounds'&&S.winMode!=='rounds')&&!(k==='target'&&S.winMode!=='profit')).map(([k,label,opts])=>'<div><label for="ol_'+k+'">'+label+'</label>'+(host
   ?'<select id="ol_'+k+'" data-ol="'+k+'">'+opts.map(([v,l])=>'<option value="'+v+'"'+(String(S[k])===String(v)?' selected':'')+'>'+l+'</option>').join('')+'</select>'
