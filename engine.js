@@ -76,7 +76,12 @@ const TEMPLATES=[
  {name:'Deepwell Megaproject',dest:'Tern Belt',req:{fuel:4,ore:3,tech:2,combat:2},profit:30},
  {name:'Clinic Shipment',dest:'Harrow',req:{fuel:1,tech:1,cr:1},profit:13},
  {name:'Bulk Ingots',dest:'Brindle',req:{fuel:2,ore:4},profit:20},
- {name:'Sealed Vault Run',dest:'Lumen Gate',req:{fuel:3,tech:3,combat:1},profit:24}
+ {name:'Sealed Vault Run',dest:'Lumen Gate',req:{fuel:3,tech:3,combat:1},profit:24},
+ // high-value contracts (30-40 favor): 2 copies each instead of 3; like every contract over 20, dealt from round 9
+ {name:'Contraband Run',dest:'Shadow Port',req:{fuel:3,tech:3,cr:4,combat:2},profit:33,copies:2},
+ {name:'Dreadnought Refit',dest:'Port Calder',req:{fuel:3,ore:5,combat:2},profit:34,copies:2},
+ {name:'Colony Ark Charter',dest:'Harrow',req:{fuel:5,ore:3,tech:3,cr:3},profit:38,copies:2},
+ {name:'Gatebreaker Heist',dest:'Shadow Port',req:{fuel:4,tech:4,combat:4,cr:2},profit:40,copies:2}
 ];
 function rnd(s){s.seed=(s.seed*16807)%2147483647;return (s.seed-1)/2147483646}
 function shuffle(s,a){for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd(s)*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -139,7 +144,7 @@ function create(o={}){
   p.deck=shuffle(s,['scrip','scrip','scrip','scrip','drum','drum','drum','sample','sample','rig']);
   draw(s,p,5);s.players.push(p);
  });
- s.cdeck=shuffle(s,Array.from({length:48},(_,i)=>{const t=TEMPLATES[i%16];return {...t,req:{...t.req},id:i}}));
+ s.cdeck=shuffle(s,TEMPLATES.flatMap(t=>Array.from({length:t.copies||3},()=>t)).map((t,i)=>{const c={...t,req:{...t.req},id:i};delete c.copies;return c}));
  const e=s.cdeck.findIndex(c=>c.name==='Seed Stock');
  s.board.push(s.cdeck.splice(e,1)[0]);
  while(s.board.length<s.boardSize)s.board.push(nextContract(s));

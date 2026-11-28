@@ -939,7 +939,12 @@ const TEMPLATES=[
  {name:'Deepwell Megaproject',dest:'Tern Belt',req:{fuel:4,ore:3,tech:2,combat:2},profit:30},
  {name:'Clinic Shipment',dest:'Harrow',req:{fuel:1,tech:1,cr:1},profit:13},
  {name:'Bulk Ingots',dest:'Brindle',req:{fuel:2,ore:4},profit:20},
- {name:'Sealed Vault Run',dest:'Lumen Gate',req:{fuel:3,tech:3,combat:1},profit:24}
+ {name:'Sealed Vault Run',dest:'Lumen Gate',req:{fuel:3,tech:3,combat:1},profit:24},
+ // high-value contracts (30-40 favor): 2 copies each instead of 3; like every contract over 20, dealt from round 9
+ {name:'Contraband Run',dest:'Shadow Port',req:{fuel:3,tech:3,cr:4,combat:2},profit:33,copies:2},
+ {name:'Dreadnought Refit',dest:'Port Calder',req:{fuel:3,ore:5,combat:2},profit:34,copies:2},
+ {name:'Colony Ark Charter',dest:'Harrow',req:{fuel:5,ore:3,tech:3,cr:3},profit:38,copies:2},
+ {name:'Gatebreaker Heist',dest:'Shadow Port',req:{fuel:4,tech:4,combat:4,cr:2},profit:40,copies:2}
 ];
 function rnd(s){s.seed=(s.seed*16807)%2147483647;return (s.seed-1)/2147483646}
 function shuffle(s,a){for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd(s)*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -1002,7 +1007,7 @@ function create(o={}){
   p.deck=shuffle(s,['scrip','scrip','scrip','scrip','drum','drum','drum','sample','sample','rig']);
   draw(s,p,5);s.players.push(p);
  });
- s.cdeck=shuffle(s,Array.from({length:48},(_,i)=>{const t=TEMPLATES[i%16];return {...t,req:{...t.req},id:i}}));
+ s.cdeck=shuffle(s,TEMPLATES.flatMap(t=>Array.from({length:t.copies||3},()=>t)).map((t,i)=>{const c={...t,req:{...t.req},id:i};delete c.copies;return c}));
  const e=s.cdeck.findIndex(c=>c.name==='Seed Stock');
  s.board.push(s.cdeck.splice(e,1)[0]);
  while(s.board.length<s.boardSize)s.board.push(nextContract(s));
@@ -1271,6 +1276,12 @@ function rock(s,cx,cy,r,seed,ice){for(let y=Math.floor(cy-r-1);y<=cy+r+1;y++)for
  const l=Math.max(0,a*-.55+b*-.5+.5),n=fbm(x/3,y/3,seed);let c=pick(PAL.steel,.1+.62*l+n*.18,x,y);
  if(ice&&n>.56)c=pick(PAL.blue,.45+.5*l,x,y);s.set(x,y,c)}}
 const SCENES={
+ 'Shadow Port'(s,seed){nebula(s,seed+7,PAL.red);stars(s,seed,18,34);
+  const L=new S(88,52);rock(L,30,30,18,seed+4);
+  box3d(L,22,10,18,12,PAL.steel);L.rect(24,13,4,2,PAL.red[5]);L.rect(30,13,4,2,PAL.amber[5]);L.rect(36,13,2,2,PAL.red[4]);L.rect(30,4,2,7,PAL.steel[4]);L.set(31,3,PAL.red[6]);
+  L.rect(40,18,22,3,PAL.steel[3]);L.rect(40,18,22,1,PAL.steel[5]);L.rect(60,15,3,9,PAL.steel[4]);
+  L.poly([[66,30],[80,26],[84,30],[80,34]],PAL.steel[4]);L.poly([[66,30],[80,26],[82,28],[68,30]],PAL.steel[5]);L.rect(62,29,4,2,PAL.amber[5]);L.set(61,30,PAL.amber[6]);
+  [[14,40],[44,38],[20,24]].forEach(([x,y])=>{L.set(x,y,PAL.amber[6]);L.set(x+1,y,PAL.amber[4])});L.outline(OUT);s.blit(L)},
  Harrow(s,seed){nebula(s,seed,PAL.teal);stars(s,seed,22,34);
   planet(s,60,38,26,{land:PAL.green,sea:PAL.blue,seaLevel:.52,seed:seed+2,cloud:.6,atmo:PAL.blue[5],caps:true});
   const m=new S(88,52);sph(m,16,15,6,PAL.steel);m.outline(OUT);s.blit(m)},
@@ -2181,7 +2192,7 @@ function encyclopedia(sec){sec=sec||'cards';
  let h='';
  if(sec==='cards')h='<p class="mute">Every card you can buy. The 6 <b>core</b> cards are in every game; in a Standard market, 6 random <b>specialists</b> join them (always one costing 5+ and one extra combat card). Bought cards go to your discard pile and show up in later hands.</p><ul class="enc">'+marketList(E.MARKET.slice()).map(k=>card(k).replace('<div class="kind">','<div class="kind">'+(isSpec(k)?'<span class="enctag spec">Specialist</span>':'<span class="enctag">Core</span>')+(s&&screen==='game'&&E.offered(s).includes(k)&&isSpec(k)?'<span class="enctag on">In this game</span>':''))).join('')+'</ul>';
  else if(sec==='start')h='<p class="mute">Every captain starts with these 10 cards: 4 Scrip, 3 Fuel Drums, 2 Ore Samples and 1 Hold Rig.</p><ul class="enc">'+['scrip','drum','sample','rig'].map(card).join('')+'</ul>';
- else if(sec==='contracts')h='<p class="mute">The 16 contract types (each appears 3 times in the contract deck). Pay the listed resources plus cargo space equal to ore + tech. Big contracts only appear after round 4 or 8.</p><ul class="enc">'+E.TEMPLATES.map((t,i)=>'<li><img class="px" src="'+SP.sceneURL(t.dest,i)+'" width="88" height="52" alt=""><div><div class="kind">To '+esc(t.dest)+' · '+(t.req.combat?'Armed':'Freight')+'</div><b>'+esc(t.name)+'</b><div class="reqs">'+req(t)+'</div></div><strong>'+icon('star',1.6)+'+'+t.profit+'</strong></li>').join('')+'</ul>';
+ else if(sec==='contracts')h='<p class="mute">The '+E.TEMPLATES.length+' contract types (most appear 3 times in the contract deck; the four worth 30+ favor appear twice). Pay the listed resources plus cargo space equal to ore + tech. Contracts worth over 13 favor appear from round 5, and over 20 from round 9.</p><ul class="enc">'+E.TEMPLATES.map((t,i)=>'<li><img class="px" src="'+SP.sceneURL(t.dest,i)+'" width="88" height="52" alt=""><div><div class="kind">To '+esc(t.dest)+' · '+(t.req.combat?'Armed':'Freight')+'</div><b>'+esc(t.name)+'</b><div class="reqs">'+req(t)+'</div></div><strong>'+icon('star',1.6)+'+'+t.profit+'</strong></li>').join('')+'</ul>';
  else if(sec==='threats')h='<p class="mute">With threats on, a boss arrives every '+E.BOSS_EVERY+' rounds, starting in round '+E.BOSS_EVERY+', drawn at random from the six below. Each pirate patrol pushes the next boss back '+E.PATROL_DELAY+' round, at most '+E.MAX_DELAY+' rounds per boss. While one is active no contracts can be delivered. Spend combat (1 damage each, double with a Weapons Officer) or hire mercenaries (usually '+E.MERC+' credits per damage). Beaten: +1 favor per damage dealt, +'+E.FINAL_BLOW+' for the final blow. Survives its deadline (usually '+E.BOSS_ROUNDS+' rounds): raids every captain for '+E.RAID+' favor, double for whoever dealt the least damage.</p><ul class="enc">'+E.BOSS_KEYS.map(k=>{const b=E.BOSSES[k];return '<li><img class="px" src="'+SP.bossURL(k)+'" width="88" height="52" alt=""><div><div class="kind">Pirate boss</div><b>'+b.name+'</b><span>'+b.trait+'</span></div></li>'}).join('')+'</ul>';
  else h='<ul class="enc moves">'
   +'<li><img class="px" src="'+SP.iconURL('combat')+'" width="40" height="40" alt=""><div><b>Pirate patrol</b><span>Spend 3 combat and 1 fuel for +5 favor. Once per turn.</span></div><strong>'+icon('star',1.6)+'+5</strong></li>'

@@ -80,6 +80,12 @@ function rock(s,cx,cy,r,seed,ice){for(let y=Math.floor(cy-r-1);y<=cy+r+1;y++)for
  const l=Math.max(0,a*-.55+b*-.5+.5),n=fbm(x/3,y/3,seed);let c=pick(PAL.steel,.1+.62*l+n*.18,x,y);
  if(ice&&n>.56)c=pick(PAL.blue,.45+.5*l,x,y);s.set(x,y,c)}}
 const SCENES={
+ 'Shadow Port'(s,seed){nebula(s,seed+7,PAL.red);stars(s,seed,18,34);
+  const L=new S(88,52);rock(L,30,30,18,seed+4);
+  box3d(L,22,10,18,12,PAL.steel);L.rect(24,13,4,2,PAL.red[5]);L.rect(30,13,4,2,PAL.amber[5]);L.rect(36,13,2,2,PAL.red[4]);L.rect(30,4,2,7,PAL.steel[4]);L.set(31,3,PAL.red[6]);
+  L.rect(40,18,22,3,PAL.steel[3]);L.rect(40,18,22,1,PAL.steel[5]);L.rect(60,15,3,9,PAL.steel[4]);
+  L.poly([[66,30],[80,26],[84,30],[80,34]],PAL.steel[4]);L.poly([[66,30],[80,26],[82,28],[68,30]],PAL.steel[5]);L.rect(62,29,4,2,PAL.amber[5]);L.set(61,30,PAL.amber[6]);
+  [[14,40],[44,38],[20,24]].forEach(([x,y])=>{L.set(x,y,PAL.amber[6]);L.set(x+1,y,PAL.amber[4])});L.outline(OUT);s.blit(L)},
  Harrow(s,seed){nebula(s,seed,PAL.teal);stars(s,seed,22,34);
   planet(s,60,38,26,{land:PAL.green,sea:PAL.blue,seaLevel:.52,seed:seed+2,cloud:.6,atmo:PAL.blue[5],caps:true});
   const m=new S(88,52);sph(m,16,15,6,PAL.steel);m.outline(OUT);s.blit(m)},
