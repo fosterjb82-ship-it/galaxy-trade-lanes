@@ -117,6 +117,7 @@ node preview.cjs                    # art preview sheets into out/
 ## Rules summary
 
 - Turn counters are called **Deals** (purchases left) and **Orders** (order cards you can still play; 2 per turn by default).
+- Turn order (setup option, also in the online lobby): **As listed** (default: human captains first, then computer captains; online, in order of joining) or **Random**, which shuffles every seat, computer captains included. The order is announced when the run starts and logged. Local games shuffle with the run's own seed; the online server shuffles its seats so each browser keeps its own captain. Tested in `tests/order.test.cjs`.
 - Card market (setup option **Card market**, also in the online lobby): **Standard** (default) offers the 6 core cards (Dockside Deal, Plasma Pack, Barge, Data Vault, Ore Borer, Gunship) every game plus 6 random specialists from the other 14 (Quartermaster and Clearing House became specialists after a playtest), always including at least one costing 5+ and one extra combat card. **Full** offers all 20. Specialists carry a violet *Specialist* tag; the Encyclopedia lists every card marked Core / Specialist / In this game. Saves from before this option load with the full market. In testing, computer captains beat about 59% of bosses with a Standard market versus 69% with Full.
 - The card market shows core cards first, then specialists, each sorted by cost, then resource cards before order cards.
 - Everyone starts with 10 cards (4 Scrip, 3 Fuel Drums, 2 Ore Samples, 1 Hold Rig) and draws 5 each turn.

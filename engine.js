@@ -137,7 +137,9 @@ function create(o={}){
   threats:o.threats!==false,nextBoss:BOSS_EVERY,bossBase:BOSS_EVERY,bossNo:0,bossOrder:null,boss:null,bossDone:[],winMode:o.winMode||'rounds',maxRounds:o.rounds||16,target:o.target||80,finalRound:null,
   boardSize:o.boardSize||4,board:[],cdeck:[],cdisc:[],done:[],
   market:Object.fromEntries(MARKET.map(k=>[k,Math.max(10,4+2*((o.players||[]).length||3))])),trash:[],log:[],players:[]};
- const cfg=o.players||[{name:'Captain'},{name:'Nova',bot:true},{name:'Orion',bot:true}];
+ let cfg=o.players||[{name:'Captain'},{name:'Nova',bot:true},{name:'Orion',bot:true}];
+ // optional random turn order (seeded, so a run can be replayed); the online server shuffles its own seats instead
+ s.order=o.order==='random'?'random':'listed';if(s.order==='random'){for(let i=0;i<12;i++)rnd(s);cfg=shuffle(s,cfg.slice())}   // warm the generator: its first draws track small seeds
  cfg.forEach(c=>{
   const p={name:String(c.name||'Captain').slice(0,24),bot:!!c.bot,ship:c.ship||null,deck:[],hand:[],played:[],discard:[],pool:fresh(),
    buys:1,actions:s.actionLimit,patrolled:false,scrapped:false,profit:0,completed:0,turnPlayed:[],scrappedCards:[]};
@@ -153,6 +155,7 @@ function create(o={}){
  s.offer=o.offer||(s.marketMode==='full'?MARKET.slice():CORE.concat(pickSpecialists(s)));
  s.bossOrder=o.bosses||shuffle(s,BOSS_KEYS.slice());
  log(s,'The contract board is open.');
+ if(s.order==='random'||o.announceOrder)log(s,'Turn order (random): '+s.players.map(p=>p.name).join(', ')+'.');
  return s;
 }
 function begin(s){if(s.over||s.phase!=='handoff')return false;s.phase='action';me(s).news=[];s.feedFrom=s.evn||0;log(s,me(s).name+' begins a turn.');return true}

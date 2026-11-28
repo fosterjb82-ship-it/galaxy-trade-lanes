@@ -18,7 +18,7 @@ const MAX_PLAYERS = 6, WAIT_MS = 25000;
 
 /* ---------------- table state ---------------- */
 const id = n => crypto.randomBytes(n).toString('hex');
-const defaults = () => ({ actionLimit: 2, winMode: 'rounds', rounds: 16, target: 80, boardSize: 4, threats: true, market: 'standard' });
+const defaults = () => ({ actionLimit: 2, winMode: 'rounds', rounds: 16, target: 80, boardSize: 4, threats: true, market: 'standard', order: 'listed' });
 let T = { server: id(4), hostKey: id(6), version: 1, players: [], hostToken: null, settings: defaults(), game: null, notice: '' };
 try { const saved = JSON.parse(fs.readFileSync(SAVE_FILE, 'utf8')); if (saved && saved.server) { T = saved; T.version++; if (T.game) E.migrate(T.game); } } catch (e) { /* fresh table */ }
 const seen = {};                       // token -> last time this browser was heard from
@@ -111,6 +111,7 @@ function lobby(tok, op, body) {
     if ([3, 4, 5].includes(s.boardSize)) S.boardSize = s.boardSize;
     if (typeof s.threats === 'boolean') S.threats = s.threats;
     if (['standard', 'full'].includes(s.market)) S.market = s.market;
+    if (['listed', 'random'].includes(s.order)) S.order = s.order;
     changed(); return { ok: true };
   }
   if (op === 'kick') {
@@ -121,7 +122,9 @@ function lobby(tok, op, body) {
   if (op === 'start') {
     if (T.game && !T.game.over) return { ok: false, error: 'A run is already in progress.' };
     if (T.players.length < 2) return { ok: false, error: 'You need at least 2 captains.' };
-    T.game = E.create({ ...T.settings, mode: 'online', players: T.players.map(p => ({ name: p.name, ship: p.ship })) });
+    // random turn order: shuffle the seats themselves, so each browser keeps controlling its own captain
+    if (T.settings.order === 'random') for (let i = T.players.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [T.players[i], T.players[j]] = [T.players[j], T.players[i]]; }
+    T.game = E.create({ ...T.settings, order: 'listed', announceOrder: T.settings.order === 'random', mode: 'online', players: T.players.map(p => ({ name: p.name, ship: p.ship })) });
     E.begin(T.game); changed('The run has started. ' + T.game.players[0].name + ' goes first.'); return { ok: true };
   }
   if (op === 'skip') {       // move a stuck or absent captain's turn along

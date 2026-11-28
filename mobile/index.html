@@ -1000,7 +1000,9 @@ function create(o={}){
   threats:o.threats!==false,nextBoss:BOSS_EVERY,bossBase:BOSS_EVERY,bossNo:0,bossOrder:null,boss:null,bossDone:[],winMode:o.winMode||'rounds',maxRounds:o.rounds||16,target:o.target||80,finalRound:null,
   boardSize:o.boardSize||4,board:[],cdeck:[],cdisc:[],done:[],
   market:Object.fromEntries(MARKET.map(k=>[k,Math.max(10,4+2*((o.players||[]).length||3))])),trash:[],log:[],players:[]};
- const cfg=o.players||[{name:'Captain'},{name:'Nova',bot:true},{name:'Orion',bot:true}];
+ let cfg=o.players||[{name:'Captain'},{name:'Nova',bot:true},{name:'Orion',bot:true}];
+ // optional random turn order (seeded, so a run can be replayed); the online server shuffles its own seats instead
+ s.order=o.order==='random'?'random':'listed';if(s.order==='random'){for(let i=0;i<12;i++)rnd(s);cfg=shuffle(s,cfg.slice())}   // warm the generator: its first draws track small seeds
  cfg.forEach(c=>{
   const p={name:String(c.name||'Captain').slice(0,24),bot:!!c.bot,ship:c.ship||null,deck:[],hand:[],played:[],discard:[],pool:fresh(),
    buys:1,actions:s.actionLimit,patrolled:false,scrapped:false,profit:0,completed:0,turnPlayed:[],scrappedCards:[]};
@@ -1016,6 +1018,7 @@ function create(o={}){
  s.offer=o.offer||(s.marketMode==='full'?MARKET.slice():CORE.concat(pickSpecialists(s)));
  s.bossOrder=o.bosses||shuffle(s,BOSS_KEYS.slice());
  log(s,'The contract board is open.');
+ if(s.order==='random'||o.announceOrder)log(s,'Turn order (random): '+s.players.map(p=>p.name).join(', ')+'.');
  return s;
 }
 function begin(s){if(s.over||s.phase!=='handoff')return false;s.phase='action';me(s).news=[];s.feedFrom=s.evn||0;log(s,me(s).name+' begins a turn.');return true}
@@ -1749,7 +1752,7 @@ let s=null,screen='setup',scrollPos=0,handX=0;
 let ME=null;
 const myTurn=()=>!!s&&s.phase==='action'&&!s.over&&(ME===null?!s.players[s.current].bot&&!(typeof playingBack==='function'&&playingBack()):s.current===ME);
 const viewer=()=>ME===null?s.current:ME;
-const cfg={humans:1,bots:2,threats:1,market:'standard',cpuSpeed:'normal',winMode:'rounds',rounds:16,actionLimit:2,target:80,boardSize:4,ships:['hauler','courier','corvette','explorer','miner','clipper'],names:['Captain 1','Captain 2','Captain 3','Captain 4','Captain 5','Captain 6']};
+const cfg={order:'listed',humans:1,bots:2,threats:1,market:'standard',cpuSpeed:'normal',winMode:'rounds',rounds:16,actionLimit:2,target:80,boardSize:4,ships:['hauler','courier','corvette','explorer','miner','clipper'],names:['Captain 1','Captain 2','Captain 3','Captain 4','Captain 5','Captain 6']};
 const BOTS=['Nova Syndicate','Orion Freight','Vesta Lines','Kestrel Haulage','Pallas Combine'];
 const MUS='gtl-mobile-music-v1';
 const SCALE=1.5,AW=Math.round(88*SCALE),AH=Math.round(52*SCALE);
@@ -1782,6 +1785,7 @@ function renderSetup(){
  +field('winMode','Victory',[['rounds','Highest favor after set rounds'],['profit','Race to a favor target']])
  +(cfg.winMode==='rounds'?field('rounds','Run length',[[10,'10 rounds'],[12,'12 rounds'],[16,'16 rounds (recommended)'],[20,'20 rounds']]):field('target','Favor target',[[50,'50 favor'],[80,'80 favor'],[120,'120 favor']]))
  +field('boardSize','Contract board',[[3,'3 contracts'],[4,'4 contracts'],[5,'5 contracts']])
+ +field('order','Turn order',[['listed','As listed (captains first)'],['random','Random']])
  +field('market','Card market',[['standard','Standard: 6 core + 6 random specialists'],['full','Full: every card']])
  +field('threats','Pirate threats',[[1,'On: boss battles (recommended)'],[0,'Off']])
  +(cfg.bots?field('cpuSpeed','Computer turns',[['normal','Watch at normal speed'],['slow','Watch slowly'],['fast','Watch quickly'],['instant','Instant']]):'')
@@ -1792,7 +1796,8 @@ function renderSetup(){
 function start(){collect();scrollPos=0;handX=0;
  const players=Array.from({length:cfg.humans},(_,i)=>({name:(cfg.names[i]||'').trim()||'Captain '+(i+1),ship:cfg.ships[i]}));
  for(let i=0;i<cfg.bots;i++)players.push({name:BOTS[i],bot:true});
- stopPlayback();vicSeat=null;s=E.create({...cfg,threats:cfg.threats!==0,mode:cfg.humans>1?'local':'solo',players});s.cpuSpeed=cfg.cpuSpeed;seenBoss=0;screen='game';settle();
+ stopPlayback();vicSeat=null;s=E.create({...cfg,threats:cfg.threats!==0,mode:cfg.humans>1?'local':'solo',players});s.cpuSpeed=cfg.cpuSpeed;seenBoss=0;screen='game';
+ if(s.order==='random')notify('Random turn order: '+s.players.map(p=>p.name).join(' → ')+'. '+s.players[0].name+' goes first.');settle();
 }
 const SPEEDS={slow:1100,normal:620,fast:260,instant:0},SPEED_NAMES={slow:'Slow',normal:'Normal',fast:'Fast',instant:'Instant'};
 let playTimer=null,playGen=null;
@@ -2239,7 +2244,7 @@ function endAsk(){if(!s||screen!=='game'||!E.live(s))return;s.warned=s.warned||{
  modal('<h2>End your turn?</h2><p>Unspent resources expire. Your hand and played cards go to discard, then you draw a new hand of 5. This reminder only appears on your first turn.</p><div class="btns"><button class="primary" data-a="end">End turn</button><button data-a="close">Cancel</button></div>')}
 
 /* ---------- events ---------- */
-document.addEventListener('change',e=>{const k=e.target.id;if(k in cfg&&k!=='names'&&screen==='setup'){collect();cfg[k]=k==='winMode'||k==='cpuSpeed'||k==='market'?e.target.value:Number(e.target.value);
+document.addEventListener('change',e=>{const k=e.target.id;if(k in cfg&&k!=='names'&&screen==='setup'){collect();cfg[k]=k==='winMode'||k==='cpuSpeed'||k==='market'||k==='order'?e.target.value:Number(e.target.value);
  if(k==='humans'){cfg.bots=Math.min(cfg.bots,6-cfg.humans);if(cfg.humans+cfg.bots<2)cfg.bots=1}renderSetup()}});
 /* ---------- sound: one Sound button opens a panel with All sound, Music and Effects ---------- */
 function musicUI(){const b=$('snd');if(!b)return;const mu=typeof musicWanted==='undefined'?Music.on:musicWanted,st=!Music.allOn?'muted':!mu&&!Music.fxOn?'off':!mu?'effects only':!Music.fxOn?'music only':'';

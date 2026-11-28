@@ -1,7 +1,7 @@
 {
   "name": "smugglers-run",
   "productName": "Smugglers Run",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Smugglers Run, a pixel-art space freight deck-builder",
   "private": true,
   "main": "main.js",
