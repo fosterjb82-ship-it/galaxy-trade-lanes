@@ -34,7 +34,14 @@ const CARDS={
  ledger:{n:'Gilded Ledger',cat:'res',kind:'Gilded Exchange',fac:'gilded',g:{cr:5},buys:1,cost:0,t:'Gain 5 credits and 1 extra deal.'},
  orehauler:{n:'Union Ore Hauler',cat:'res',kind:"Drift Haulers' Union",fac:'union',g:{ore:1,cargo:2,cr:1},cost:0,t:'Gain 1 ore, 2 cargo space and 1 credit.'},
  tanker:{n:'Ember Tanker',cat:'res',kind:'Ember Cartel',fac:'ember',g:{fuel:3,cargo:2,cr:2},cost:0,t:'Gain 3 fuel, 2 cargo space and 2 credits.'},
- contacts:{n:'Ghost Contacts',cat:'res',kind:'Ghost Runners',fac:'ghost',g:{cargo:1},draw:2,cost:0,t:'Draw 2 cards and gain 1 cargo space.'}
+ contacts:{n:'Ghost Contacts',cat:'res',kind:'Ghost Runners',fac:'ghost',g:{cargo:1},draw:2,cost:0,t:'Draw 2 cards and gain 1 cargo space.'},
+ // faction leaders: the same effect for every faction; each joins its captain's discard pile at the start of round 4 and cannot be scrapped
+ kessa:{n:'Warlord Kessa Vane',cat:'act',kind:'Leader · Iron Covenant',fac:'covenant',leader:true,g:{},draw:2,refund:2,cost:0,t:'Draw 2 cards. Gain 2 orders.'},
+ oren:{n:'Archivist Oren Lux',cat:'act',kind:'Leader · Lumen Syndicate',fac:'lumen',leader:true,g:{},draw:2,refund:2,cost:0,t:'Draw 2 cards. Gain 2 orders.'},
+ mirabel:{n:'Chancellor Mirabel Aurum',cat:'act',kind:'Leader · Gilded Exchange',fac:'gilded',leader:true,g:{},draw:2,refund:2,cost:0,t:'Draw 2 cards. Gain 2 orders.'},
+ dax:{n:'Foreman Dax Holloway',cat:'act',kind:"Leader · Drift Haulers' Union",fac:'union',leader:true,g:{},draw:2,refund:2,cost:0,t:'Draw 2 cards. Gain 2 orders.'},
+ sola:{n:'Matriarch Sola Brand',cat:'act',kind:'Leader · Ember Cartel',fac:'ember',leader:true,g:{},draw:2,refund:2,cost:0,t:'Draw 2 cards. Gain 2 orders.'},
+ nyx:{n:'"Whisper" Nyx Calloway',cat:'act',kind:'Leader · Ghost Runners',fac:'ghost',leader:true,g:{},draw:2,refund:2,cost:0,t:'Draw 2 cards. Gain 2 orders.'}
 };
 const CASH=4; // credits per 1 profit when cashing in
 const MERC=2; // credits per 1 boss damage when hiring mercenaries
@@ -55,12 +62,12 @@ const SHIP_IDS=SHIPS.map(x=>x.id);
 // keep chosen ships if valid and unique; give everyone else the first free ones, in order
 /* factions (setup option): each captain picks one, unique at a table; it adds its signature card to the starting deck */
 const FACTIONS=[
- {id:'covenant',name:'Iron Covenant',card:'broadside',color:'#f0654f',about:'Mercenary warfleet. Combat and the fuel to run a pirate patrol, for armed contracts and bosses.'},
- {id:'lumen',name:'Lumen Syndicate',card:'datacore',color:'#5aa6f0',about:'Tech cartel from Lumen Gate. Steady tech, the scarcest input.'},
- {id:'gilded',name:'Gilded Exchange',card:'ledger',color:'#ffd05a',about:'Bankers and brokers. A pile of credits and an extra purchase to build the deck fast.'},
- {id:'union',name:"Drift Haulers' Union",card:'orehauler',color:'#e68a52',about:'Miners and bulk freighters. Ore, a big hold to carry it, and a little cash.'},
- {id:'ember',name:'Ember Cartel',card:'tanker',color:'#f5a52d',about:'Fuel barons. Fuel, cargo space and spare credits on every run.'},
- {id:'ghost',name:'Ghost Runners',card:'contacts',color:'#a384f0',about:'True smugglers. Their contacts dig up extra cards when it counts.'}
+ {id:'covenant',name:'Iron Covenant',card:'broadside',leader:'kessa',color:'#f0654f',about:'Mercenary warfleet. Combat and the fuel to run a pirate patrol, for armed contracts and bosses.'},
+ {id:'lumen',name:'Lumen Syndicate',card:'datacore',leader:'oren',color:'#5aa6f0',about:'Tech cartel from Lumen Gate. Steady tech, the scarcest input.'},
+ {id:'gilded',name:'Gilded Exchange',card:'ledger',leader:'mirabel',color:'#ffd05a',about:'Bankers and brokers. A pile of credits and an extra purchase to build the deck fast.'},
+ {id:'union',name:"Drift Haulers' Union",card:'orehauler',leader:'dax',color:'#e68a52',about:'Miners and bulk freighters. Ore, a big hold to carry it, and a little cash.'},
+ {id:'ember',name:'Ember Cartel',card:'tanker',leader:'sola',color:'#f5a52d',about:'Fuel barons. Fuel, cargo space and spare credits on every run.'},
+ {id:'ghost',name:'Ghost Runners',card:'contacts',leader:'nyx',color:'#a384f0',about:'True smugglers. Their contacts dig up extra cards when it counts.'}
 ],FACTION_IDS=FACTIONS.map(f=>f.id);
 // keep valid, unique picks; give everyone else (computer captains included) a random remaining faction
 function assignFactions(s,players){const used=new Set();players.forEach(p=>{if(FACTION_IDS.includes(p.faction)&&!used.has(p.faction))used.add(p.faction);else p.faction=null});
@@ -68,6 +75,7 @@ function assignFactions(s,players){const used=new Set();players.forEach(p=>{if(F
 function assignShips(players){const used=new Set();players.forEach(p=>{if(SHIP_IDS.includes(p.ship)&&!used.has(p.ship))used.add(p.ship);else p.ship=null});
  players.forEach(p=>{if(!p.ship){p.ship=SHIP_IDS.find(id=>!used.has(id))||SHIP_IDS[0];used.add(p.ship)}});return players}
 const BOSS_KEYS=Object.keys(BOSSES),STAGE_HP=[2.4,5.2,6.2];
+const LEADER_ROUND=4; // faction leaders arrive at the start of this round
 const BOSS_EVERY=5,PATROL_DELAY=1,MAX_DELAY=2; // a boss every 5 rounds; each pirate patrol pushes the next one back 1 round, at most 2 rounds per boss
 const BOSS_ROUNDS=3,RAID=5,FINAL_BLOW=5;
 const MARKET=['deal','house','pack','borer','vault','quarter','barge','gunship','probe','broker','deck','wing','buyout','salvage','weapons','charter','reactor','hidden','quantum','drill'];
@@ -198,7 +206,7 @@ function play(s,i,target){
  if(k==='buyout'&&!bo)return false;
  const before=!p.bot&&!batching?snapState(s):null;
  let junk=null;
- if(c.junk&&Number.isInteger(target)&&target>=0&&target!==i&&target<p.hand.length)junk=target>i?target-1:target;
+ if(c.junk&&Number.isInteger(target)&&target>=0&&target!==i&&target<p.hand.length&&!CARDS[p.hand[target]].leader)junk=target>i?target-1:target;
  p.hand.splice(i,1);
  if(junk!==null){const j=p.hand.splice(junk,1)[0];s.trash.push(j);(p.scrappedCards=p.scrappedCards||[]).push(j);log(s,p.name+' salvaged '+CARDS[j].n+' out of the deck.');ev(s,{t:'salvage',k:j})}
  (p.turnPlayed=p.turnPlayed||[]).push(k);
@@ -285,7 +293,7 @@ function raid(s){const b=s.boss,amt=b.raid||RAID,low=Math.min(...b.dmg),least=b.
  ev(s,{t:'raid',boss:b.name,amt});log(s,b.name+' raided every captain for '+amt+' favor ('+amt*2+' from the least helpful) and left the lanes.');s.boss=null;bossLeft(s,b)}
 function cashIn(s){const p=me(s);if(!live(s)||p.pool.cr<CASH)return false;
  p.pool.cr-=CASH;p.profit++;score(p,'cash',1);ev(s,{t:'cash'});log(s,p.name+' cashed in '+CASH+' credits for +1 favor.');checkTarget(s);return true}
-function scrap(s,i){const p=me(s);if(!live(s)||p.scrapped||p.pool.cr<1||!Number.isInteger(i)||i<0||i>=p.hand.length)return false;
+function scrap(s,i){const p=me(s);if(!live(s)||p.scrapped||p.pool.cr<1||!Number.isInteger(i)||i<0||i>=p.hand.length||CARDS[p.hand[i]].leader)return false;
  p.pool.cr--;const k=p.hand.splice(i,1)[0];s.trash.push(k);(p.scrappedCards=p.scrappedCards||[]).push(k);p.scrapped=true;log(s,p.name+' scrapped '+CARDS[k].n+'.');ev(s,{t:'scrap',k});return true}
 function end(s){
  if(!live(s))return false;
@@ -303,6 +311,8 @@ function end(s){
    if(h.length){s.finalRound=s.round;s.over=true;s.phase='over';log(s,'End of round '+s.round+': '+h.map(p=>p.name).join(' and ')+' '+(h.length>1?'hold':'holds')+' the favor target. The run is over. Highest favor wins.');return true}
    if(s.finalRound!==null){s.finalRound=null;log(s,'End of round '+s.round+': nobody holds the favor target. The race goes on.')}}
   s.round++;
+  if(s.factions&&s.round===LEADER_ROUND){s.players.forEach(p=>{const f=FACTIONS.find(x=>x.id===p.faction);if(f&&f.leader)p.discard.push(f.leader)});
+   log(s,'The faction leaders join their fleets: each captain adds their leader to their discard pile.');ev(s,{t:'leaders'})}
   spawn(s);
  }
  s.phase='handoff';return true;
@@ -354,6 +364,6 @@ function botTurn(s){if(s.over||!me(s).bot)return false;for(const _ of botSteps(s
 const commit=f=>function(s,...a){const r=f(s,...a);if(r)clearUndo(s);return r};
 return {canUndo,requestUndo,voteUndo,cancelUndo,undoLabel,undoVoters,
  begin:commit(begin),buy:commit(buy),complete:commit(complete),patrol:commit(patrol),cashIn:commit(cashIn),scrap:commit(scrap),attack:commit(attack),mercs:commit(mercs),
- buyoutTargets,canAfford,FACTIONS,FACTION_IDS,RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
+ buyoutTargets,canAfford,LEADER_ROUND,FACTIONS,FACTION_IDS,RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;

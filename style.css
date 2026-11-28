@@ -731,3 +731,13 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .facsig b{color:var(--ink)!important;display:block}
 .plate h2,.stand div>span:first-child{display:flex;align-items:center;gap:6px;min-width:0}
 .plate h2 .facico,.stand .facico{margin-left:0}
+/* leaders arrive (round 4) */
+.ldbox{border-color:var(--amber);box-shadow:0 0 0 4px #000,0 0 60px 10px rgba(245,165,45,.3);background:linear-gradient(180deg,#1d1608,#120a14 60%,#0d1424)}
+.ldbanner{background:radial-gradient(ellipse at center,rgba(60,40,8,.5),rgba(3,5,11,.8))}
+.ldrow{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+.ldone{display:flex;flex-direction:column;align-items:center;gap:4px;width:170px;border:2px solid var(--fc);background:#0a0f1e;padding:6px;animation:boslam .4s cubic-bezier(.2,1.4,.4,1) both}
+.ldone:nth-child(2){animation-delay:.12s}.ldone:nth-child(3){animation-delay:.24s}.ldone:nth-child(4){animation-delay:.36s}.ldone:nth-child(5){animation-delay:.48s}.ldone:nth-child(6){animation-delay:.6s}
+.ldone>img{width:100%;image-rendering:pixelated}
+.ldone span img{width:auto;flex:none}
+.ldone b{font:600 15px/1.15 var(--disp);color:var(--fc);text-align:center}
+.ldone span{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--mute)}.ldone .facico{margin:0}

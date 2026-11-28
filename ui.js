@@ -85,7 +85,7 @@ const RES_TIP={fuel:'Every contract needs fuel, and pirate patrols burn 1.',ore:
 function ownedCount(p,k){return p?[...p.hand,...p.deck,...p.discard,...p.played].filter(x=>x===k).length:0}
 function cardDetail(k){const c=E.CARDS[k],me=s&&s.players&&s.players[viewer()],facts=[];
  facts.push(c.cost?icon('cr',1.6)+'<span>Costs <b>'+costText(k)+'</b>'+(c.pay?' (from your pool when you buy)':'')+(s&&s.market&&s.market[k]!==undefined?' · <b>'+s.market[k]+'</b> left in the market':'')+'</span>':'<span>Starter card (every captain begins with it)</span>');
- facts.push(c.cat==='res'?'<span class="tg">Free to play: does not use an order.</span>':'<span class="ag">'+(c.refund?'Needs 1 free order and gives it back, so it costs no orders.':'Uses 1 order ('+(s&&s.actionLimit===0?'unlimited orders':'2 per turn')+').')+'</span>');
+ facts.push(c.cat==='res'?'<span class="tg">Free to play: does not use an order.</span>':'<span class="ag">'+(c.refund?orderNote(c):'Uses 1 order ('+(s&&s.actionLimit===0?'unlimited orders':'2 per turn')+').')+'</span>');
  if(me&&(me.hand.length||me.deck.length)&&!me.hand.includes('?')){const n=ownedCount(me,k);facts.push('<span>You own <b>'+n+'</b> cop'+(n===1?'y':'ies')+'</span>')}
  const tips=Object.keys(c.g).map(r=>'<li style="--rc:var(--c-'+r+')">'+icon(r,1.6)+'<span><b>'+E.RLABEL[r]+'.</b> '+RES_TIP[r]+'</span></li>');
  if(c.draw)tips.push('<li>'+icon('cargo',1.6)+'<span><b>Draw.</b> Drawn cards arrive at once and can be played this turn.</span></li>');
@@ -154,14 +154,14 @@ function bossPanel(compact){const b=s.boss,p=E.me(s),on=myTurn();
 function cardEl(k,idx,market){const c=E.CARDS[k],p=E.me(s),on=myTurn();
  if(market&&s.market[k]<1)return backEl('market',{cls:'soldout',label:'Sold out · '+c.n,attrs:' data-mk="'+k+'"'});
  let h='<article class="pc '+c.cat+(k==='buyout'&&!market?' bo':'')+(market&&on&&p.buys>0&&s.market[k]>0&&E.canAfford(s,k)?' can':'')+' notch"'+(market?' data-mk="'+k+'"':' data-hand="'+idx+'"')+'><div class="art">'+px(SP.cardURL(k),AW,AH)+gainBadge(k)
- +(c.fac&&FAC(c.fac)?'<span class="factag" style="--fc:'+FAC(c.fac).color+'"><img class="px" src="'+SP.factionURL(c.fac)+'" width="14" height="14" alt="">Faction</span>':'')+(market?'<span class="badge tl'+(c.pay?' adv':'')+'">'+costIcons(k)+'</span><span class="badge tr">×'+s.market[k]+'</span>'+(isSpec(k)&&s.marketMode!=='full'?'<span class="spectag">Specialist</span>':''):'')+'</div>'
+ +(c.fac&&FAC(c.fac)?'<span class="factag" style="--fc:'+FAC(c.fac).color+'"><img class="px" src="'+SP.factionURL(c.fac)+'" width="14" height="14" alt="">'+(c.leader?'Leader':'Faction')+'</span>':'')+(market?'<span class="badge tl'+(c.pay?' adv':'')+'">'+costIcons(k)+'</span><span class="badge tr">×'+s.market[k]+'</span>'+(isSpec(k)&&s.marketMode!=='full'?'<span class="spectag">Specialist</span>':''):'')+'</div>'
  +'<div class="pb"><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><h3>'+c.n+'</h3>'+(market?'<div class="fx">'+shortFx(k)+'</div>':'')+'<p>'+c.t+'</p>';
  if(market)h+='<button data-a="buy" data-key="'+k+'"'+(!on||p.buys<1||s.market[k]<1||!E.canAfford(s,k)?' disabled':'')+'>Buy · '+costText(k,true)+'</button>';
  else{
-  if(k==='salvage')h+='<select id="bt'+idx+'" aria-label="Card to scrap">'+p.hand.map((t,j)=>j!==idx?'<option value="'+j+'">Scrap '+E.CARDS[t].n+'</option>':'').join('')+'<option value="-1">Scrap nothing</option></select>';
+  if(k==='salvage')h+='<select id="bt'+idx+'" aria-label="Card to scrap">'+p.hand.map((t,j)=>j!==idx&&!E.CARDS[t].leader?'<option value="'+j+'">Scrap '+E.CARDS[t].n+'</option>':'').join('')+'<option value="-1">Scrap nothing</option></select>';
   if(k==='buyout')h+=buyoutPick(idx);
   h+='<button class="'+(c.cat==='act'?'primary':'')+'" data-a="play" data-id="'+idx+'"'+(on&&E.canPlay(s,idx)?'':' disabled')+'>'+(c.cat==='res'?'Play':'Give order')+'</button>'
-  +'<button class="scr" data-a="scrap" data-id="'+idx+'"'+(!on||p.scrapped||p.pool.cr<1?' disabled':'')+'>Scrap · 1 cr</button>';
+  +'<button class="scr" data-a="scrap" data-id="'+idx+'"'+(!on||p.scrapped||p.pool.cr<1||c.leader?' disabled':'')+(c.leader?' title="Leaders cannot be scrapped"':'')+'>'+(c.leader?'Cannot be scrapped':'Scrap · 1 cr')+'</button>';
  }
  return h+'</div></article>';
 }
@@ -178,6 +178,8 @@ document.addEventListener('change',e=>{const el=e.target;if(!el.classList||!el.c
 const payList=k=>Object.entries(E.CARDS[k].pay||{});
 const costText=(k,short)=>E.CARDS[k].cost+' cr'+payList(k).map(([r,n])=>' + '+n+' '+(r==='cargo'?(short?'cargo':'cargo space'):E.RLABEL[r].toLowerCase())).join('');
 const costIcons=(k,sz)=>icon('cr',sz||1.6)+E.CARDS[k].cost+payList(k).map(([r,n])=>'<i class="plus">+</i>'+icon(r,sz||1.6)+n).join('');
+// order cards that give orders back: Quartermaster (1 back) and the faction leaders (2 back)
+const orderNote=c=>c.refund>1?'Uses 1 order and gives '+c.refund+' back: +'+(c.refund-1)+' order overall (you need one free to play it).':'Needs 1 free order and gives it back, so it costs no orders.';
 const isSpec=k=>!E.CORE.includes(k);
 const byCost=(a,b)=>E.CARDS[a].cost-E.CARDS[b].cost||(E.CARDS[a].cat==='res'?0:1)-(E.CARDS[b].cat==='res'?0:1)||E.CARDS[a].n.localeCompare(E.CARDS[b].n);
 // this game's market: core cards first, then the specialists, each by cost (all=true lists every card, for the encyclopedia)
@@ -195,6 +197,7 @@ let animPrev=null;
 let boQueue=[],boShowing=false;
 function buyoutNews(e){boQueue.push(e);if(!boShowing)nextBuyout()}
 function nextBuyout(){const e=boQueue.shift();if(!e||!s){boShowing=false;boQueue=[];return}boShowing=true;
+ if(e.t==='leaders'){leaderNews();return}
  const by=s.players[e.who]||{name:'?'},from=s.players[e.v]||{name:'?'},lost=e.lost??e.amt,d=s.done.find(x=>x.id===e.id)||{name:e.name,dest:'',req:{},profit:e.amt,id:0};
  const pay=Object.entries(d.req||{}).filter(([,n])=>n).map(([r,n])=>tok(r,n,true)).join('')+(E.need(d)?tok('cargo',E.need(d),true):'');
  const el=document.createElement('div');el.className='bobanner';el.setAttribute('role','alert');
@@ -206,6 +209,14 @@ function nextBuyout(){const e=boQueue.shift();if(!e||!s){boShowing=false;boQueue
  document.body.append(el);Music.sfx('buyout');
  const close=()=>{if(!el.isConnected||el.classList.contains('out'))return;el.classList.add('out');setTimeout(()=>{el.remove();nextBuyout()},320)};
  el.addEventListener('click',close);setTimeout(close,5600)}
+// round 4 with factions on: every captain's leader joins their fleet
+function leaderNews(){const el=document.createElement('div');el.className='bobanner ldbanner';el.setAttribute('role','alert');
+ el.innerHTML='<div class="bobox ldbox notch"><div class="boeye">Round '+s.round+' · Factions</div><h2>LEADERS JOIN THE FLEET</h2><div class="ldrow">'
+  +s.players.map(p=>{const f=FAC(p.faction);if(!f)return '';const c=E.CARDS[f.leader];return '<div class="ldone" style="--fc:'+f.color+'"><img class="px" src="'+SP.cardURL(f.leader)+'" alt=""><b>'+esc(c.n)+'</b><span>'+ava(p,22)+esc(p.name)+facIcon(p,18)+'</span></div>'}).join('')
+  +'</div><p>Each leader joins their captain\'s discard pile: <b>draw 2 cards and gain 2 orders</b> when played. Leaders cannot be scrapped.</p><small>Click to dismiss</small></div>';
+ document.body.append(el);Music.sfx('turn');
+ const close=()=>{if(!el.isConnected||el.classList.contains('out'))return;el.classList.add('out');setTimeout(()=>{el.remove();nextBuyout()},320)};
+ el.addEventListener('click',close);setTimeout(close,6500)}
 function cdeckPile(){return '<span class="cdeck" title="Contract deck: '+s.cdeck.length+' left" style="--tile:url('+SP.backURL('contract')+')"><i></i><i></i><i><img class="px" src="'+SP.logoURL()+'" alt=""></i><b>'+s.cdeck.length+'</b></span>'}
 /* card backs: crew (every captain's own deck), contract and market, each with the logo and title */
 const BACKLABEL={crew:'Crew deck',contract:'Contract',market:'Market'};
@@ -230,6 +241,7 @@ function animAfter(snap){if(screen!=='game'||!s)return;
  const prev=animPrev;animPrev={id:s.id,key,hand,board,evn:s.evn||0,profits,tp};if(!prev||prev.id!==s.id)return;
  if(prev.key===key&&prev.hand===null&&hand&&!calm())document.querySelectorAll('.pc[data-hand]').forEach((el,i)=>{el.classList.add('reveal');el.style.animationDelay=(i*90)+'ms'});
  const evAll=(s.events||[]).filter(e=>e.n>(prev.evn||0)),burst=evAll.length>10||s.over,still=calm()||burst;
+ evAll.filter(e=>e.t==='leaders').forEach(buyoutNews);
  evAll.filter(e=>e.t==='buyout'&&e.name).forEach(e=>{buyoutNews(e);[[e.v,'robbed'],[e.who,'gainer']].forEach(([i,c])=>{const r=document.querySelector('.stand[data-seat="'+i+'"]');if(r)r.classList.add(c)})});
  // contracts that left the board, and the ones dealt in their place
  const gone=prev.board.filter(x=>!board.includes(x)),fresh=board.filter(x=>!prev.board.includes(x));
@@ -274,7 +286,7 @@ if(DESK){addEventListener('resize',fitDesk);fitDesk()}
 if(DESK){let pop=null;
  document.addEventListener('mouseover',e=>{const el=e.target.closest&&e.target.closest('.mband.mini .pc[data-mk]');if(!el){if(pop&&!e.target.closest('.mpop')){pop.remove();pop=null}return}
   const k=el.dataset.mk,c=E.CARDS[k];if(pop&&pop.dataset.k===k)return;if(pop)pop.remove();
-  pop=document.createElement('div');pop.className='mpop notch';pop.dataset.k=k;pop.innerHTML='<div class="art">'+px(SP.cardURL(k),264,156)+gainBadge(k)+'</div>'+'<div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><b>'+c.n+'</b><p>'+c.t+'</p><small>'+costIcons(k)+' · '+s.market[k]+' left'+(c.cat==='act'?(c.refund?' · order given back':' · uses 1 order'):' · free to play')+'</small>';
+  pop=document.createElement('div');pop.className='mpop notch';pop.dataset.k=k;pop.innerHTML='<div class="art">'+px(SP.cardURL(k),264,156)+gainBadge(k)+'</div>'+'<div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><b>'+c.n+'</b><p>'+c.t+'</p><small>'+costIcons(k)+' · '+s.market[k]+' left'+(c.cat==='act'?(c.refund?' · '+(c.refund>1?'+'+(c.refund-1)+' order overall':'order given back'):' · uses 1 order'):' · free to play')+'</small>';
   document.body.append(pop);const z=zoomK(),r=el.getBoundingClientRect(),pw=pop.offsetWidth,ph=pop.offsetHeight;
   pop.style.left=Math.max(8,Math.min(innerWidth/z-pw-8,(r.left+r.width/2)/z-pw/2))+'px';pop.style.top=Math.max(8,r.top/z-ph-10)+'px'});
  document.addEventListener('click',()=>{if(pop){pop.remove();pop=null}},true)}
@@ -292,6 +304,7 @@ function feedLine(e){const c=e.k&&E.CARDS[e.k],nm=c?'<b>'+c.n+'</b>':'';
   case 'hit':return {i:icon('combat',1.6),x:'Hit '+esc(e.boss)+' for <b class="down">'+e.d+'</b>'+(e.via==='mercs'?' with mercenaries':e.dbl?' (double)':''),cls:'hit'};
   case 'bossdown':return {i:icon('star',1.6),x:'<b class="acc">'+esc(e.boss)+' destroyed!</b>',cls:'big'};
   case 'undo':return {i:'<span class="undoi">↶</span>',x:'Took back <b>'+esc(E.undoLabel(e.ks))+'</b>',cls:'undo'};
+  case 'leaders':return {i:'<span class="undoi">★</span>',x:'<b>The faction leaders join their fleets</b>',cls:'big'};
   case 'raid':return {i:icon('combat',1.6),x:'<b class="down">'+esc(e.boss)+' raided everyone</b>',cls:'hit'};
  }return {i:'',x:'',cls:''}}
 function feedPanel(){const all=(s.events||[]).slice().reverse(),now=e=>e.n>(s.feedFrom||0)&&e.who===s.current&&e.r===s.round;let last=null,rows='';
@@ -407,7 +420,7 @@ function rules(){modal('<div class="eyebrow">How Smugglers Run works</div><h2>Ev
  +'<p><b class="acc">Market.</b> Six core cards are in every game. A Standard market adds 6 random specialists (always one costing 5 or more and one extra combat card); a Full market offers all 16.</p>'
  +'<p><b class="acc">Taking back.</b> Back takes back your last card play, one step at a time, until you buy, deliver, patrol, cash in, scrap, hit a boss or end your turn. A card that drew cards cannot be taken back, since you have seen the new cards. With other human captains in the game, every one of them must agree; against computer captains it is instant.</p>'
  +'<p><b class="acc">Advanced cards.</b> Fusion Reactor, Hidden Compartments, Quantum Core and Deep-Core Drill are specialists bought with credits <i>plus</i> 2 of the resource they upgrade (fuel, cargo space, tech or ore), paid from your pool that turn. They are free-to-play resource cards: +4 fuel, 1 cargo and 1 credit; +3 cargo and 2 credits; +4 tech; +3 ore and 1 cargo.</p>'
- +'<p><b class="acc">Factions.</b> An optional setup rule. Each captain picks one of six factions (one each at a table) and adds its signature card to their starting deck: Iron Covenant (Covenant Broadside: +3 combat, +1 fuel, order), Lumen Syndicate (Lumen Datacore: +2 tech), Gilded Exchange (Gilded Ledger: +5 credits and an extra deal), Drift Haulers\' Union (Union Ore Hauler: +1 ore, +2 cargo, +1 credit), Ember Cartel (Ember Tanker: +3 fuel, +2 cargo, +2 credits) and Ghost Runners (Ghost Contacts: draw 2, +1 cargo).</p>'
+ +'<p><b class="acc">Factions.</b> An optional setup rule. Each captain picks one of six factions (one each at a table) and adds its signature card to their starting deck: Iron Covenant (Covenant Broadside: +3 combat, +1 fuel, order), Lumen Syndicate (Lumen Datacore: +2 tech), Gilded Exchange (Gilded Ledger: +5 credits and an extra deal), Drift Haulers\' Union (Union Ore Hauler: +1 ore, +2 cargo, +1 credit), Ember Cartel (Ember Tanker: +3 fuel, +2 cargo, +2 credits) and Ghost Runners (Ghost Contacts: draw 2, +1 cargo). At the start of round '+E.LEADER_ROUND+' each captain\'s faction leader joins their discard pile: an order card that draws 2 cards and gives 2 orders back (+1 overall). Leaders cannot be scrapped.</p>'
  +'<p><b class="acc">Deals.</b> One deal (purchase) per turn; Brokerage adds one. Bought cards go to your discard pile and have no immediate effect.</p>'
  +'<p><b class="acc">Combat.</b> Combat covers escort requirements. Or spend 3 combat and 1 fuel for a pirate patrol worth +5 favor, once per turn. There are no dice.</p>'
  +'<p><b class="acc">Buyout Contract.</b> Costs 7. An order card: take a contract another captain already delivered. Pay its resources and cargo space, as if delivering it; its favor moves from them to you, and the card is scrapped.</p>'
@@ -430,7 +443,7 @@ function deckTile(k,n,where,gone){const c=E.CARDS[k];
 function whereText(p,k){const pl=[['draw',p.deck],['in hand',p.hand],['played',p.played],['discard',p.discard]].map(([l,a])=>[l,a.filter(x=>x===k).length]).filter(([,n])=>n);return pl.map(([l,n])=>n+' '+l).join(' · ')}
 function deckGroups(p,own){const rows=Object.entries(deckCounts(p)).sort(deckSort),bought=rows.filter(([k])=>E.CARDS[k].cost>0),start=rows.filter(([k])=>E.CARDS[k].cost===0&&!E.CARDS[k].fac),sig=rows.filter(([k])=>E.CARDS[k].fac),sum=r=>r.reduce((a,x)=>a+x[1],0);
  const grid=(title,r)=>r.length?'<h3 class="dsub">'+title+' · '+sum(r)+'</h3><div class="dtiles">'+r.map(([k,n])=>deckTile(k,n,own?whereText(p,k):'')).join('')+'</div>':'';
- return grid('Faction card',sig)+grid('Bought',bought)+grid('Starter cards',start)}
+ return grid('Faction cards',sig)+grid('Bought',bought)+grid('Starter cards',start)}
 function scrapTiles(p){const sc=p.scrappedCards||[],c={};sc.forEach(k=>c[k]=(c[k]||0)+1);if(!sc.length)return '';
  return '<h3 class="dsub">Scrapped · '+sc.length+'</h3><p class="mute">Removed from the deck for good (scrapped from hand, by Salvage Crew, or a Buyout Contract used up when played).</p><div class="dtiles">'
   +Object.entries(c).sort(deckSort).map(([k,n])=>deckTile(k,n,'',true)).join('')+'</div>'}
@@ -452,13 +465,13 @@ function viewDecks(i){
   +deckGroups(p,false)+scrapTiles(p)
   +'<div class="btns"><button class="primary" data-a="close">Back</button></div>',true)}
 function encyclopedia(sec){sec=sec||'cards';
- const card=k=>{const c=E.CARDS[k];return '<li class="'+c.cat+'"><img class="px" src="'+SP.cardURL(k)+'" width="88" height="52" alt=""><div><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><b>'+c.n+'</b><span>'+c.t+'</span><small class="mute">'+(c.cat==='res'?'Free to play: does not use an order.':c.refund?'Needs 1 free order and gives it back.':'Uses 1 order (2 per turn by default).')+'</small></div><strong>'+(c.cost?costIcons(k):'Start')+'</strong></li>'};
+ const card=k=>{const c=E.CARDS[k];return '<li class="'+c.cat+'"><img class="px" src="'+SP.cardURL(k)+'" width="88" height="52" alt=""><div><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><b>'+c.n+'</b><span>'+c.t+'</span><small class="mute">'+(c.cat==='res'?'Free to play: does not use an order.':c.refund?orderNote(c):'Uses 1 order (2 per turn by default).')+'</small></div><strong>'+(c.cost?costIcons(k):'Start')+'</strong></li>'};
  const req=t=>Object.entries(t.req).map(([r,n])=>'<span class="tok met" style="--rc:var(--c-'+r+')">'+icon(r,1.6)+n+'</span>').join('')+(E.need(t)?'<span class="tok met" style="--rc:var(--c-cargo)">'+icon('cargo',1.6)+E.need(t)+'</span>':'');
  const tabs=[['cards','Market cards'],['start','Starter cards'],['factions','Factions'],['contracts','Contracts'],['threats','Pirate threats'],['moves','Other moves']];
  let h='';
  if(sec==='cards')h='<p class="mute">Every card you can buy. The 6 <b>core</b> cards are in every game; in a Standard market, 6 random <b>specialists</b> join them (always one costing 5+ and one extra combat card). Bought cards go to your discard pile and show up in later hands.</p><ul class="enc">'+marketList(E.MARKET.slice()).map(k=>card(k).replace('<div class="kind">','<div class="kind">'+(isSpec(k)?'<span class="enctag spec">Specialist</span>':'<span class="enctag">Core</span>')+(s&&screen==='game'&&E.offered(s).includes(k)&&isSpec(k)?'<span class="enctag on">In this game</span>':''))).join('')+'</ul>';
  else if(sec==='start')h='<p class="mute">Every captain starts with these 10 cards: 4 Scrip, 3 Fuel Drums, 2 Ore Samples and 1 Hold Rig.</p><ul class="enc">'+['scrip','drum','sample','rig'].map(card).join('')+'</ul>';
- else if(sec==='factions')h='<p class="mute">With <b>Factions</b> on (setup option), each captain picks a faction, one per faction at a table; computer captains get a random one. Your faction adds its signature card to your starting deck (11 cards). Signature cards are never in the market.</p><ul class="enc facenc">'+E.FACTIONS.map(f=>{const c=E.CARDS[f.card];return '<li style="--fc:'+f.color+'"><img class="px" src="'+SP.factionURL(f.id)+'" width="56" height="56" alt=""><div><div class="kind">Faction</div><b>'+esc(f.name)+'</b><span>'+esc(f.about)+'</span></div><div class="facsig"><img class="px" src="'+SP.cardURL(f.card)+'" width="88" height="52" alt=""><div><b>'+esc(c.n)+'</b><span>'+(c.cat==='res'?'Resource · free to play':'Order')+'. '+esc(c.t)+'</span></div></div></li>'}).join('')+'</ul>';
+ else if(sec==='factions')h='<p class="mute">With <b>Factions</b> on (setup option), each captain picks a faction, one per faction at a table; computer captains get a random one. Your faction adds its signature card to your starting deck (11 cards), and its leader joins your discard pile at the start of round '+E.LEADER_ROUND+'. Leaders all do the same thing: an order that draws 2 cards and gives 2 orders back (+1 overall). They cannot be scrapped. Faction cards are never in the market.</p><ul class="enc facenc">'+E.FACTIONS.map(f=>{const c=E.CARDS[f.card];return '<li style="--fc:'+f.color+'"><img class="px" src="'+SP.factionURL(f.id)+'" width="56" height="56" alt=""><div><div class="kind">Faction</div><b>'+esc(f.name)+'</b><span>'+esc(f.about)+'</span></div><div class="facsig"><img class="px" src="'+SP.cardURL(f.card)+'" width="88" height="52" alt=""><div><b>'+esc(c.n)+'</b><span>'+(c.cat==='res'?'Resource · free to play':'Order')+'. '+esc(c.t)+'</span></div></div><div class="facsig"><img class="px" src="'+SP.cardURL(f.leader)+'" width="88" height="52" alt=""><div><b>'+esc(E.CARDS[f.leader].n)+'</b><span>Leader, from round '+E.LEADER_ROUND+'. Order: '+esc(E.CARDS[f.leader].t)+'</span></div></div></li>'}).join('')+'</ul>';
  else if(sec==='contracts')h='<p class="mute">The '+E.TEMPLATES.length+' contract types (most appear 3 times in the contract deck; the four worth 30+ favor appear twice). Pay the listed resources plus cargo space equal to ore + tech. Contracts worth over 13 favor appear from round 5, and over 20 from round 9.</p><ul class="enc">'+E.TEMPLATES.map((t,i)=>'<li><img class="px" src="'+SP.sceneURL(t.dest,i)+'" width="88" height="52" alt=""><div><div class="kind">To '+esc(t.dest)+' · '+(t.req.combat?'Armed':'Freight')+'</div><b>'+esc(t.name)+'</b><div class="reqs">'+req(t)+'</div></div><strong>'+icon('star',1.6)+'+'+t.profit+'</strong></li>').join('')+'</ul>';
  else if(sec==='threats')h='<p class="mute">With threats on, a boss arrives every '+E.BOSS_EVERY+' rounds, starting in round '+E.BOSS_EVERY+', drawn at random from the six below. Each pirate patrol pushes the next boss back '+E.PATROL_DELAY+' round, at most '+E.MAX_DELAY+' rounds per boss. While one is active no contracts can be delivered. Spend combat (1 damage each, double with a Weapons Officer) or hire mercenaries (usually '+E.MERC+' credits per damage). Beaten: +1 favor per damage dealt, +'+E.FINAL_BLOW+' for the final blow. Survives its deadline (usually '+E.BOSS_ROUNDS+' rounds): raids every captain for '+E.RAID+' favor, double for whoever dealt the least damage.</p><ul class="enc">'+E.BOSS_KEYS.map(k=>{const b=E.BOSSES[k];return '<li><img class="px" src="'+SP.bossURL(k)+'" width="88" height="52" alt=""><div><div class="kind">Pirate boss</div><b>'+b.name+'</b><span>'+b.trait+'</span></div></li>'}).join('')+'</ul>';
  else h='<ul class="enc moves">'

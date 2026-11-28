@@ -43,4 +43,31 @@ for (let n = 2; n <= 6; n++) {
   let g = 0; while (!s.over && g++ < 3000) { E.botTurn(s); (s.bossDone || []).forEach((r, k) => s.players.forEach((t, i) => E.confirmBoss(s, k, i))); }
   assert(s.over, n + ' captains finish');
 }
+// leaders: same effect for every faction, join the discard pile at the start of round 4, cannot be scrapped
+const LEAD = { covenant: 'kessa', lumen: 'oren', gilded: 'mirabel', union: 'dax', ember: 'sola', ghost: 'nyx' };
+for (const f of E.FACTIONS) { const c = E.CARDS[f.leader]; assert.strictEqual(f.leader, LEAD[f.id]); assert(c.leader && c.cat === 'act' && c.draw === 2 && c.refund === 2 && c.fac === f.id, f.leader); assert(!E.MARKET.includes(f.leader)); }
+{
+  const s = E.create({ seed: 21, factions: true, threats: false, players: [{ name: 'Ann' }, { name: 'Ben' }, { name: 'Nova', bot: true }] });
+  const has = (p, k) => all(p).includes(k);
+  while (s.round < E.LEADER_ROUND) { assert(!s.players.some(p => has(p, LEAD[p.faction])), 'no leader before round ' + E.LEADER_ROUND); E.begin(s); E.end(s); }
+  s.players.forEach(p => { assert.strictEqual(all(p).filter(k => E.CARDS[k].leader).length, 1, p.name + ' has one leader'); assert(p.discard.includes(LEAD[p.faction]), 'in the discard pile'); assert.strictEqual(E.deckSize(p), 12); });
+  assert(s.events.some(e => e.t === 'leaders'));
+  // playing a leader: draw 2, uses 1 order and gives 2 back
+  E.begin(s); const p = E.me(s); const L = LEAD[p.faction];
+  p.hand = [L, 'scrip']; p.deck = ['drum', 'sample', 'rig']; const orders = p.actions;
+  assert(E.play(s, 0)); assert.strictEqual(p.actions, orders + 1, '+1 order overall'); assert.strictEqual(p.hand.length, 3, 'drew 2');
+  // cannot be scrapped from hand, nor by Salvage Crew
+  p.hand = [L, 'salvage', 'scrip']; p.pool.cr = 5; p.scrapped = false;
+  assert(!E.scrap(s, 0), 'leader cannot be scrapped'); assert(E.scrap(s, 2), 'ordinary cards still can');
+  p.hand = ['salvage', L]; p.deck = ['drum', 'sample']; const trash = s.trash.length; p.actions = 2;
+  assert(E.play(s, 0, 1)); assert.strictEqual(s.trash.length, trash, 'Salvage Crew did not scrap the leader'); assert(p.hand.includes(L));
+}
+// no leaders without factions; unlimited orders: the refund changes nothing
+{
+  const s = E.create({ seed: 22, threats: false, players: [{ name: 'Ann' }, { name: 'Nova', bot: true }] });
+  while (s.round <= E.LEADER_ROUND) { E.begin(s); E.end(s); }
+  assert(!s.players.some(p => all(p).some(k => E.CARDS[k].leader)));
+  const u = E.create({ seed: 23, factions: true, actionLimit: 0, threats: false, players: [{ name: 'Ann' }, { name: 'Nova', bot: true }] });
+  E.begin(u); const q = E.me(u); q.hand = [LEAD[q.faction]]; q.deck = ['drum', 'scrip']; assert(E.play(u, 0)); assert.strictEqual(q.actions, 0);
+}
 console.log('factions ok');

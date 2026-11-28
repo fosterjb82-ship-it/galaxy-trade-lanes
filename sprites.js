@@ -113,6 +113,13 @@ function scene(dest,seed){const s=new S(88,52);(SCENES[dest]||SCENES.Harrow)(s,s
 
 /* ---- card emblems ---- */
 function fighter(L,x,y){L.poly([[x,y+4],[x+8,y+1],[x+20,y+4],[x+8,y+7]],PAL.steel[4]);L.poly([[x+4,y+2],[x+1,y-5],[x+11,y+1]],PAL.steel[3]);L.poly([[x+4,y+6],[x+1,y+13],[x+11,y+7]],PAL.steel[3]);L.rect(x+13,y+3,4,2,PAL.amber[5]);L.rect(x-3,y+3,3,2,PAL.amber[5]);L.rect(x-6,y+3,3,2,PAL.amber[3]);L.set(x+9,y+4,PAL.steel[6])}
+// faction leaders: a shared bust (coat, face, headgear) with per-leader details
+function bust(L,o){const c=o.coat,sk=o.dark?1:0;
+ L.poly([[10,52],[14,38],[30,32],[58,32],[74,38],[78,52]],c[3]);L.poly([[30,32],[44,44],[58,32]],c[1]);L.poly([[38,32],[44,41],[50,32]],o.shirt||PAL.steel[6]);
+ [[16,40],[62,40]].forEach(([x,y])=>{L.rect(x,y,10,3,o.trim||PAL.amber[4]);L.rect(x,y+4,10,1,o.trim||PAL.amber[4])});
+ L.rect(40,26,8,7,PAL.skin[2-sk]);sph(L,44,19,9,o.dark?['#2a160e','#4a2a1c','#7d482c','#9a5c36','#b87a4e','#d49a6a','#f0c090']:PAL.skin,-.5,-.5);
+ L.rect(34,18,2,5,PAL.skin[1]);L.rect(52,18,2,5,PAL.skin[1]);
+ if(!o.noeyes){L.rect(39,19,3,2,PAL.space[0]);L.rect(46,19,3,2,PAL.space[0])}L.rect(42,25,4,1,PAL.skin[0])}
 const EMB={
  scrip(L){coins(L,24,44,4,8);coins(L,44,44,7,9);coins(L,64,44,3,8);L.set(36,10,PAL.amber[6]);L.set(35,10,PAL.amber[5]);L.set(37,10,PAL.amber[5]);L.set(36,9,PAL.amber[5]);L.set(36,11,PAL.amber[5])},
  drum(L){cyl(L,10,22,16,26,PAL.teal);L.rect(10,32,16,2,PAL.teal[1]);cyl(L,34,6,24,40,PAL.rust);
@@ -244,6 +251,23 @@ const EMB={
   L.ellipse(44,28,9,10,PAL.violet[5]);L.ellipse(44,26,8,8,PAL.violet[6]);L.rect(39,25,3,4,PAL.space[0]);L.rect(46,25,3,4,PAL.space[0]);L.rect(42,32,4,2,PAL.violet[3]);
   [[6,30,-.3],[14,28,-.15],[66,28,.15],[74,30,.3]].forEach(([x,y])=>{L.rect(x,y,10,14,PAL.steel[5]);L.rect(x+1,y+1,8,12,PAL.violet[3]);L.set(x+4,y+6,PAL.violet[6]);L.set(x+5,y+6,PAL.violet[6])});
   [[20,12],[70,14],[56,6]].forEach(([x,y])=>{L.set(x,y,PAL.teal[6]);L.set(x+1,y,PAL.teal[4])})},
+ // faction leaders
+ kessa(L){bust(L,{coat:PAL.red,trim:PAL.amber[5]});L.rect(33,9,22,7,PAL.steel[2]);L.rect(33,9,22,1,PAL.steel[4]);L.rect(31,15,26,2,PAL.steel[1]);L.rect(42,10,4,4,PAL.red[5]);
+  L.line(47,15,50,24,PAL.red[4]);L.rect(46,19,3,2,PAL.red[5]);L.line(38,14,36,24,PAL.steel[1]);
+  [[62,8],[70,14],[78,6]].forEach(([x,y])=>{L.line(x,y,x+8,y,PAL.red[5]);L.set(x+8,y,PAL.amber[6])});L.rect(20,34,4,4,PAL.amber[5]);L.rect(64,34,4,4,PAL.amber[5])},
+ oren(L){bust(L,{coat:PAL.blue,trim:PAL.teal[4],noeyes:true});L.rect(35,8,18,6,PAL.blue[1]);L.rect(35,8,18,1,PAL.blue[3]);L.rect(36,17,16,5,PAL.space[0]);L.rect(37,18,14,3,PAL.teal[4]);L.rect(39,19,4,1,PAL.teal[6]);
+  L.line(53,19,58,15,PAL.teal[5]);L.set(59,14,PAL.teal[6]);for(let i=0;i<5;i++){L.rect(64,8+i*6,16-(i*3)%9,1,PAL.blue[4]);L.rect(8,10+i*6,10-(i*2)%6,1,PAL.teal[4])}},
+ mirabel(L){bust(L,{coat:PAL.green,trim:PAL.amber[5],shirt:PAL.amber[6]});L.rect(34,10,20,5,PAL.rust[2]);L.rect(32,12,4,12,PAL.rust[2]);L.rect(52,12,4,12,PAL.rust[2]);
+  L.poly([[35,10],[36,2],[40,7],[44,0],[48,7],[52,2],[53,10]],PAL.amber[5]);L.rect(35,9,18,2,PAL.amber[4]);[[40,9],[44,9],[48,9]].forEach(([x,y])=>L.set(x,y,PAL.red[5]));L.set(44,3,PAL.amber[6]);
+  coins(L,70,48,4,6);coins(L,16,48,2,5);L.rect(41,35,6,2,PAL.amber[5])},
+ dax(L){bust(L,{coat:PAL.rust,trim:PAL.amber[5],dark:true});L.ellipse(44,12,12,5,PAL.amber[4]);L.rect(32,13,24,3,PAL.amber[3]);L.rect(42,7,4,3,PAL.steel[6]);L.set(44,8,PAL.amber[6]);
+  L.rect(38,24,12,3,PAL.rust[1]);L.line(64,10,74,22,PAL.steel[5]);L.line(60,12,70,8,PAL.steel[4]);L.rect(62,9,6,2,PAL.steel[6]);[[20,10],[14,18],[24,22]].forEach(([x,y])=>{L.rect(x,y,4,3,PAL.rust[4]);L.set(x,y,PAL.rust[5])})},
+ sola(L){bust(L,{coat:PAL.amber,trim:PAL.red[4]});L.ellipse(44,12,11,6,PAL.red[2]);L.rect(33,12,4,14,PAL.red[2]);L.rect(51,12,4,14,PAL.red[2]);L.rect(36,9,16,3,PAL.red[3]);
+  L.poly([[49,20],[51,16],[52,20],[51,23]],PAL.amber[5]);L.set(51,19,PAL.amber[6]);
+  L.poly([[68,8],[74,18],[72,24],[64,24],[62,18],[66,16]],PAL.red[4]);L.poly([[68,14],[71,20],[70,24],[66,24],[65,20]],PAL.amber[5]);L.set(68,21,PAL.amber[6])},
+ nyx(L){bust(L,{coat:PAL.violet,trim:PAL.violet[5],noeyes:true});L.poly([[30,30],[33,12],[44,4],[55,12],[58,30],[52,30],[50,16],[44,11],[38,16],[36,30]],PAL.violet[1]);
+  L.ellipse(44,20,7,8,PAL.violet[5]);L.ellipse(44,19,6,6,PAL.violet[6]);L.rect(40,18,3,3,PAL.space[0]);L.rect(46,18,3,3,PAL.space[0]);L.rect(42,24,4,1,PAL.violet[3]);
+  [[64,12],[72,20]].forEach(([x,y])=>{L.rect(x,y,9,12,PAL.steel[5]);L.rect(x+1,y+1,7,10,PAL.violet[3]);L.set(x+4,y+5,PAL.violet[6])});[[14,10],[22,18],[10,26]].forEach(([x,y])=>{L.set(x,y,PAL.teal[6]);L.set(x+1,y,PAL.teal[4])})},
  charter(L){cyl(L,14,4,8,44,PAL.amber);cyl(L,62,4,8,44,PAL.amber);
   L.rect(22,6,40,40,PAL.rust[6]);L.rect(22,6,40,2,PAL.rust[5]);L.rect(22,44,40,2,PAL.rust[5]);
   L.rect(27,11,30,3,PAL.violet[3]);for(let i=0;i<4;i++)L.rect(27,18+i*5,i===3?14:24,2,PAL.steel[3]);
@@ -253,7 +277,7 @@ const EMB={
   L.poly([[65,30],[66.6,34],[71,34],[67.4,36.6],[68.8,41],[65,38.4],[61.2,41],[62.6,36.6],[59,34],[63.4,34]],PAL.amber[6]);
   [[78,8],[82,20],[76,24]].forEach(([x,y],i)=>{L.set(x,y,PAL.amber[6]);L.set(x-1,y,PAL.amber[5-i%2]);L.set(x+1,y,PAL.amber[5-i%2]);L.set(x,y-1,PAL.amber[5]);L.set(x,y+1,PAL.amber[5])})}
 };
-const TINT={scrip:PAL.amber,drum:PAL.amber,sample:PAL.rust,rig:PAL.teal,deal:PAL.amber,house:PAL.blue,pack:PAL.teal,borer:PAL.rust,vault:PAL.blue,quarter:PAL.teal,barge:PAL.teal,gunship:PAL.red,probe:PAL.violet,broker:PAL.blue,deck:PAL.amber,wing:PAL.red,buyout:PAL.red,salvage:PAL.rust,weapons:PAL.red,charter:PAL.violet,reactor:PAL.amber,hidden:PAL.green,quantum:PAL.blue,drill:PAL.rust,broadside:PAL.red,datacore:PAL.blue,ledger:PAL.green,orehauler:PAL.rust,tanker:PAL.amber,contacts:PAL.violet};
+const TINT={scrip:PAL.amber,drum:PAL.amber,sample:PAL.rust,rig:PAL.teal,deal:PAL.amber,house:PAL.blue,pack:PAL.teal,borer:PAL.rust,vault:PAL.blue,quarter:PAL.teal,barge:PAL.teal,gunship:PAL.red,probe:PAL.violet,broker:PAL.blue,deck:PAL.amber,wing:PAL.red,buyout:PAL.red,salvage:PAL.rust,weapons:PAL.red,charter:PAL.violet,reactor:PAL.amber,hidden:PAL.green,quantum:PAL.blue,drill:PAL.rust,broadside:PAL.red,datacore:PAL.blue,ledger:PAL.green,orehauler:PAL.rust,tanker:PAL.amber,contacts:PAL.violet,kessa:PAL.red,oren:PAL.blue,mirabel:PAL.green,dax:PAL.rust,sola:PAL.amber,nyx:PAL.violet};
 function cardArt(k){const s=cardBg(TINT[k]||PAL.teal,k.length*7+k.charCodeAt(0));const L=new S(88,52);EMB[k](L);L.outline(OUT);s.blit(L);return s}
 
 /* ---- hero freighter (144x64) ---- */
