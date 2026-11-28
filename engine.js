@@ -69,9 +69,10 @@ const FACTIONS=[
  {id:'ember',name:'Ember Cartel',card:'tanker',leader:'sola',color:'#f5a52d',about:'Fuel barons. Fuel, cargo space and spare credits on every run.'},
  {id:'ghost',name:'Ghost Runners',card:'contacts',leader:'nyx',color:'#a384f0',about:'True smugglers. Their contacts dig up extra cards when it counts.'}
 ],FACTION_IDS=FACTIONS.map(f=>f.id);
-// keep valid, unique picks; give everyone else (computer captains included) a random remaining faction
-function assignFactions(s,players){const used=new Set();players.forEach(p=>{if(FACTION_IDS.includes(p.faction)&&!used.has(p.faction))used.add(p.faction);else p.faction=null});
- const left=shuffle(s,FACTION_IDS.filter(f=>!used.has(f)));players.forEach(p=>{if(!p.faction)p.faction=left.shift()||FACTION_IDS[0]});return players}
+function factionsLeft(s){const used=new Set(s.players.map(p=>p.faction).filter(Boolean));return FACTION_IDS.filter(f=>!used.has(f))}
+// the active captain picks a faction: its signature card goes straight to their discard pile
+function chooseFaction(s,id){if(!needsFaction(s)||!factionsLeft(s).includes(id))return false;const p=me(s),f=FACTIONS.find(x=>x.id===id);
+ p.faction=id;p.discard.push(f.card);log(s,p.name+' leads the '+f.name+'. '+CARDS[f.card].n+' goes to their discard pile.');ev(s,{t:'faction',f:id,k:f.card});return true}
 function assignShips(players){const used=new Set();players.forEach(p=>{if(SHIP_IDS.includes(p.ship)&&!used.has(p.ship))used.add(p.ship);else p.ship=null});
  players.forEach(p=>{if(!p.ship){p.ship=SHIP_IDS.find(id=>!used.has(id))||SHIP_IDS[0];used.add(p.ship)}});return players}
 const BOSS_KEYS=Object.keys(BOSSES),STAGE_HP=[2.4,5.2,6.2];
@@ -114,7 +115,9 @@ function rnd(s){s.seed=(s.seed*16807)%2147483647;return (s.seed-1)/2147483646}
 function shuffle(s,a){for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd(s)*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const me=s=>s.players[s.current];
 const fresh=()=>({fuel:0,ore:0,tech:0,cr:0,combat:0,cargo:1});
-const live=s=>s.phase==='action'&&!s.over&&!s.undoReq;
+const live=s=>s.phase==='action'&&!s.over&&!s.undoReq&&!needsFaction(s);
+// with factions on, a captain picks a faction before their first move
+const needsFaction=s=>!!s.factions&&!s.over&&s.phase==='action'&&!!s.players[s.current]&&!s.players[s.current].faction;
 /* ---------- taking back card plays ----------
    Each card play by a human captain stores a snapshot of the game before it, so it can be taken back
    one step at a time during that turn. Only card plays can be taken back: buying, delivering, patrols,
@@ -173,10 +176,8 @@ function create(o={}){
   s.players.push(p);
  });
  s.factions=!!o.factions;
- if(s.factions)assignFactions(s,s.players);else s.players.forEach(p=>p.faction=null);
- s.players.forEach(p=>{const start=['scrip','scrip','scrip','scrip','drum','drum','drum','sample','sample','rig'];
-  if(s.factions)start.push(FACTIONS.find(f=>f.id===p.faction).card);
-  p.deck=shuffle(s,start);draw(s,p,5)});
+ // with factions on, each captain picks one on their first turn, in turn order (see chooseFaction)
+ s.players.forEach(p=>{p.faction=null;p.deck=shuffle(s,['scrip','scrip','scrip','scrip','drum','drum','drum','sample','sample','rig']);draw(s,p,5)});
  s.cdeck=shuffle(s,TEMPLATES.flatMap(t=>Array.from({length:t.copies||3},()=>t)).map((t,i)=>{const c={...t,req:{...t.req},id:i};delete c.copies;return c}));
  const e=s.cdeck.findIndex(c=>c.name==='Seed Stock');
  s.board.push(s.cdeck.splice(e,1)[0]);
@@ -345,6 +346,7 @@ function playAll(s){if(!live(s))return false;for(const _ of playAllSteps(s));ret
 function* botSteps(s){
  if(s.over||!me(s).bot)return;
  if(s.phase==='handoff'){begin(s);yield}
+ if(needsFaction(s)){const left=factionsLeft(s);chooseFaction(s,left[Math.floor(rnd(s)*left.length)]);yield}
  const p=me(s);yield* playAllSteps(s);
  for(let n=0;n<10;n++){const ch=s.board.filter(c=>canComplete(s,c)).sort((a,b)=>b.profit-a.profit);if(!ch.length)break;complete(s,ch[0].id);yield}
  const owned=()=>{const a=[...p.deck,...p.discard,...p.hand,...p.played];return Object.fromEntries(MARKET.map(k=>[k,a.filter(t=>t===k).length]))};
@@ -364,6 +366,6 @@ function botTurn(s){if(s.over||!me(s).bot)return false;for(const _ of botSteps(s
 const commit=f=>function(s,...a){const r=f(s,...a);if(r)clearUndo(s);return r};
 return {canUndo,requestUndo,voteUndo,cancelUndo,undoLabel,undoVoters,
  begin:commit(begin),buy:commit(buy),complete:commit(complete),patrol:commit(patrol),cashIn:commit(cashIn),scrap:commit(scrap),attack:commit(attack),mercs:commit(mercs),
- buyoutTargets,canAfford,LEADER_ROUND,FACTIONS,FACTION_IDS,RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
+ buyoutTargets,canAfford,LEADER_ROUND,needsFaction,factionsLeft,chooseFaction:commit(chooseFaction),FACTIONS,FACTION_IDS,RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;

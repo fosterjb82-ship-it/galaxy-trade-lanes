@@ -12,24 +12,42 @@ for (const f of E.FACTIONS) { assert.strictEqual(f.card, SIG[f.id]); assert.stri
   const s = E.create({ seed: 4, players: [{ name: 'Ann', faction: 'ghost' }, { name: 'Nova', bot: true }] });
   assert(!s.factions); s.players.forEach(p => { assert.strictEqual(p.faction, null); assert.strictEqual(E.deckSize(p), 10); assert(!all(p).some(k => E.CARDS[k].fac)); });
 }
-// on: picks kept, duplicates and missing picks filled at random, one faction each, signature card added
-for (let seed = 1; seed <= 60; seed++) {
-  const s = E.create({ seed, factions: true, players: [{ name: 'Ann', faction: 'lumen' }, { name: 'Ben', faction: 'lumen' }, { name: 'Cy', faction: 'bogus' }, { name: 'Nova', bot: true }, { name: 'Orion', bot: true }, { name: 'Vesta', bot: true }] });
-  assert(s.factions);
-  assert.strictEqual(s.players[0].faction, 'lumen', 'first pick kept');
-  const fs = s.players.map(p => p.faction); assert.strictEqual(new Set(fs).size, 6, 'one faction each');
-  s.players.forEach(p => {
-    assert(E.FACTION_IDS.includes(p.faction));
-    assert.strictEqual(E.deckSize(p), 11, p.name + ' has 11 cards');
-    const sig = all(p).filter(k => E.CARDS[k].fac); assert.deepStrictEqual(sig, [SIG[p.faction]], p.name + ' has exactly its own signature card');
-  });
+// on: nobody has a faction at the start; each captain picks on their first turn, in turn order
+{
+  const s = E.create({ seed: 7, factions: true, order: 'random', players: [{ name: 'Ann' }, { name: 'Ben' }, { name: 'Nova', bot: true }] });
+  assert(s.factions); s.players.forEach(p => { assert.strictEqual(p.faction, null); assert.strictEqual(E.deckSize(p), 10); });
+  E.begin(s); const first = E.me(s);
+  if (!first.bot) {
+    assert(E.needsFaction(s)); assert(!E.live(s), 'no moves until a faction is chosen');
+    assert(!E.play(s, 0) && !E.end(s), 'blocked');
+    assert(!E.chooseFaction(s, 'bogus'));
+    assert(E.chooseFaction(s, 'ghost'));
+    assert.strictEqual(first.faction, 'ghost'); assert.strictEqual(first.discard[first.discard.length - 1], 'contacts', 'signature card goes to the discard pile');
+    assert.strictEqual(E.deckSize(first), 11); assert(!E.chooseFaction(s, 'lumen'), 'only once');
+    assert(E.live(s)); assert(/leads the Ghost Runners/.test(s.log[0]));
+    E.end(s);
+  }
+  // play on: humans pick a free faction (a taken one is refused); computer captains pick on their own turn
+  let g = 0;
+  while (s.players.some(p => !p.faction) && g++ < 20) {
+    if (E.me(s).bot) { E.botTurn(s); continue; }
+    E.begin(s);
+    if (E.needsFaction(s)) {
+      const taken = s.players.find(p => p.faction); if (taken) assert(!E.chooseFaction(s, taken.faction), 'taken faction refused');
+      assert(E.chooseFaction(s, E.factionsLeft(s)[0]));
+    }
+    E.end(s);
+  }
+  const fs = s.players.map(p => p.faction); assert(fs.every(Boolean)); assert.strictEqual(new Set(fs).size, fs.length, 'one faction each');
+  s.players.forEach(p => { assert.deepStrictEqual(all(p).filter(k => E.CARDS[k].fac && !E.CARDS[k].leader), [SIG[p.faction]]); if (!p.bot) assert.strictEqual(E.deckSize(p), 11); });
+  assert.strictEqual(s.round, 2, 'everyone picked during round 1');
 }
 // signature cards do what they say
 {
   const want = { broadside: [{ combat: 3, fuel: 1 }, 'act'], datacore: [{ tech: 2 }, 'res'], ledger: [{ cr: 5 }, 'res'], orehauler: [{ ore: 1, cargo: 2, cr: 1 }, 'res'], tanker: [{ fuel: 3, cargo: 2, cr: 2 }, 'res'], contacts: [{ cargo: 1 }, 'res'] };
   for (const [k, [g, cat]] of Object.entries(want)) {
     const s = E.create({ seed: 9, factions: true, threats: false, players: [{ name: 'Ann' }, { name: 'Nova', bot: true }] });
-    E.begin(s); const p = E.me(s); p.hand = [k]; p.deck = ['scrip', 'drum', 'sample']; const before = { ...p.pool }, buys = p.buys, orders = p.actions;
+    E.begin(s); E.chooseFaction(s, E.CARDS[k].fac); const p = E.me(s); p.hand = [k]; p.deck = ['scrip', 'drum', 'sample']; const before = { ...p.pool }, buys = p.buys, orders = p.actions;
     assert(E.play(s, 0), k); assert.strictEqual(E.CARDS[k].cat, cat, k);
     for (const [r, n] of Object.entries(g)) assert.strictEqual(p.pool[r], before[r] + n, k + ' ' + r);
     if (k === 'ledger') assert.strictEqual(p.buys, buys + 1, 'extra deal');
@@ -49,8 +67,9 @@ for (const f of E.FACTIONS) { const c = E.CARDS[f.leader]; assert.strictEqual(f.
 {
   const s = E.create({ seed: 21, factions: true, threats: false, players: [{ name: 'Ann' }, { name: 'Ben' }, { name: 'Nova', bot: true }] });
   const has = (p, k) => all(p).includes(k);
-  while (s.round < E.LEADER_ROUND) { assert(!s.players.some(p => has(p, LEAD[p.faction])), 'no leader before round ' + E.LEADER_ROUND); E.begin(s); E.end(s); }
-  s.players.forEach(p => { assert.strictEqual(all(p).filter(k => E.CARDS[k].leader).length, 1, p.name + ' has one leader'); assert(p.discard.includes(LEAD[p.faction]), 'in the discard pile'); assert.strictEqual(E.deckSize(p), 12); });
+  while (s.round < E.LEADER_ROUND) { assert(!s.players.some(p => p.faction && has(p, LEAD[p.faction])), 'no leader before round ' + E.LEADER_ROUND); if (E.me(s).bot) { E.botTurn(s); continue; } E.begin(s); if (E.needsFaction(s)) E.chooseFaction(s, E.factionsLeft(s)[0]); E.end(s); }
+  s.players.forEach(p => { assert.strictEqual(all(p).filter(k => E.CARDS[k].leader).length, 1, p.name + ' has one leader'); assert(p.discard.includes(LEAD[p.faction]), 'in the discard pile'); if (!p.bot) assert.strictEqual(E.deckSize(p), 12); });
+  while (E.me(s).bot) E.botTurn(s);
   assert(s.events.some(e => e.t === 'leaders'));
   // playing a leader: draw 2, uses 1 order and gives 2 back
   E.begin(s); const p = E.me(s); const L = LEAD[p.faction];
@@ -68,6 +87,6 @@ for (const f of E.FACTIONS) { const c = E.CARDS[f.leader]; assert.strictEqual(f.
   while (s.round <= E.LEADER_ROUND) { E.begin(s); E.end(s); }
   assert(!s.players.some(p => all(p).some(k => E.CARDS[k].leader)));
   const u = E.create({ seed: 23, factions: true, actionLimit: 0, threats: false, players: [{ name: 'Ann' }, { name: 'Nova', bot: true }] });
-  E.begin(u); const q = E.me(u); q.hand = [LEAD[q.faction]]; q.deck = ['drum', 'scrip']; assert(E.play(u, 0)); assert.strictEqual(q.actions, 0);
+  E.begin(u); E.chooseFaction(u, 'ember'); const q = E.me(u); q.hand = [LEAD[q.faction]]; q.deck = ['drum', 'scrip']; assert(E.play(u, 0)); assert.strictEqual(q.actions, 0);
 }
 console.log('factions ok');

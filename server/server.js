@@ -63,7 +63,8 @@ const TURN_MOVES = {
   playResources: g => E.playResources(g), buy: (g, a) => E.buy(g, String(a[0])), complete: (g, a) => E.complete(g, int(a[0])),
   patrol: g => E.patrol(g), cashIn: g => E.cashIn(g), scrap: (g, a) => E.scrap(g, int(a[0])),
   attack: g => E.attack(g), mercs: g => E.mercs(g), end: g => E.end(g),
-  requestUndo: g => E.requestUndo(g), cancelUndo: g => E.cancelUndo(g)
+  requestUndo: g => E.requestUndo(g), cancelUndo: g => E.cancelUndo(g),
+  chooseFaction: (g, a) => E.chooseFaction(g, String(a[0] || ''))
 };
 const int = v => (Number.isInteger(Number(v)) ? Number(v) : NaN);
 function startTurnIfNeeded() { const g = T.game; if (g && !g.over && g.phase === 'handoff') E.begin(g); }
@@ -89,13 +90,6 @@ function act(tok, fn, args) {
 function lobby(tok, op, body) {
   const me = player(tok); if (!me) return { ok: false, error: 'Join first.' };
   const host = T.hostToken === me.token;
-  if (op === 'faction') {
-    if (T.game && !T.game.over) return { ok: false, error: 'Factions are chosen in the lobby.' };
-    const k = String(body.faction || '');
-    if (!E.FACTION_IDS.includes(k)) return { ok: false, error: 'Unknown faction.' };
-    if (T.players.some(p => p !== me && p.faction === k)) return { ok: false, error: 'Another captain already leads that faction.' };
-    me.faction = k; changed(); return { ok: true };
-  }
   if (op === 'ship') {
     if (T.game && !T.game.over) return { ok: false, error: 'Ships are chosen in the lobby.' };
     const k = String(body.ship || '');
@@ -132,7 +126,7 @@ function lobby(tok, op, body) {
     if (T.players.length < 2) return { ok: false, error: 'You need at least 2 captains.' };
     // random turn order: shuffle the seats themselves, so each browser keeps controlling its own captain
     if (T.settings.order === 'random') for (let i = T.players.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [T.players[i], T.players[j]] = [T.players[j], T.players[i]]; }
-    T.game = E.create({ ...T.settings, order: 'listed', announceOrder: T.settings.order === 'random', mode: 'online', players: T.players.map(p => ({ name: p.name, ship: p.ship, faction: p.faction })) });
+    T.game = E.create({ ...T.settings, order: 'listed', announceOrder: T.settings.order === 'random', mode: 'online', players: T.players.map(p => ({ name: p.name, ship: p.ship })) });
     E.begin(T.game); changed('The run has started. ' + T.game.players[0].name + ' goes first.'); return { ok: true };
   }
   if (op === 'skip') {       // move a stuck or absent captain's turn along

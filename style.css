@@ -741,3 +741,17 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .ldone span img{width:auto;flex:none}
 .ldone b{font:600 15px/1.15 var(--disp);color:var(--fc);text-align:center}
 .ldone span{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--mute)}.ldone .facico{margin:0}
+/* faction selection on a captain's first turn */
+.facdlg h2{display:flex;align-items:center;gap:12px}
+.facgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+.facopt{display:flex;flex-direction:column;gap:8px;border:2px solid var(--fc);background:#0a0f1e;padding:10px}
+.facopt.taken{opacity:.45;filter:grayscale(.7);border-style:dashed}
+.fohead{display:flex;gap:10px;align-items:center}.fohead img{image-rendering:pixelated;flex:none}
+.fohead h3{margin:0;font:700 22px/1.1 var(--disp);color:var(--fc)}.fohead p{margin:2px 0 0;font-size:13px;color:var(--mute);line-height:1.35}
+.focard{display:flex;gap:8px;align-items:center;border-top:1px dashed var(--line);padding-top:7px}
+.focard img{width:96px;image-rendering:pixelated;border:1px solid #000;flex:none}
+.focard>div{display:flex;flex-direction:column;gap:1px;font-size:12.5px;color:var(--mute);line-height:1.3}
+.focard b{font:600 15px/1.15 var(--disp);color:var(--ink)}
+.facopt button{margin-top:auto;min-height:42px}
+.fotaken{margin-top:auto;text-align:center;font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);padding:10px 0}
+.facnote{margin:6px 0 0}

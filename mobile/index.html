@@ -746,6 +746,20 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .ldone span img{width:auto;flex:none}
 .ldone b{font:600 15px/1.15 var(--disp);color:var(--fc);text-align:center}
 .ldone span{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--mute)}.ldone .facico{margin:0}
+/* faction selection on a captain's first turn */
+.facdlg h2{display:flex;align-items:center;gap:12px}
+.facgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+.facopt{display:flex;flex-direction:column;gap:8px;border:2px solid var(--fc);background:#0a0f1e;padding:10px}
+.facopt.taken{opacity:.45;filter:grayscale(.7);border-style:dashed}
+.fohead{display:flex;gap:10px;align-items:center}.fohead img{image-rendering:pixelated;flex:none}
+.fohead h3{margin:0;font:700 22px/1.1 var(--disp);color:var(--fc)}.fohead p{margin:2px 0 0;font-size:13px;color:var(--mute);line-height:1.35}
+.focard{display:flex;gap:8px;align-items:center;border-top:1px dashed var(--line);padding-top:7px}
+.focard img{width:96px;image-rendering:pixelated;border:1px solid #000;flex:none}
+.focard>div{display:flex;flex-direction:column;gap:1px;font-size:12.5px;color:var(--mute);line-height:1.3}
+.focard b{font:600 15px/1.15 var(--disp);color:var(--ink)}
+.facopt button{margin-top:auto;min-height:42px}
+.fotaken{margin-top:auto;text-align:center;font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);padding:10px 0}
+.facnote{margin:6px 0 0}
 /* Phone build. Loaded after style.css and overrides it.
    Layout: compact header, a fixed strip with this turn's pool, one scrolling tab body,
    and a tab bar in thumb reach at the bottom. Single dark look by choice. */
@@ -887,6 +901,7 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 .bocard{max-width:200px}.bostamp{font-size:13cqw}
 .bocard{width:200px;max-width:100%}
 .ldone{width:46%}
+.facgrid{grid-template-columns:1fr}.focard img{width:80px}.fohead h3{font-size:19px}
 </style>
 <div id="app"><header class="top"><div class="brand">SMUGGLERS RUN<small>POCKET</small></div><nav><button id="snd" data-a="sound">Sound</button><button data-a="menu">Menu</button></nav><div class="status" id="status"></div></header><main id="stage"></main></div>
 <div id="overlay" class="overlay" hidden><section id="dialog" class="dialog notch" tabindex="-1" role="dialog" aria-modal="true" aria-label="Game dialog"></section></div>
@@ -962,9 +977,10 @@ const FACTIONS=[
  {id:'ember',name:'Ember Cartel',card:'tanker',leader:'sola',color:'#f5a52d',about:'Fuel barons. Fuel, cargo space and spare credits on every run.'},
  {id:'ghost',name:'Ghost Runners',card:'contacts',leader:'nyx',color:'#a384f0',about:'True smugglers. Their contacts dig up extra cards when it counts.'}
 ],FACTION_IDS=FACTIONS.map(f=>f.id);
-// keep valid, unique picks; give everyone else (computer captains included) a random remaining faction
-function assignFactions(s,players){const used=new Set();players.forEach(p=>{if(FACTION_IDS.includes(p.faction)&&!used.has(p.faction))used.add(p.faction);else p.faction=null});
- const left=shuffle(s,FACTION_IDS.filter(f=>!used.has(f)));players.forEach(p=>{if(!p.faction)p.faction=left.shift()||FACTION_IDS[0]});return players}
+function factionsLeft(s){const used=new Set(s.players.map(p=>p.faction).filter(Boolean));return FACTION_IDS.filter(f=>!used.has(f))}
+// the active captain picks a faction: its signature card goes straight to their discard pile
+function chooseFaction(s,id){if(!needsFaction(s)||!factionsLeft(s).includes(id))return false;const p=me(s),f=FACTIONS.find(x=>x.id===id);
+ p.faction=id;p.discard.push(f.card);log(s,p.name+' leads the '+f.name+'. '+CARDS[f.card].n+' goes to their discard pile.');ev(s,{t:'faction',f:id,k:f.card});return true}
 function assignShips(players){const used=new Set();players.forEach(p=>{if(SHIP_IDS.includes(p.ship)&&!used.has(p.ship))used.add(p.ship);else p.ship=null});
  players.forEach(p=>{if(!p.ship){p.ship=SHIP_IDS.find(id=>!used.has(id))||SHIP_IDS[0];used.add(p.ship)}});return players}
 const BOSS_KEYS=Object.keys(BOSSES),STAGE_HP=[2.4,5.2,6.2];
@@ -1007,7 +1023,9 @@ function rnd(s){s.seed=(s.seed*16807)%2147483647;return (s.seed-1)/2147483646}
 function shuffle(s,a){for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd(s)*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const me=s=>s.players[s.current];
 const fresh=()=>({fuel:0,ore:0,tech:0,cr:0,combat:0,cargo:1});
-const live=s=>s.phase==='action'&&!s.over&&!s.undoReq;
+const live=s=>s.phase==='action'&&!s.over&&!s.undoReq&&!needsFaction(s);
+// with factions on, a captain picks a faction before their first move
+const needsFaction=s=>!!s.factions&&!s.over&&s.phase==='action'&&!!s.players[s.current]&&!s.players[s.current].faction;
 /* ---------- taking back card plays ----------
    Each card play by a human captain stores a snapshot of the game before it, so it can be taken back
    one step at a time during that turn. Only card plays can be taken back: buying, delivering, patrols,
@@ -1066,10 +1084,8 @@ function create(o={}){
   s.players.push(p);
  });
  s.factions=!!o.factions;
- if(s.factions)assignFactions(s,s.players);else s.players.forEach(p=>p.faction=null);
- s.players.forEach(p=>{const start=['scrip','scrip','scrip','scrip','drum','drum','drum','sample','sample','rig'];
-  if(s.factions)start.push(FACTIONS.find(f=>f.id===p.faction).card);
-  p.deck=shuffle(s,start);draw(s,p,5)});
+ // with factions on, each captain picks one on their first turn, in turn order (see chooseFaction)
+ s.players.forEach(p=>{p.faction=null;p.deck=shuffle(s,['scrip','scrip','scrip','scrip','drum','drum','drum','sample','sample','rig']);draw(s,p,5)});
  s.cdeck=shuffle(s,TEMPLATES.flatMap(t=>Array.from({length:t.copies||3},()=>t)).map((t,i)=>{const c={...t,req:{...t.req},id:i};delete c.copies;return c}));
  const e=s.cdeck.findIndex(c=>c.name==='Seed Stock');
  s.board.push(s.cdeck.splice(e,1)[0]);
@@ -1238,6 +1254,7 @@ function playAll(s){if(!live(s))return false;for(const _ of playAllSteps(s));ret
 function* botSteps(s){
  if(s.over||!me(s).bot)return;
  if(s.phase==='handoff'){begin(s);yield}
+ if(needsFaction(s)){const left=factionsLeft(s);chooseFaction(s,left[Math.floor(rnd(s)*left.length)]);yield}
  const p=me(s);yield* playAllSteps(s);
  for(let n=0;n<10;n++){const ch=s.board.filter(c=>canComplete(s,c)).sort((a,b)=>b.profit-a.profit);if(!ch.length)break;complete(s,ch[0].id);yield}
  const owned=()=>{const a=[...p.deck,...p.discard,...p.hand,...p.played];return Object.fromEntries(MARKET.map(k=>[k,a.filter(t=>t===k).length]))};
@@ -1257,7 +1274,7 @@ function botTurn(s){if(s.over||!me(s).bot)return false;for(const _ of botSteps(s
 const commit=f=>function(s,...a){const r=f(s,...a);if(r)clearUndo(s);return r};
 return {canUndo,requestUndo,voteUndo,cancelUndo,undoLabel,undoVoters,
  begin:commit(begin),buy:commit(buy),complete:commit(complete),patrol:commit(patrol),cashIn:commit(cashIn),scrap:commit(scrap),attack:commit(attack),mercs:commit(mercs),
- buyoutTargets,canAfford,LEADER_ROUND,FACTIONS,FACTION_IDS,RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
+ buyoutTargets,canAfford,LEADER_ROUND,needsFaction,factionsLeft,chooseFaction:commit(chooseFaction),FACTIONS,FACTION_IDS,RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;
 const Sprites=(function(){
@@ -1877,7 +1894,7 @@ let s=null,screen='setup',scrollPos=0,handX=0;
 let ME=null;
 const myTurn=()=>!!s&&s.phase==='action'&&!s.over&&(ME===null?!s.players[s.current].bot&&!(typeof playingBack==='function'&&playingBack()):s.current===ME);
 const viewer=()=>ME===null?s.current:ME;
-const cfg={factions:0,facs:['covenant','lumen','gilded','union','ember','ghost'],order:'listed',humans:1,bots:2,threats:1,market:'standard',cpuSpeed:'normal',winMode:'rounds',rounds:16,actionLimit:2,target:80,boardSize:4,ships:['hauler','courier','corvette','explorer','miner','clipper'],names:['Captain 1','Captain 2','Captain 3','Captain 4','Captain 5','Captain 6']};
+const cfg={factions:0,order:'listed',humans:1,bots:2,threats:1,market:'standard',cpuSpeed:'normal',winMode:'rounds',rounds:16,actionLimit:2,target:80,boardSize:4,ships:['hauler','courier','corvette','explorer','miner','clipper'],names:['Captain 1','Captain 2','Captain 3','Captain 4','Captain 5','Captain 6']};
 const BOTS=['Nova Syndicate','Orion Freight','Vesta Lines','Kestrel Haulage','Pallas Combine'];
 const MUS='gtl-mobile-music-v1';
 const SCALE=1.5,AW=Math.round(88*SCALE),AH=Math.round(52*SCALE);
@@ -1910,17 +1927,17 @@ function renderSetup(){
  +field('winMode','Victory',[['rounds','Highest favor after set rounds'],['profit','Race to a favor target']])
  +(cfg.winMode==='rounds'?field('rounds','Run length',[[10,'10 rounds'],[12,'12 rounds'],[16,'16 rounds (recommended)'],[20,'20 rounds']]):field('target','Favor target',[[50,'50 favor'],[80,'80 favor'],[120,'120 favor']]))
  +field('boardSize','Contract board',[[3,'3 contracts'],[4,'4 contracts'],[5,'5 contracts']])
- +field('factions','Factions',[[0,'Off'],[1,'On: each captain picks a faction']])
+ +field('factions','Factions',[[0,'Off'],[1,'On: pick a faction on your first turn']])
  +field('order','Turn order',[['listed','As listed (captains first)'],['random','Random']])
  +field('market','Card market',[['standard','Standard: 6 core + 6 random specialists'],['full','Full: every card']])
  +field('threats','Pirate threats',[[1,'On: boss battles (recommended)'],[0,'Off']])
  +(cfg.bots?field('cpuSpeed','Computer turns',[['normal','Watch at normal speed'],['slow','Watch slowly'],['fast','Watch quickly'],['instant','Instant']]):'')
- +'</div><div class="capfields">'+Array.from({length:n},(_,i)=>'<div class="capf"><label for="nm'+i+'">Captain '+(i+1)+'</label><input id="nm'+i+'" data-name="'+i+'" maxlength="24" value="'+esc(cfg.names[i])+'">'+shipPicker(i,n)+(cfg.factions?facPicker(i,n):'')+'</div>').join('')+'</div>'
+ +'</div><div class="capfields">'+Array.from({length:n},(_,i)=>'<div class="capf"><label for="nm'+i+'">Captain '+(i+1)+'</label><input id="nm'+i+'" data-name="'+i+'" maxlength="24" value="'+esc(cfg.names[i])+'">'+shipPicker(i,n)+'</div>').join('')+'</div>'+(cfg.factions?'<p class="mute facnote">Factions are on: once the run begins, each captain picks a faction on their first turn, in turn order.</p>':'')
  +'<div class="btns" style="margin-top:4px"><button class="primary" data-a="start">Launch run</button><button data-a="tutorial">Tutorial</button><button data-a="rules">How to play</button></div></div>'
  +'<div class="heroart">'+px(SP.heroURL(),576,256)+'<div class="feat"><div><b>BUILD</b> Bought cards land in your discard pile and arrive in later hands.</div><div><b>LOAD</b> Cargo space is per turn, so play Hold Rigs and Barges before you deliver.</div><div><b>CLAIM</b> The board is shared. First captain to pay a contract takes the favor.</div></div></div></section>';
 }
 function start(){collect();scrollPos=0;handX=0;
- const players=Array.from({length:cfg.humans},(_,i)=>({name:(cfg.names[i]||'').trim()||'Captain '+(i+1),ship:cfg.ships[i],faction:cfg.factions?cfg.facs[i]:null}));
+ const players=Array.from({length:cfg.humans},(_,i)=>({name:(cfg.names[i]||'').trim()||'Captain '+(i+1),ship:cfg.ships[i]}));
  for(let i=0;i<cfg.bots;i++)players.push({name:BOTS[i],bot:true});
  stopPlayback();vicSeat=null;s=E.create({...cfg,factions:!!cfg.factions,threats:cfg.threats!==0,mode:cfg.humans>1?'local':'solo',players});s.cpuSpeed=cfg.cpuSpeed;seenBoss=0;screen='game';
  if(s.order==='random')notify('Random turn order: '+s.players.map(p=>p.name).join(' → ')+'. '+s.players[0].name+' goes first.');settle();
@@ -2089,6 +2106,16 @@ function leaderNews(){const el=document.createElement('div');el.className='boban
  document.body.append(el);Music.sfx('turn');
  const close=()=>{if(!el.isConnected||el.classList.contains('out'))return;el.classList.add('out');setTimeout(()=>{el.remove();nextBuyout()},320)};
  el.addEventListener('click',close);setTimeout(close,6500)}
+/* faction selection: on each captain's first turn, in turn order */
+function factionDialog(){const p=E.me(s),left=new Set(E.factionsLeft(s)),pos=s.players.filter(x=>x.faction).length+1;
+ const owner=id=>s.players.find(x=>x.faction===id);
+ modal('<div class="facdlg"><div class="eyebrow">Round '+s.round+' · choosing '+pos+' of '+s.players.length+'</div><h2>'+ava(p,48)+esc(p.name)+', choose your faction.</h2>'
+  +'<p class="mute">Your signature card goes straight to your discard pile, so it joins your deck when you next shuffle. Your leader joins in round '+E.LEADER_ROUND+'. Each faction can be chosen once.</p>'
+  +'<div class="facgrid">'+E.FACTIONS.map(f=>{const sig=E.CARDS[f.card],ld=E.CARDS[f.leader],taken=!left.has(f.id),o=owner(f.id);
+   return '<article class="facopt'+(taken?' taken':'')+'" style="--fc:'+f.color+'"><div class="fohead"><img class="px" src="'+SP.factionURL(f.id)+'" width="52" height="52" alt=""><div><h3>'+esc(f.name)+'</h3><p>'+esc(f.about)+'</p></div></div>'
+    +'<div class="focard"><img class="px" src="'+SP.cardURL(f.card)+'" alt=""><div><span class="eyebrow">Signature card · now</span><b>'+esc(sig.n)+'</b><span>'+(sig.cat==='res'?'Resource, free to play':'Order')+'. '+esc(sig.t)+'</span></div></div>'
+    +'<div class="focard"><img class="px" src="'+SP.cardURL(f.leader)+'" alt=""><div><span class="eyebrow">Leader · round '+E.LEADER_ROUND+'</span><b>'+esc(ld.n)+'</b><span>Order. '+esc(ld.t)+'</span></div></div>'
+    +(taken?'<div class="fotaken">Taken by '+esc(o?o.name:'another captain')+'</div>':'<button class="primary" data-a="choosefac" data-fac="'+f.id+'">Lead the '+esc(f.name)+'</button>')+'</article>'}).join('')+'</div></div>',true)}
 function cdeckPile(){return '<span class="cdeck" title="Contract deck: '+s.cdeck.length+' left" style="--tile:url('+SP.backURL('contract')+')"><i></i><i></i><i><img class="px" src="'+SP.logoURL()+'" alt=""></i><b>'+s.cdeck.length+'</b></span>'}
 /* card backs: crew (every captain's own deck), contract and market, each with the logo and title */
 const BACKLABEL={crew:'Crew deck',contract:'Contract',market:'Market'};
@@ -2176,6 +2203,7 @@ function feedLine(e){const c=e.k&&E.CARDS[e.k],nm=c?'<b>'+c.n+'</b>':'';
   case 'hit':return {i:icon('combat',1.6),x:'Hit '+esc(e.boss)+' for <b class="down">'+e.d+'</b>'+(e.via==='mercs'?' with mercenaries':e.dbl?' (double)':''),cls:'hit'};
   case 'bossdown':return {i:icon('star',1.6),x:'<b class="acc">'+esc(e.boss)+' destroyed!</b>',cls:'big'};
   case 'undo':return {i:'<span class="undoi">↶</span>',x:'Took back <b>'+esc(E.undoLabel(e.ks))+'</b>',cls:'undo'};
+  case 'faction':{const f=FAC(e.f);return {i:f?'<img class="px" src="'+SP.factionURL(e.f)+'" width="20" height="20" alt="">':'',x:'Leads the <b>'+esc(f?f.name:'')+'</b>',cls:'big'}}
   case 'leaders':return {i:'<span class="undoi">★</span>',x:'<b>The faction leaders join their fleets</b>',cls:'big'};
   case 'raid':return {i:icon('combat',1.6),x:'<b class="down">'+esc(e.boss)+' raided everyone</b>',cls:'hit'};
  }return {i:'',x:'',cls:''}}
@@ -2223,9 +2251,6 @@ function ava(p,size,cls){return p&&p.ship?'<img class="px ava'+(cls?' '+cls:'')+
 /* ---------- factions ---------- */
 const FAC=id=>E.FACTIONS.find(f=>f.id===id);
 const facIcon=(p,size,cls)=>p&&p.faction&&FAC(p.faction)?'<img class="px facico'+(cls?' '+cls:'')+'" src="'+SP.factionURL(p.faction)+'" width="'+(size||20)+'" height="'+(size||20)+'" alt="'+esc(FAC(p.faction).name)+'" title="'+esc(FAC(p.faction).name)+'">':'';
-function facPicker(i,n){const taken=new Set(cfg.facs.slice(0,n).filter((x,j)=>j!==i)),mine=cfg.facs[i],f=FAC(mine);
- return '<div class="facpick" role="radiogroup" aria-label="Faction for captain '+(i+1)+'">'+E.FACTIONS.map(x=>'<button type="button" class="'+(x.id===mine?'on':'')+'" role="radio" aria-checked="'+(x.id===mine)+'" data-a="pickfac" data-id="'+i+'" data-fac="'+x.id+'" style="--fc:'+x.color+'"'+(taken.has(x.id)?' disabled title="Taken by another captain"':' title="'+esc(x.name)+'"')+'><img class="px" src="'+SP.factionURL(x.id)+'" width="34" height="34" alt="'+esc(x.name)+'"></button>').join('')
-  +'<span class="facname" style="--fc:'+(f?f.color:'#888')+'">'+(f?esc(f.name)+' <small>'+esc(E.CARDS[f.card].n)+': '+esc(E.CARDS[f.card].t)+'</small>':'')+'</span></div>'}
 function shipPicker(i,n){const taken=new Set(cfg.ships.slice(0,n).filter((x,j)=>j!==i)),mine=cfg.ships[i];
  return '<div class="shippick" role="radiogroup" aria-label="Ship for captain '+(i+1)+'">'+E.SHIPS.map(x=>'<button type="button" class="'+(x.id===mine?'on':'')+'" role="radio" aria-checked="'+(x.id===mine)+'" data-a="pickship" data-id="'+i+'" data-ship="'+x.id+'"'+(taken.has(x.id)?' disabled title="Taken by another captain"':' title="'+x.name+'"')+'><img class="px" src="'+SP.shipURL(x.id)+'" width="40" height="40" alt="'+x.name+'"></button>').join('')+'<span class="shipname">'+esc(shipName(mine))+'</span></div>'}
 function standings(){return s.players.map((t,i)=>({t,i})).sort((a,b)=>b.t.profit-a.t.profit).map(({t,i},rank)=>'<div class="stand'+(i===s.current&&!s.over?' cur':'')+'" data-seat="'+i+'"><i>'+(rank+1)+'</i>'+ava(t,30)+'<div><span>'+esc(t.name)+facIcon(t,20)+'</span><small>'+(t.bot?'CPU · ':'')+t.completed+' deliv · '+E.deckSize(t)+' cards</small>'+(i===s.current&&!s.over?'<em class="playing">playing</em>':'')+'</div><strong>'+t.profit+'</strong></div>').join('')}
@@ -2279,7 +2304,8 @@ function bossReport(){
   return true}
  return false}
 function phase(){
- if(screen!=='game')return;if(s.undoReq&&!s.over){undoDialog();return}bossNews();if(bossReport())return;const p=E.me(s);
+ if(screen!=='game')return;if(s.undoReq&&!s.over){undoDialog();return}
+ if(E.needsFaction(s)&&myTurn()){factionDialog();return}bossNews();if(bossReport())return;const p=E.me(s);
  if(s.over){victory(vicSeat);return}
  if(s.phase==='handoff'){if(!p.bot){const alarm=s.boss&&!s.boss.alerted;if(alarm)s.boss.alerted=true;Music.sfx(alarm?'boss':'turn')};modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Target reached · could be the last round':'Next captain')+'</div><h2 class="upname">'+ava(p,56)+esc(p.name)+facIcon(p,30)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' favor</p>'+(s.boss?'<div class="threat soon">'+icon('combat',1.6)+'<span><b>'+esc(s.boss.name)+'</b> is blockading the lanes: '+s.boss.hp+' / '+s.boss.max+' hull left, '+(s.boss.until-s.round+1)+' round(s) to beat it.</span></div>':'')+((p.news||[]).length&&!p.bot?'<div class="hnews">'+p.news.map(n=>'<div class="threat bonews">'+icon('star',1.6)+'<span><b>'+esc((s.players[n.by]||{}).name||'A rival')+'</b> bought out your <b>'+esc(n.name)+'</b> in round '+n.round+': <b class="down">−'+n.amt+' favor</b>.</span></div>').join('')+'</div>':'')
   +'<div class="handfan" aria-hidden="true">'+backs(Math.min(5,p.hand.length))+'</div><div class="btns"><button class="primary" data-a="begin">Begin turn</button></div>');return}
@@ -2292,7 +2318,7 @@ function rules(){modal('<div class="eyebrow">How Smugglers Run works</div><h2>Ev
  +'<p><b class="acc">Market.</b> Six core cards are in every game. A Standard market adds 6 random specialists (always one costing 5 or more and one extra combat card); a Full market offers all 16.</p>'
  +'<p><b class="acc">Taking back.</b> Back takes back your last card play, one step at a time, until you buy, deliver, patrol, cash in, scrap, hit a boss or end your turn. A card that drew cards cannot be taken back, since you have seen the new cards. With other human captains in the game, every one of them must agree; against computer captains it is instant.</p>'
  +'<p><b class="acc">Advanced cards.</b> Fusion Reactor, Hidden Compartments, Quantum Core and Deep-Core Drill are specialists bought with credits <i>plus</i> 2 of the resource they upgrade (fuel, cargo space, tech or ore), paid from your pool that turn. They are free-to-play resource cards: +4 fuel, 1 cargo and 1 credit; +3 cargo and 2 credits; +4 tech; +3 ore and 1 cargo.</p>'
- +'<p><b class="acc">Factions.</b> An optional setup rule. Each captain picks one of six factions (one each at a table) and adds its signature card to their starting deck: Iron Covenant (Covenant Broadside: +3 combat, +1 fuel, order), Lumen Syndicate (Lumen Datacore: +2 tech), Gilded Exchange (Gilded Ledger: +5 credits and an extra deal), Drift Haulers\' Union (Union Ore Hauler: +1 ore, +2 cargo, +1 credit), Ember Cartel (Ember Tanker: +3 fuel, +2 cargo, +2 credits) and Ghost Runners (Ghost Contacts: draw 2, +1 cargo). At the start of round '+E.LEADER_ROUND+' each captain\'s faction leader joins their discard pile: an order card that draws 2 cards and gives 2 orders back (+1 overall). Leaders cannot be scrapped.</p>'
+ +'<p><b class="acc">Factions.</b> An optional setup rule. On their first turn, in turn order, each captain picks one of six factions (one each at a table); its signature card goes straight to their discard pile: Iron Covenant (Covenant Broadside: +3 combat, +1 fuel, order), Lumen Syndicate (Lumen Datacore: +2 tech), Gilded Exchange (Gilded Ledger: +5 credits and an extra deal), Drift Haulers\' Union (Union Ore Hauler: +1 ore, +2 cargo, +1 credit), Ember Cartel (Ember Tanker: +3 fuel, +2 cargo, +2 credits) and Ghost Runners (Ghost Contacts: draw 2, +1 cargo). At the start of round '+E.LEADER_ROUND+' each captain\'s faction leader joins their discard pile: an order card that draws 2 cards and gives 2 orders back (+1 overall). Leaders cannot be scrapped.</p>'
  +'<p><b class="acc">Deals.</b> One deal (purchase) per turn; Brokerage adds one. Bought cards go to your discard pile and have no immediate effect.</p>'
  +'<p><b class="acc">Combat.</b> Combat covers escort requirements. Or spend 3 combat and 1 fuel for a pirate patrol worth +5 favor, once per turn. There are no dice.</p>'
  +'<p><b class="acc">Buyout Contract.</b> Costs 7. An order card: take a contract another captain already delivered. Pay its resources and cargo space, as if delivering it; its favor moves from them to you, and the card is scrapped.</p>'
@@ -2343,7 +2369,7 @@ function encyclopedia(sec){sec=sec||'cards';
  let h='';
  if(sec==='cards')h='<p class="mute">Every card you can buy. The 6 <b>core</b> cards are in every game; in a Standard market, 6 random <b>specialists</b> join them (always one costing 5+ and one extra combat card). Bought cards go to your discard pile and show up in later hands.</p><ul class="enc">'+marketList(E.MARKET.slice()).map(k=>card(k).replace('<div class="kind">','<div class="kind">'+(isSpec(k)?'<span class="enctag spec">Specialist</span>':'<span class="enctag">Core</span>')+(s&&screen==='game'&&E.offered(s).includes(k)&&isSpec(k)?'<span class="enctag on">In this game</span>':''))).join('')+'</ul>';
  else if(sec==='start')h='<p class="mute">Every captain starts with these 10 cards: 4 Scrip, 3 Fuel Drums, 2 Ore Samples and 1 Hold Rig.</p><ul class="enc">'+['scrip','drum','sample','rig'].map(card).join('')+'</ul>';
- else if(sec==='factions')h='<p class="mute">With <b>Factions</b> on (setup option), each captain picks a faction, one per faction at a table; computer captains get a random one. Your faction adds its signature card to your starting deck (11 cards), and its leader joins your discard pile at the start of round '+E.LEADER_ROUND+'. Leaders all do the same thing: an order that draws 2 cards and gives 2 orders back (+1 overall). They cannot be scrapped. Faction cards are never in the market.</p><ul class="enc facenc">'+E.FACTIONS.map(f=>{const c=E.CARDS[f.card];return '<li style="--fc:'+f.color+'"><img class="px" src="'+SP.factionURL(f.id)+'" width="56" height="56" alt=""><div><div class="kind">Faction</div><b>'+esc(f.name)+'</b><span>'+esc(f.about)+'</span></div><div class="facsig"><img class="px" src="'+SP.cardURL(f.card)+'" width="88" height="52" alt=""><div><b>'+esc(c.n)+'</b><span>'+(c.cat==='res'?'Resource · free to play':'Order')+'. '+esc(c.t)+'</span></div></div><div class="facsig"><img class="px" src="'+SP.cardURL(f.leader)+'" width="88" height="52" alt=""><div><b>'+esc(E.CARDS[f.leader].n)+'</b><span>Leader, from round '+E.LEADER_ROUND+'. Order: '+esc(E.CARDS[f.leader].t)+'</span></div></div></li>'}).join('')+'</ul>';
+ else if(sec==='factions')h='<p class="mute">With <b>Factions</b> on (setup option), each captain picks a faction on their first turn, in turn order, from a screen showing every faction; each faction can be chosen once, and computer captains pick at random. Your faction\'s signature card goes straight to your discard pile, and its leader joins your discard pile at the start of round '+E.LEADER_ROUND+'. Leaders all do the same thing: an order that draws 2 cards and gives 2 orders back (+1 overall). They cannot be scrapped. Faction cards are never in the market.</p><ul class="enc facenc">'+E.FACTIONS.map(f=>{const c=E.CARDS[f.card];return '<li style="--fc:'+f.color+'"><img class="px" src="'+SP.factionURL(f.id)+'" width="56" height="56" alt=""><div><div class="kind">Faction</div><b>'+esc(f.name)+'</b><span>'+esc(f.about)+'</span></div><div class="facsig"><img class="px" src="'+SP.cardURL(f.card)+'" width="88" height="52" alt=""><div><b>'+esc(c.n)+'</b><span>'+(c.cat==='res'?'Resource · free to play':'Order')+'. '+esc(c.t)+'</span></div></div><div class="facsig"><img class="px" src="'+SP.cardURL(f.leader)+'" width="88" height="52" alt=""><div><b>'+esc(E.CARDS[f.leader].n)+'</b><span>Leader, from round '+E.LEADER_ROUND+'. Order: '+esc(E.CARDS[f.leader].t)+'</span></div></div></li>'}).join('')+'</ul>';
  else if(sec==='contracts')h='<p class="mute">The '+E.TEMPLATES.length+' contract types (most appear 3 times in the contract deck; the four worth 30+ favor appear twice). Pay the listed resources plus cargo space equal to ore + tech. Contracts worth over 13 favor appear from round 5, and over 20 from round 9.</p><ul class="enc">'+E.TEMPLATES.map((t,i)=>'<li><img class="px" src="'+SP.sceneURL(t.dest,i)+'" width="88" height="52" alt=""><div><div class="kind">To '+esc(t.dest)+' · '+(t.req.combat?'Armed':'Freight')+'</div><b>'+esc(t.name)+'</b><div class="reqs">'+req(t)+'</div></div><strong>'+icon('star',1.6)+'+'+t.profit+'</strong></li>').join('')+'</ul>';
  else if(sec==='threats')h='<p class="mute">With threats on, a boss arrives every '+E.BOSS_EVERY+' rounds, starting in round '+E.BOSS_EVERY+', drawn at random from the six below. Each pirate patrol pushes the next boss back '+E.PATROL_DELAY+' round, at most '+E.MAX_DELAY+' rounds per boss. While one is active no contracts can be delivered. Spend combat (1 damage each, double with a Weapons Officer) or hire mercenaries (usually '+E.MERC+' credits per damage). Beaten: +1 favor per damage dealt, +'+E.FINAL_BLOW+' for the final blow. Survives its deadline (usually '+E.BOSS_ROUNDS+' rounds): raids every captain for '+E.RAID+' favor, double for whoever dealt the least damage.</p><ul class="enc">'+E.BOSS_KEYS.map(k=>{const b=E.BOSSES[k];return '<li><img class="px" src="'+SP.bossURL(k)+'" width="88" height="52" alt=""><div><div class="kind">Pirate boss</div><b>'+b.name+'</b><span>'+b.trait+'</span></div></li>'}).join('')+'</ul>';
  else h='<ul class="enc moves">'
@@ -2354,7 +2380,7 @@ function encyclopedia(sec){sec=sec||'cards';
  modal('<div class="eyebrow">Smugglers Run</div><h2>Encyclopedia</h2><div class="dtabs">'+tabs.map(([k,l])=>'<button class="sm'+(k===sec?' on':'')+'" data-a="enc" data-sec="'+k+'">'+l+'</button>').join('')+'</div>'+h+'<div class="btns"><button class="primary" data-a="close">Back</button></div>',true)}
 function viewDone(){modal('<div class="eyebrow">All captains · this run</div><h2>Deliveries.</h2>'+(s.done.length?[...s.done].reverse().map(c=>'<div class="done"><div><div class="eyebrow">Round '+c.round+' · '+esc(c.captain)+(c.fromName?' · bought out from '+esc(c.fromName)+' in round '+c.boughtRound:'')+'</div><b>'+esc(c.name)+'</b> <span class="mute">to '+esc(c.dest)+'</span></div><strong>+'+c.profit+'</strong></div>').join(''):'<p class="mute">No deliveries yet.</p>')+'<div class="btns"><button class="primary" data-a="close">Back</button></div>')}
 function viewLog(){modal('<div class="eyebrow">Latest 50 events</div><h2>Run log.</h2><div class="log">'+s.log.map(t=>'<div>'+esc(t)+'</div>').join('')+'</div><div class="btns"><button class="primary" data-a="close">Back</button></div>')}
-function closeDlg(){if(document.querySelector('#dialog .undodlg'))return;if(screen==='game'&&s&&(s.phase==='handoff'||s.over||document.querySelector('#dialog [data-a=bossok]'))){if(document.querySelector('#dialog [data-a=bossok]'))return;phase()}else hide()}
+function closeDlg(){if(document.querySelector('#dialog .undodlg')||document.querySelector('#dialog .facdlg'))return;if(screen==='game'&&s&&(s.phase==='handoff'||s.over||document.querySelector('#dialog [data-a=bossok]'))){if(document.querySelector('#dialog [data-a=bossok]'))return;phase()}else hide()}
 
 /* ---------- end-of-turn check ---------- */
 function leftovers(){const p=E.me(s),out=[];
@@ -2438,6 +2464,7 @@ document.addEventListener('click',e=>{
  else if(a==='scrap')act(()=>E.scrap(s,id),'scrap');
  else if(a==='end'){s.warned=s.warned||{};s.warned[s.current]=true;act(()=>E.end(s))}
  else if(a==='endAsk')endAsk();
+ else if(a==='choosefac'){const f=E.FACTIONS.find(x=>x.id===b.dataset.fac);act(()=>E.chooseFaction(s,b.dataset.fac),'buy');if(f)notify(f.name+': '+E.CARDS[f.card].n+' goes to your discard pile.')}
  else if(a==='undo')act(()=>E.requestUndo(s));
  else if(a==='undocancel')act(()=>E.cancelUndo(s));
  else if(a==='undovote')undoVote(b);
@@ -2446,7 +2473,6 @@ document.addEventListener('click',e=>{
  else if(a==='deck')viewDeck();
  else if(a==='enc')encyclopedia(b.dataset.sec);
  else if(a==='decks')viewDecks(Number.isInteger(id)?id:null);
- else if(a==='pickfac'){collect();const i=id,k=b.dataset.fac;if(!cfg.facs.slice(0,cfg.humans).some((x,j)=>j!==i&&x===k)){cfg.facs[i]=k;renderSetup()}}
  else if(a==='pickship'){collect();const i=id,k=b.dataset.ship;if(!cfg.ships.slice(0,cfg.humans).some((x,j)=>j!==i&&x===k)){cfg.ships[i]=k;renderSetup()}}
  else if(a==='vic'){Music.sfx('tab');victory(id)}
  else if(a==='done')viewDone();

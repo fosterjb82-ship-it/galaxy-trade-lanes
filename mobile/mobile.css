@@ -139,3 +139,4 @@ table.t{font-size:13px}.t th,.t td{padding:6px 4px}
 .bocard{max-width:200px}.bostamp{font-size:13cqw}
 .bocard{width:200px;max-width:100%}
 .ldone{width:46%}
+.facgrid{grid-template-columns:1fr}.focard img{width:80px}.fohead h3{font-size:19px}

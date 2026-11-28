@@ -16,7 +16,7 @@ Object.assign(Engine,{
  play:(g,i,t)=>send('play',[i,t]),playResources:()=>send('playResources',[]),buy:(g,k)=>send('buy',[k]),complete:(g,i)=>send('complete',[i]),
  patrol:()=>send('patrol',[]),cashIn:()=>send('cashIn',[]),scrap:(g,i)=>send('scrap',[i]),attack:()=>send('attack',[]),mercs:()=>send('mercs',[]),
  end:()=>send('end',[]),
- requestUndo:()=>send('requestUndo',[]),cancelUndo:()=>send('cancelUndo',[]),voteUndo:(g,seat,yes)=>send('voteUndo',[yes?1:0]),
+ requestUndo:()=>send('requestUndo',[]),chooseFaction:(g,id)=>send('chooseFaction',[id]),cancelUndo:()=>send('cancelUndo',[]),voteUndo:(g,seat,yes)=>send('voteUndo',[yes?1:0]),
  confirmBoss:(g,k,i)=>{ORIG_CONFIRM(g,k,i);send('confirmBoss',[k]);return true}
 });
 act=function(fn,snd){if(!myTurn())return;if(document.querySelector('#dialog [data-a=end]'))hide();Promise.resolve(fn()).then(ok=>{if(ok===false)notify('Not enough resources, cargo, credits, orders or deals for that.');else if(snd)Music.sfx(snd)})};
@@ -51,14 +51,11 @@ function lobbyScreen(p){screen='setup';const host=p.you.host,S=p.settings;
   +Array.from({length:6-p.players.length},()=>'<li class="empty"><i></i>Open seat</li>').join('');
  $('stage').innerHTML='<section class="setup online"><div><div class="eyebrow">Online table · lobby</div><h1>'+(p.players.length)+' of 6<br><span>captains aboard.</span></h1>'
  +'<p class="mute" style="max-width:520px">'+(host?'You are the host. Send the table link to your friends, pick the rules, then launch when everyone is here.':'Waiting for the host to launch the run.')+'</p>'
- +'<ol class="seats">'+seats+'</ol>'+myShip(p)+(p.settings.factions?myFaction(p):'')
+ +'<ol class="seats">'+seats+'</ol>'+myShip(p)+(p.settings.factions?'<p class="mute">Factions are on: each captain picks one on their first turn, in turn order.</p>':'')
  +'<div class="fields">'+fields+'</div>'
  +'<div class="btns">'+(host?'<button class="primary" data-a="olstart"'+(p.players.length<2?' disabled':'')+'>'+(p.players.length<2?'Need 2 captains':'Launch run')+'</button>':'')+'<button data-a="olleave">Leave table</button><button data-a="rules">How to play</button></div></div>'
  +'<div class="heroart">'+px(SP.heroURL(),576,256)+'<div class="feat"><div><b>LINK</b> Share the address in your browser bar. Everyone who opens it can join until the run starts.</div><div><b>TURNS</b> Only the captain whose turn it is can act. Everyone else watches the board update.</div><div><b>RECONNECT</b> Closed the tab? Open the link again in the same browser to get your seat back.</div></div></div></section>'}
 
-function myFaction(p){const mine=p.players[p.you.seat]||{},taken=new Set(p.players.filter(x=>x.seat!==p.you.seat).map(x=>x.faction)),f=E.FACTIONS.find(x=>x.id===mine.faction);
- return '<div class="olship"><label>Your faction</label><div class="facpick">'+E.FACTIONS.map(x=>'<button type="button" class="'+(x.id===mine.faction?'on':'')+'" data-a="olfac" data-fac="'+x.id+'" style="--fc:'+x.color+'"'+(taken.has(x.id)?' disabled title="Taken"':' title="'+esc(x.name)+'"')+'><img class="px" src="'+SP.factionURL(x.id)+'" width="34" height="34" alt="'+esc(x.name)+'"></button>').join('')
-  +'<span class="facname" style="--fc:'+(f?f.color:'#888')+'">'+(f?esc(f.name)+' <small>'+esc(E.CARDS[f.card].n)+': '+esc(E.CARDS[f.card].t)+'</small>':'No faction picked yet: one is assigned at random when the run starts.')+'</span></div></div>'}
 function myShip(p){const mine=p.players[p.you.seat]||{},taken=new Set(p.players.filter(x=>x.seat!==p.you.seat).map(x=>x.ship));
  return '<div class="olship"><label>Your ship</label><div class="shippick">'+E.SHIPS.map(x=>'<button type="button" class="'+(x.id===mine.ship?'on':'')+'" data-a="olship" data-ship="'+x.id+'"'+(taken.has(x.id)?' disabled title="Taken"':' title="'+x.name+'"')+'><img class="px" src="'+SP.shipURL(x.id)+'" width="40" height="40" alt="'+x.name+'"></button>').join('')+'<span class="shipname">'+esc(shipName(mine.ship))+'</span></div></div>'}
 /* ---------- applying what the server sends ---------- */
@@ -68,7 +65,7 @@ function apply(p){last=p;
  lobbySeen=true;
  if(!p.started||!p.game){ME=null;s=null;if(!$('overlay').hidden&&document.querySelector('#dialog [data-a=bossok]'))hide();lobbyScreen(p);roster(p);return}
  const g=p.game;s=g;ME=p.you.seat;s.warned=warned;
- const turnKey=g.round+':'+g.current,keepDialog=!$('overlay').hidden&&!document.querySelector('#dialog [data-a=bossok]')&&!document.querySelector('#dialog .undodlg')&&!g.undoReq&&screen==='game'&&!g.over&&E.unseen(g,ME)<0&&turnKey===apply.turnKey;apply.turnKey=turnKey;screen='game';
+ const turnKey=g.round+':'+g.current,keepDialog=!$('overlay').hidden&&!document.querySelector('#dialog [data-a=bossok]')&&!document.querySelector('#dialog .undodlg')&&!g.undoReq&&!document.querySelector('#dialog .facdlg')&&screen==='game'&&!g.over&&E.unseen(g,ME)<0&&turnKey===apply.turnKey;apply.turnKey=turnKey;screen='game';
  const mine=myTurn();if(mine&&!wasMyTurn){Music.sfx('turn');notify('Your turn, '+p.you.name+'.')}wasMyTurn=mine;
  if(g.over&&!recorded[p.server+g.id]){recorded[p.server+g.id]=1;try{record()}catch(e){}}
  render();roster(p);
@@ -90,7 +87,6 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
   if(last&&last.you&&last.you.host&&s&&s.over){const r=await post('/api/lobby',{op:'lobby'});if(!r.ok)notify(r.error)}
   else if(last&&last.you&&last.you.host)modal('<h2>Open the lobby?</h2><p>This ends the current run for everyone and returns the table to the lobby.</p><div class="btns"><button class="primary" data-a="ollobby">End run</button><button data-a="close">Cancel</button></div>');
   else notify('Only the host can start a new run.');return}
- if(a==='olfac'){const r=await post('/api/lobby',{op:'faction',faction:b.dataset.fac});if(!r.ok)notify(r.error);return}
  if(a==='olship'){const r=await post('/api/lobby',{op:'ship',ship:b.dataset.ship});if(!r.ok)notify(r.error);return}
  if(a==='oljoin'){const name=($('olname')||{}).value||'';const r=await post('/api/join',{name,hostKey});if(!r.ok)return joinScreen(r.error);token=r.token;serverId=r.server;remember();version=0;poll();return}
  if(a==='olstart'||a==='olleave'||a==='olkick'||a==='olhost'||a==='olskip'||a==='ollobby'){
