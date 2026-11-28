@@ -41,7 +41,7 @@ function joinScreen(msg){screen='setup';hide();$('status').innerHTML='';
 
 const SETTINGS=[['actionLimit','Orders per turn',[[2,'Two orders (recommended)'],[0,'Unlimited']]],['winMode','Victory',[['rounds','Highest favor after set rounds'],['profit','Race to a favor target']]],
  ['rounds','Run length',[[10,'10 rounds'],[12,'12 rounds'],[16,'16 rounds (recommended)'],[20,'20 rounds']]],['target','Favor target',[[50,'50 favor'],[80,'80 favor'],[120,'120 favor']]],
- ['boardSize','Contract board',[[3,'3 contracts'],[4,'4 contracts'],[5,'5 contracts']]],['order','Turn order',[['listed','In order of joining'],['random','Random']]],['market','Card market',[['standard','Standard: 6 core + 6 random specialists'],['full','Full: every card']]],['threats','Pirate threats',[[true,'On: boss battles (recommended)'],[false,'Off']]]];
+ ['boardSize','Contract board',[[3,'3 contracts'],[4,'4 contracts'],[5,'5 contracts']]],['factions','Factions',[[false,'Off'],[true,'On: each captain picks a faction']]],['order','Turn order',[['listed','In order of joining'],['random','Random']]],['market','Card market',[['standard','Standard: 6 core + 6 random specialists'],['full','Full: every card']]],['threats','Pirate threats',[[true,'On: boss battles (recommended)'],[false,'Off']]]];
 function lobbyScreen(p){screen='setup';const host=p.you.host,S=p.settings;
  const fields=SETTINGS.filter(([k])=>!(k==='rounds'&&S.winMode!=='rounds')&&!(k==='target'&&S.winMode!=='profit')).map(([k,label,opts])=>'<div><label for="ol_'+k+'">'+label+'</label>'+(host
   ?'<select id="ol_'+k+'" data-ol="'+k+'">'+opts.map(([v,l])=>'<option value="'+v+'"'+(String(S[k])===String(v)?' selected':'')+'>'+l+'</option>').join('')+'</select>'
@@ -51,11 +51,14 @@ function lobbyScreen(p){screen='setup';const host=p.you.host,S=p.settings;
   +Array.from({length:6-p.players.length},()=>'<li class="empty"><i></i>Open seat</li>').join('');
  $('stage').innerHTML='<section class="setup online"><div><div class="eyebrow">Online table · lobby</div><h1>'+(p.players.length)+' of 6<br><span>captains aboard.</span></h1>'
  +'<p class="mute" style="max-width:520px">'+(host?'You are the host. Send the table link to your friends, pick the rules, then launch when everyone is here.':'Waiting for the host to launch the run.')+'</p>'
- +'<ol class="seats">'+seats+'</ol>'+myShip(p)
+ +'<ol class="seats">'+seats+'</ol>'+myShip(p)+(p.settings.factions?myFaction(p):'')
  +'<div class="fields">'+fields+'</div>'
  +'<div class="btns">'+(host?'<button class="primary" data-a="olstart"'+(p.players.length<2?' disabled':'')+'>'+(p.players.length<2?'Need 2 captains':'Launch run')+'</button>':'')+'<button data-a="olleave">Leave table</button><button data-a="rules">How to play</button></div></div>'
  +'<div class="heroart">'+px(SP.heroURL(),576,256)+'<div class="feat"><div><b>LINK</b> Share the address in your browser bar. Everyone who opens it can join until the run starts.</div><div><b>TURNS</b> Only the captain whose turn it is can act. Everyone else watches the board update.</div><div><b>RECONNECT</b> Closed the tab? Open the link again in the same browser to get your seat back.</div></div></div></section>'}
 
+function myFaction(p){const mine=p.players[p.you.seat]||{},taken=new Set(p.players.filter(x=>x.seat!==p.you.seat).map(x=>x.faction)),f=E.FACTIONS.find(x=>x.id===mine.faction);
+ return '<div class="olship"><label>Your faction</label><div class="facpick">'+E.FACTIONS.map(x=>'<button type="button" class="'+(x.id===mine.faction?'on':'')+'" data-a="olfac" data-fac="'+x.id+'" style="--fc:'+x.color+'"'+(taken.has(x.id)?' disabled title="Taken"':' title="'+esc(x.name)+'"')+'><img class="px" src="'+SP.factionURL(x.id)+'" width="34" height="34" alt="'+esc(x.name)+'"></button>').join('')
+  +'<span class="facname" style="--fc:'+(f?f.color:'#888')+'">'+(f?esc(f.name)+' <small>'+esc(E.CARDS[f.card].n)+': '+esc(E.CARDS[f.card].t)+'</small>':'No faction picked yet: one is assigned at random when the run starts.')+'</span></div></div>'}
 function myShip(p){const mine=p.players[p.you.seat]||{},taken=new Set(p.players.filter(x=>x.seat!==p.you.seat).map(x=>x.ship));
  return '<div class="olship"><label>Your ship</label><div class="shippick">'+E.SHIPS.map(x=>'<button type="button" class="'+(x.id===mine.ship?'on':'')+'" data-a="olship" data-ship="'+x.id+'"'+(taken.has(x.id)?' disabled title="Taken"':' title="'+x.name+'"')+'><img class="px" src="'+SP.shipURL(x.id)+'" width="40" height="40" alt="'+x.name+'"></button>').join('')+'<span class="shipname">'+esc(shipName(mine.ship))+'</span></div></div>'}
 /* ---------- applying what the server sends ---------- */
@@ -87,6 +90,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
   if(last&&last.you&&last.you.host&&s&&s.over){const r=await post('/api/lobby',{op:'lobby'});if(!r.ok)notify(r.error)}
   else if(last&&last.you&&last.you.host)modal('<h2>Open the lobby?</h2><p>This ends the current run for everyone and returns the table to the lobby.</p><div class="btns"><button class="primary" data-a="ollobby">End run</button><button data-a="close">Cancel</button></div>');
   else notify('Only the host can start a new run.');return}
+ if(a==='olfac'){const r=await post('/api/lobby',{op:'faction',faction:b.dataset.fac});if(!r.ok)notify(r.error);return}
  if(a==='olship'){const r=await post('/api/lobby',{op:'ship',ship:b.dataset.ship});if(!r.ok)notify(r.error);return}
  if(a==='oljoin'){const name=($('olname')||{}).value||'';const r=await post('/api/join',{name,hostKey});if(!r.ok)return joinScreen(r.error);token=r.token;serverId=r.server;remember();version=0;poll();return}
  if(a==='olstart'||a==='olleave'||a==='olkick'||a==='olhost'||a==='olskip'||a==='ollobby'){
@@ -97,7 +101,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
   if(op==='leave'&&r.ok){forget();joinScreen('')}return}
 },true);
 document.addEventListener('change',async e=>{const k=e.target.dataset&&e.target.dataset.ol;if(!k)return;e.stopImmediatePropagation();
- let v=e.target.value;v=k==='winMode'||k==='market'||k==='order'?v:k==='threats'?v==='true':Number(v);const r=await post('/api/lobby',{op:'settings',settings:{[k]:v}});if(!r.ok)notify(r.error)},true);
+ let v=e.target.value;v=k==='winMode'||k==='market'||k==='order'?v:k==='threats'||k==='factions'?v==='true':Number(v);const r=await post('/api/lobby',{op:'settings',settings:{[k]:v}});if(!r.ok)notify(r.error)},true);
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='olname'){e.preventDefault();const b=document.querySelector('[data-a=oljoin]');if(b)b.click()}});
 
 /* ---------- start ---------- */

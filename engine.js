@@ -27,7 +27,14 @@ const CARDS={
  reactor:{n:'Fusion Reactor',cat:'res',kind:'Propulsion',g:{fuel:4,cargo:1,cr:1},cost:4,pay:{fuel:2},t:'Gain 4 fuel, 1 cargo space and 1 credit.'},
  hidden:{n:'Hidden Compartments',cat:'res',kind:'Storage',g:{cargo:3,cr:2},cost:4,pay:{cargo:2},t:'Gain 3 cargo space and 2 credits.'},
  quantum:{n:'Quantum Core',cat:'res',kind:'Research',g:{tech:4},cost:5,pay:{tech:2},t:'Gain 4 tech.'},
- drill:{n:'Deep-Core Drill',cat:'res',kind:'Mining',g:{ore:3,cargo:1},cost:4,pay:{ore:2},t:'Gain 3 ore and 1 cargo space.'}
+ drill:{n:'Deep-Core Drill',cat:'res',kind:'Mining',g:{ore:3,cargo:1},cost:4,pay:{ore:2},t:'Gain 3 ore and 1 cargo space.'},
+ // faction signature cards: one in each captain's starting deck when factions are on; never in the market
+ broadside:{n:'Covenant Broadside',cat:'act',kind:'Iron Covenant',fac:'covenant',g:{combat:3,fuel:1},cost:0,t:'Gain 3 combat and 1 fuel.'},
+ datacore:{n:'Lumen Datacore',cat:'res',kind:'Lumen Syndicate',fac:'lumen',g:{tech:2},cost:0,t:'Gain 2 tech.'},
+ ledger:{n:'Gilded Ledger',cat:'res',kind:'Gilded Exchange',fac:'gilded',g:{cr:5},buys:1,cost:0,t:'Gain 5 credits and 1 extra deal.'},
+ orehauler:{n:'Union Ore Hauler',cat:'res',kind:"Drift Haulers' Union",fac:'union',g:{ore:1,cargo:2,cr:1},cost:0,t:'Gain 1 ore, 2 cargo space and 1 credit.'},
+ tanker:{n:'Ember Tanker',cat:'res',kind:'Ember Cartel',fac:'ember',g:{fuel:3,cargo:2,cr:2},cost:0,t:'Gain 3 fuel, 2 cargo space and 2 credits.'},
+ contacts:{n:'Ghost Contacts',cat:'res',kind:'Ghost Runners',fac:'ghost',g:{cargo:1},draw:2,cost:0,t:'Draw 2 cards and gain 1 cargo space.'}
 };
 const CASH=4; // credits per 1 profit when cashing in
 const MERC=2; // credits per 1 boss damage when hiring mercenaries
@@ -46,6 +53,18 @@ const SHIPS=[
  {id:'miner',name:'Rockjaw Miner'},{id:'clipper',name:'Solar Clipper'},{id:'tug',name:'Ironclad Tug'},{id:'cruiser',name:'Aurora Cruiser'}];
 const SHIP_IDS=SHIPS.map(x=>x.id);
 // keep chosen ships if valid and unique; give everyone else the first free ones, in order
+/* factions (setup option): each captain picks one, unique at a table; it adds its signature card to the starting deck */
+const FACTIONS=[
+ {id:'covenant',name:'Iron Covenant',card:'broadside',color:'#f0654f',about:'Mercenary warfleet. Combat and the fuel to run a pirate patrol, for armed contracts and bosses.'},
+ {id:'lumen',name:'Lumen Syndicate',card:'datacore',color:'#5aa6f0',about:'Tech cartel from Lumen Gate. Steady tech, the scarcest input.'},
+ {id:'gilded',name:'Gilded Exchange',card:'ledger',color:'#ffd05a',about:'Bankers and brokers. A pile of credits and an extra purchase to build the deck fast.'},
+ {id:'union',name:"Drift Haulers' Union",card:'orehauler',color:'#e68a52',about:'Miners and bulk freighters. Ore, a big hold to carry it, and a little cash.'},
+ {id:'ember',name:'Ember Cartel',card:'tanker',color:'#f5a52d',about:'Fuel barons. Fuel, cargo space and spare credits on every run.'},
+ {id:'ghost',name:'Ghost Runners',card:'contacts',color:'#a384f0',about:'True smugglers. Their contacts dig up extra cards when it counts.'}
+],FACTION_IDS=FACTIONS.map(f=>f.id);
+// keep valid, unique picks; give everyone else (computer captains included) a random remaining faction
+function assignFactions(s,players){const used=new Set();players.forEach(p=>{if(FACTION_IDS.includes(p.faction)&&!used.has(p.faction))used.add(p.faction);else p.faction=null});
+ const left=shuffle(s,FACTION_IDS.filter(f=>!used.has(f)));players.forEach(p=>{if(!p.faction)p.faction=left.shift()||FACTION_IDS[0]});return players}
 function assignShips(players){const used=new Set();players.forEach(p=>{if(SHIP_IDS.includes(p.ship)&&!used.has(p.ship))used.add(p.ship);else p.ship=null});
  players.forEach(p=>{if(!p.ship){p.ship=SHIP_IDS.find(id=>!used.has(id))||SHIP_IDS[0];used.add(p.ship)}});return players}
 const BOSS_KEYS=Object.keys(BOSSES),STAGE_HP=[2.4,5.2,6.2];
@@ -141,11 +160,15 @@ function create(o={}){
  // optional random turn order (seeded, so a run can be replayed); the online server shuffles its own seats instead
  s.order=o.order==='random'?'random':'listed';if(s.order==='random'){for(let i=0;i<12;i++)rnd(s);cfg=shuffle(s,cfg.slice())}   // warm the generator: its first draws track small seeds
  cfg.forEach(c=>{
-  const p={name:String(c.name||'Captain').slice(0,24),bot:!!c.bot,ship:c.ship||null,deck:[],hand:[],played:[],discard:[],pool:fresh(),
+  const p={name:String(c.name||'Captain').slice(0,24),bot:!!c.bot,ship:c.ship||null,faction:c.faction||null,deck:[],hand:[],played:[],discard:[],pool:fresh(),
    buys:1,actions:s.actionLimit,patrolled:false,scrapped:false,profit:0,completed:0,turnPlayed:[],scrappedCards:[]};
-  p.deck=shuffle(s,['scrip','scrip','scrip','scrip','drum','drum','drum','sample','sample','rig']);
-  draw(s,p,5);s.players.push(p);
+  s.players.push(p);
  });
+ s.factions=!!o.factions;
+ if(s.factions)assignFactions(s,s.players);else s.players.forEach(p=>p.faction=null);
+ s.players.forEach(p=>{const start=['scrip','scrip','scrip','scrip','drum','drum','drum','sample','sample','rig'];
+  if(s.factions)start.push(FACTIONS.find(f=>f.id===p.faction).card);
+  p.deck=shuffle(s,start);draw(s,p,5)});
  s.cdeck=shuffle(s,TEMPLATES.flatMap(t=>Array.from({length:t.copies||3},()=>t)).map((t,i)=>{const c={...t,req:{...t.req},id:i};delete c.copies;return c}));
  const e=s.cdeck.findIndex(c=>c.name==='Seed Stock');
  s.board.push(s.cdeck.splice(e,1)[0]);
@@ -331,6 +354,6 @@ function botTurn(s){if(s.over||!me(s).bot)return false;for(const _ of botSteps(s
 const commit=f=>function(s,...a){const r=f(s,...a);if(r)clearUndo(s);return r};
 return {canUndo,requestUndo,voteUndo,cancelUndo,undoLabel,undoVoters,
  begin:commit(begin),buy:commit(buy),complete:commit(complete),patrol:commit(patrol),cashIn:commit(cashIn),scrap:commit(scrap),attack:commit(attack),mercs:commit(mercs),
- buyoutTargets,canAfford,RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
+ buyoutTargets,canAfford,FACTIONS,FACTION_IDS,RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;

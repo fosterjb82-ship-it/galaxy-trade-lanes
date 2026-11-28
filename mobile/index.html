@@ -717,6 +717,25 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .badge.tl.adv{display:flex;align-items:center;gap:3px;border-color:var(--amber)}
 .badge .plus,.mpop .plus,.enc .plus,.cdetail .plus{font-style:normal;opacity:.7;margin:0 1px}
 .mband.mini .badge.tl.adv{gap:1px}
+/* ---------- factions ---------- */
+.facico{image-rendering:pixelated;vertical-align:middle;margin-left:8px;flex:none}
+.facpick{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}
+.facpick button{padding:3px;min-height:0;border:2px solid var(--line);background:var(--panel2);line-height:0}
+.facpick button.on{border-color:var(--fc);box-shadow:0 0 0 2px var(--fc) inset,0 0 10px var(--fc)}
+.facpick button:disabled{opacity:.3}
+.facpick img{image-rendering:pixelated}
+.facname{flex:1 1 100%;font:600 15px var(--disp);color:var(--fc);line-height:1.25}
+.facname small{display:block;font:400 12.5px var(--body);color:var(--mute)}
+.facline{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fc)}
+.factag{position:absolute;left:50%;top:4px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:1px 6px 1px 3px;background:#05080fe6;border:1px solid var(--fc);color:var(--fc);font:600 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.factag img{image-rendering:pixelated}
+.facenc li{border-left:4px solid var(--fc)!important;flex-wrap:wrap}
+.facenc li>img{width:56px!important;height:56px!important;image-rendering:pixelated}
+.facenc li b{color:var(--fc)}
+.facsig{display:flex;gap:10px;align-items:center;flex:1 1 320px;border-top:1px dashed var(--line);padding-top:6px}
+.facsig b{color:var(--ink)!important;display:block}
+.plate h2,.stand div>span:first-child{display:flex;align-items:center;gap:6px;min-width:0}
+.plate h2 .facico,.stand .facico{margin-left:0}
 /* Phone build. Loaded after style.css and overrides it.
    Layout: compact header, a fixed strip with this turn's pool, one scrolling tab body,
    and a tab bar in thumb reach at the bottom. Single dark look by choice. */
@@ -890,7 +909,14 @@ const CARDS={
  reactor:{n:'Fusion Reactor',cat:'res',kind:'Propulsion',g:{fuel:4,cargo:1,cr:1},cost:4,pay:{fuel:2},t:'Gain 4 fuel, 1 cargo space and 1 credit.'},
  hidden:{n:'Hidden Compartments',cat:'res',kind:'Storage',g:{cargo:3,cr:2},cost:4,pay:{cargo:2},t:'Gain 3 cargo space and 2 credits.'},
  quantum:{n:'Quantum Core',cat:'res',kind:'Research',g:{tech:4},cost:5,pay:{tech:2},t:'Gain 4 tech.'},
- drill:{n:'Deep-Core Drill',cat:'res',kind:'Mining',g:{ore:3,cargo:1},cost:4,pay:{ore:2},t:'Gain 3 ore and 1 cargo space.'}
+ drill:{n:'Deep-Core Drill',cat:'res',kind:'Mining',g:{ore:3,cargo:1},cost:4,pay:{ore:2},t:'Gain 3 ore and 1 cargo space.'},
+ // faction signature cards: one in each captain's starting deck when factions are on; never in the market
+ broadside:{n:'Covenant Broadside',cat:'act',kind:'Iron Covenant',fac:'covenant',g:{combat:3,fuel:1},cost:0,t:'Gain 3 combat and 1 fuel.'},
+ datacore:{n:'Lumen Datacore',cat:'res',kind:'Lumen Syndicate',fac:'lumen',g:{tech:2},cost:0,t:'Gain 2 tech.'},
+ ledger:{n:'Gilded Ledger',cat:'res',kind:'Gilded Exchange',fac:'gilded',g:{cr:5},buys:1,cost:0,t:'Gain 5 credits and 1 extra deal.'},
+ orehauler:{n:'Union Ore Hauler',cat:'res',kind:"Drift Haulers' Union",fac:'union',g:{ore:1,cargo:2,cr:1},cost:0,t:'Gain 1 ore, 2 cargo space and 1 credit.'},
+ tanker:{n:'Ember Tanker',cat:'res',kind:'Ember Cartel',fac:'ember',g:{fuel:3,cargo:2,cr:2},cost:0,t:'Gain 3 fuel, 2 cargo space and 2 credits.'},
+ contacts:{n:'Ghost Contacts',cat:'res',kind:'Ghost Runners',fac:'ghost',g:{cargo:1},draw:2,cost:0,t:'Draw 2 cards and gain 1 cargo space.'}
 };
 const CASH=4; // credits per 1 profit when cashing in
 const MERC=2; // credits per 1 boss damage when hiring mercenaries
@@ -909,6 +935,18 @@ const SHIPS=[
  {id:'miner',name:'Rockjaw Miner'},{id:'clipper',name:'Solar Clipper'},{id:'tug',name:'Ironclad Tug'},{id:'cruiser',name:'Aurora Cruiser'}];
 const SHIP_IDS=SHIPS.map(x=>x.id);
 // keep chosen ships if valid and unique; give everyone else the first free ones, in order
+/* factions (setup option): each captain picks one, unique at a table; it adds its signature card to the starting deck */
+const FACTIONS=[
+ {id:'covenant',name:'Iron Covenant',card:'broadside',color:'#f0654f',about:'Mercenary warfleet. Combat and the fuel to run a pirate patrol, for armed contracts and bosses.'},
+ {id:'lumen',name:'Lumen Syndicate',card:'datacore',color:'#5aa6f0',about:'Tech cartel from Lumen Gate. Steady tech, the scarcest input.'},
+ {id:'gilded',name:'Gilded Exchange',card:'ledger',color:'#ffd05a',about:'Bankers and brokers. A pile of credits and an extra purchase to build the deck fast.'},
+ {id:'union',name:"Drift Haulers' Union",card:'orehauler',color:'#e68a52',about:'Miners and bulk freighters. Ore, a big hold to carry it, and a little cash.'},
+ {id:'ember',name:'Ember Cartel',card:'tanker',color:'#f5a52d',about:'Fuel barons. Fuel, cargo space and spare credits on every run.'},
+ {id:'ghost',name:'Ghost Runners',card:'contacts',color:'#a384f0',about:'True smugglers. Their contacts dig up extra cards when it counts.'}
+],FACTION_IDS=FACTIONS.map(f=>f.id);
+// keep valid, unique picks; give everyone else (computer captains included) a random remaining faction
+function assignFactions(s,players){const used=new Set();players.forEach(p=>{if(FACTION_IDS.includes(p.faction)&&!used.has(p.faction))used.add(p.faction);else p.faction=null});
+ const left=shuffle(s,FACTION_IDS.filter(f=>!used.has(f)));players.forEach(p=>{if(!p.faction)p.faction=left.shift()||FACTION_IDS[0]});return players}
 function assignShips(players){const used=new Set();players.forEach(p=>{if(SHIP_IDS.includes(p.ship)&&!used.has(p.ship))used.add(p.ship);else p.ship=null});
  players.forEach(p=>{if(!p.ship){p.ship=SHIP_IDS.find(id=>!used.has(id))||SHIP_IDS[0];used.add(p.ship)}});return players}
 const BOSS_KEYS=Object.keys(BOSSES),STAGE_HP=[2.4,5.2,6.2];
@@ -1004,11 +1042,15 @@ function create(o={}){
  // optional random turn order (seeded, so a run can be replayed); the online server shuffles its own seats instead
  s.order=o.order==='random'?'random':'listed';if(s.order==='random'){for(let i=0;i<12;i++)rnd(s);cfg=shuffle(s,cfg.slice())}   // warm the generator: its first draws track small seeds
  cfg.forEach(c=>{
-  const p={name:String(c.name||'Captain').slice(0,24),bot:!!c.bot,ship:c.ship||null,deck:[],hand:[],played:[],discard:[],pool:fresh(),
+  const p={name:String(c.name||'Captain').slice(0,24),bot:!!c.bot,ship:c.ship||null,faction:c.faction||null,deck:[],hand:[],played:[],discard:[],pool:fresh(),
    buys:1,actions:s.actionLimit,patrolled:false,scrapped:false,profit:0,completed:0,turnPlayed:[],scrappedCards:[]};
-  p.deck=shuffle(s,['scrip','scrip','scrip','scrip','drum','drum','drum','sample','sample','rig']);
-  draw(s,p,5);s.players.push(p);
+  s.players.push(p);
  });
+ s.factions=!!o.factions;
+ if(s.factions)assignFactions(s,s.players);else s.players.forEach(p=>p.faction=null);
+ s.players.forEach(p=>{const start=['scrip','scrip','scrip','scrip','drum','drum','drum','sample','sample','rig'];
+  if(s.factions)start.push(FACTIONS.find(f=>f.id===p.faction).card);
+  p.deck=shuffle(s,start);draw(s,p,5)});
  s.cdeck=shuffle(s,TEMPLATES.flatMap(t=>Array.from({length:t.copies||3},()=>t)).map((t,i)=>{const c={...t,req:{...t.req},id:i};delete c.copies;return c}));
  const e=s.cdeck.findIndex(c=>c.name==='Seed Stock');
  s.board.push(s.cdeck.splice(e,1)[0]);
@@ -1194,7 +1236,7 @@ function botTurn(s){if(s.over||!me(s).bot)return false;for(const _ of botSteps(s
 const commit=f=>function(s,...a){const r=f(s,...a);if(r)clearUndo(s);return r};
 return {canUndo,requestUndo,voteUndo,cancelUndo,undoLabel,undoVoters,
  begin:commit(begin),buy:commit(buy),complete:commit(complete),patrol:commit(patrol),cashIn:commit(cashIn),scrap:commit(scrap),attack:commit(attack),mercs:commit(mercs),
- buyoutTargets,canAfford,RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
+ buyoutTargets,canAfford,FACTIONS,FACTION_IDS,RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;
 const Sprites=(function(){
@@ -1417,6 +1459,32 @@ const EMB={
   [[52,18,PAL.amber[6]],[54,27,PAL.amber[5]],[50,30,PAL.amber[6]],[55,22,PAL.amber[4]]].forEach(([x,y,c])=>L.set(x,y,c));
   [[40,36],[46,40],[34,42]].forEach(([x,y])=>{L.rect(x,y,3,3,PAL.rust[4]);L.set(x,y,PAL.rust[5])});
   box3d(L,6,36,20,12,PAL.green);L.rect(9,38,14,2,PAL.green[5]);L.rect(9,41,3,3,PAL.rust[4]);L.rect(14,42,3,3,PAL.rust[3])},
+ // faction signature cards
+ broadside(L){L.poly([[6,30],[70,30],[82,36],[70,42],[10,42]],PAL.steel[3]);L.poly([[6,30],[70,30],[74,32],[8,32]],PAL.steel[5]);L.rect(10,38,60,2,PAL.steel[2]);
+  box3d(L,24,20,30,10,PAL.steel);L.rect(28,23,4,2,PAL.red[5]);L.rect(36,23,4,2,PAL.red[5]);L.rect(44,23,4,2,PAL.amber[5]);L.rect(36,12,2,8,PAL.steel[4]);L.set(37,11,PAL.red[6]);
+  [[14,33],[30,33],[46,33]].forEach(([x,y],i)=>{L.rect(x,y,10,3,PAL.steel[1]);L.rect(x+10,y,2,3,PAL.steel[5]);const fx=x+12;L.poly([[fx,y-3],[fx+8,y+1],[fx,y+5]],PAL.amber[5]);L.poly([[fx,y-1],[fx+4,y+1],[fx,y+3]],PAL.amber[6]);
+   L.set(fx+10,y-2-i,PAL.red[5]);L.set(fx+12,y+4+i,PAL.red[4])});
+  L.rect(0,34,6,4,PAL.teal[4]);L.set(0,35,PAL.teal[6])},
+ datacore(L){box3d(L,16,6,56,40,PAL.blue);L.rect(19,9,50,34,PAL.blue[0]);
+  for(let y=12;y<40;y+=4)L.rect(21,y,(y*7)%18+6,1,PAL.blue[3]);for(let y=12;y<40;y+=4)L.rect(64-((y*5)%14),y,(y*5)%14,1,PAL.teal[3]);
+  L.ellipse(44,26,17,9,PAL.teal[5]);L.ellipse(44,26,15,7,PAL.blue[1]);L.circle(44,26,6,PAL.blue[4]);L.circle(44,26,3,PAL.space[0]);L.set(42,24,PAL.blue[6]);L.set(43,24,PAL.blue[6]);
+  L.rect(40,46,8,4,PAL.steel[3]);L.rect(32,49,24,2,PAL.steel[4])},
+ ledger(L){L.poly([[10,18],[44,14],[44,46],[10,48]],PAL.steel[5]);L.poly([[44,14],[78,18],[78,48],[44,46]],PAL.steel[6]);L.line(44,14,44,46,PAL.steel[2]);
+  for(let i=0;i<6;i++){L.line(14,22+i*4,40,19+i*4,PAL.steel[3]);L.line(48,19+i*4,74,22+i*4,i%2?PAL.green[3]:PAL.steel[3])}
+  L.poly([[10,48],[44,46],[78,48],[78,50],[44,48],[10,50]],PAL.rust[3]);coins(L,66,46,4,6);coins(L,22,46,2,5);
+  L.poly([[34,10],[36,2],[40,7],[44,0],[48,7],[52,2],[54,10]],PAL.amber[5]);L.rect(34,10,20,3,PAL.amber[4]);[[38,11],[44,11],[50,11]].forEach(([x,y])=>L.set(x,y,PAL.red[5]));L.set(44,4,PAL.amber[6])},
+ orehauler(L){L.poly([[8,34],[66,34],[76,40],[66,46],[12,46]],PAL.steel[3]);L.rect(8,34,58,2,PAL.steel[5]);L.rect(66,30,10,6,PAL.steel[4]);L.rect(68,31,5,2,PAL.teal[5]);
+  L.rect(14,22,48,12,PAL.steel[1]);L.rect(14,22,48,2,PAL.steel[4]);[[16,22],[38,22]].forEach(([x])=>L.rect(x,18,2,16,PAL.steel[4]));
+  [[20,20,5],[30,18,6],[42,19,5],[52,20,6],[26,24,4],[48,24,4]].forEach(([x,y,r],i)=>{L.ellipse(x,y,r,r-1,PAL.rust[i%2?3:4]);L.set(x-1,y-1,PAL.rust[5]);if(i%3===0)L.set(x+1,y,PAL.amber[5])});
+  L.rect(2,37,6,5,PAL.amber[4]);L.set(1,39,PAL.amber[6])},
+ tanker(L){L.poly([[4,36],[74,36],[84,42],[74,48],[8,48]],PAL.steel[3]);L.rect(4,36,70,2,PAL.steel[5]);
+  [[10,18],[30,18],[50,18]].forEach(([x,y])=>{cyl(L,x,y,18,18,PAL.amber);L.rect(x+3,y+8,12,2,PAL.red[4])});
+  L.rect(70,28,8,8,PAL.steel[4]);L.rect(72,30,4,2,PAL.teal[5]);
+  L.poly([[38,4],[44,12],[42,16],[46,14],[44,20],[36,20],[34,14],[37,15],[35,10]],PAL.red[4]);L.poly([[39,10],[42,15],[40,19],[37,17]],PAL.amber[5]);L.set(39,16,PAL.amber[6])},
+ contacts(L){L.poly([[26,50],[30,26],[44,12],[58,26],[62,50]],PAL.violet[1]);L.poly([[30,26],[44,12],[58,26],[54,30],[34,30]],PAL.violet[2]);
+  L.ellipse(44,28,9,10,PAL.violet[5]);L.ellipse(44,26,8,8,PAL.violet[6]);L.rect(39,25,3,4,PAL.space[0]);L.rect(46,25,3,4,PAL.space[0]);L.rect(42,32,4,2,PAL.violet[3]);
+  [[6,30,-.3],[14,28,-.15],[66,28,.15],[74,30,.3]].forEach(([x,y])=>{L.rect(x,y,10,14,PAL.steel[5]);L.rect(x+1,y+1,8,12,PAL.violet[3]);L.set(x+4,y+6,PAL.violet[6]);L.set(x+5,y+6,PAL.violet[6])});
+  [[20,12],[70,14],[56,6]].forEach(([x,y])=>{L.set(x,y,PAL.teal[6]);L.set(x+1,y,PAL.teal[4])})},
  charter(L){cyl(L,14,4,8,44,PAL.amber);cyl(L,62,4,8,44,PAL.amber);
   L.rect(22,6,40,40,PAL.rust[6]);L.rect(22,6,40,2,PAL.rust[5]);L.rect(22,44,40,2,PAL.rust[5]);
   L.rect(27,11,30,3,PAL.violet[3]);for(let i=0;i<4;i++)L.rect(27,18+i*5,i===3?14:24,2,PAL.steel[3]);
@@ -1426,7 +1494,7 @@ const EMB={
   L.poly([[65,30],[66.6,34],[71,34],[67.4,36.6],[68.8,41],[65,38.4],[61.2,41],[62.6,36.6],[59,34],[63.4,34]],PAL.amber[6]);
   [[78,8],[82,20],[76,24]].forEach(([x,y],i)=>{L.set(x,y,PAL.amber[6]);L.set(x-1,y,PAL.amber[5-i%2]);L.set(x+1,y,PAL.amber[5-i%2]);L.set(x,y-1,PAL.amber[5]);L.set(x,y+1,PAL.amber[5])})}
 };
-const TINT={scrip:PAL.amber,drum:PAL.amber,sample:PAL.rust,rig:PAL.teal,deal:PAL.amber,house:PAL.blue,pack:PAL.teal,borer:PAL.rust,vault:PAL.blue,quarter:PAL.teal,barge:PAL.teal,gunship:PAL.red,probe:PAL.violet,broker:PAL.blue,deck:PAL.amber,wing:PAL.red,buyout:PAL.red,salvage:PAL.rust,weapons:PAL.red,charter:PAL.violet,reactor:PAL.amber,hidden:PAL.green,quantum:PAL.blue,drill:PAL.rust};
+const TINT={scrip:PAL.amber,drum:PAL.amber,sample:PAL.rust,rig:PAL.teal,deal:PAL.amber,house:PAL.blue,pack:PAL.teal,borer:PAL.rust,vault:PAL.blue,quarter:PAL.teal,barge:PAL.teal,gunship:PAL.red,probe:PAL.violet,broker:PAL.blue,deck:PAL.amber,wing:PAL.red,buyout:PAL.red,salvage:PAL.rust,weapons:PAL.red,charter:PAL.violet,reactor:PAL.amber,hidden:PAL.green,quantum:PAL.blue,drill:PAL.rust,broadside:PAL.red,datacore:PAL.blue,ledger:PAL.green,orehauler:PAL.rust,tanker:PAL.amber,contacts:PAL.violet};
 function cardArt(k){const s=cardBg(TINT[k]||PAL.teal,k.length*7+k.charCodeAt(0));const L=new S(88,52);EMB[k](L);L.outline(OUT);s.blit(L);return s}
 
 /* ---- hero freighter (144x64) ---- */
@@ -1565,12 +1633,24 @@ function backTile(kind){const r=BACK[kind]||PAL.amber,s=new S(16,16);s.rect(0,0,
  for(let i=0;i<16;i++){s.set(i,i,r[1]);s.set((i+8)%16,i,r[1])}                         // fine diagonal lattice
  s.set(8,8,r[3]);s.set(0,0,r[3]);s.set(7,8,r[2]);s.set(9,8,r[2]);s.set(8,7,r[2]);s.set(8,9,r[2]);
  s.set(4,12,PAL.steel[3]);s.set(13,3,PAL.steel[4]);return s}
+/* faction icons: 20x20 badges in the faction colour */
+const FAC_ART={covenant:PAL.red,lumen:PAL.blue,gilded:PAL.amber,union:PAL.rust,ember:PAL.amber,ghost:PAL.violet};
+function factionIcon(id){const s=new S(20,20),r=FAC_ART[id]||PAL.steel,c=9.5;
+ for(let y=0;y<20;y++)for(let x=0;x<20;x++){const d=Math.hypot(x-c,y-c);if(d<=9.6)s.set(x,y,d>8.2?r[4]:d>7.4?r[2]:PAL.space[1])}
+ const G={
+  covenant(){s.line(5,5,14,14,PAL.steel[5]);s.line(14,5,5,14,PAL.steel[5]);s.line(5,6,13,14,PAL.steel[3]);s.line(13,5,5,13,PAL.steel[3]);s.rect(8,8,4,4,PAL.red[5]);s.set(9,9,PAL.red[6])},
+  lumen(){s.ellipse(9.5,9.5,6,3.5,PAL.blue[5]);s.ellipse(9.5,9.5,5,2.5,PAL.space[0]);s.circle(9.5,9.5,2,PAL.blue[4]);s.set(9,9,PAL.blue[6])},
+  gilded(){s.circle(9.5,11,5,PAL.amber[4]);s.circle(9.5,11,3.5,PAL.amber[5]);s.rect(9,9,2,4,PAL.amber[2]);s.poly([[5,7],[6,3],[8,5.5],[10,2.5],[12,5.5],[14,3],[15,7]],PAL.amber[6])},
+  union(){s.rect(5,8,9,7,PAL.rust[3]);s.rect(5,8,9,1,PAL.rust[5]);s.rect(9,8,1,7,PAL.rust[2]);s.line(11,3,16,8,PAL.steel[5]);s.line(13,3,15,5,PAL.steel[4]);s.rect(11,3,4,1,PAL.steel[6])},
+  ember(){s.poly([[9.5,3],[14,10],[13,15],[6,15],[5,10],[8,8]],PAL.red[4]);s.poly([[9.5,7],[12,12],[11,15],[8,15],[7,12]],PAL.amber[5]);s.set(9,13,PAL.amber[6]);s.set(10,13,PAL.amber[6])},
+  ghost(){s.poly([[5,15],[5,8],[7,5],[12,5],[14,8],[14,15],[12.5,13.5],[11,15],[9.5,13.5],[8,15],[6.5,13.5]],PAL.violet[5]);s.rect(7,8,2,3,PAL.space[0]);s.rect(11,8,2,3,PAL.space[0]);s.set(7,6,PAL.violet[6])}};
+ (G[id]||(()=>{}))();s.outline(OUT);return s}
 const cache={};
 function toURL(s){const c=document.createElement('canvas');c.width=s.w;c.height=s.h;const g=c.getContext('2d'),id=g.createImageData(s.w,s.h);id.data.set(s.d);g.putImageData(id,0,0);return c.toDataURL()}
 function memo(key,fn){return cache[key]||(cache[key]=toURL(fn()))}
 return {S,PAL,logo,backTile,BACK,scene,cardArt,hero,icon,boss,ship,SHIP_ART,patrolArt,cashArt,EMB,SCENES,
  sceneURL:(d,seed)=>memo('s:'+d+':'+(seed%4),()=>scene(d,(seed%4)+1)),
- cardURL:k=>memo('c:'+k,()=>cardArt(k)),bossURL:n=>memo('b:'+n,()=>boss(n)),shipURL:k=>memo('ship:'+k,()=>ship(k)),moveURL:k=>memo('m:'+k,()=>k==='cash'?cashArt():patrolArt()),heroURL:()=>memo('hero',hero),logoURL:()=>memo('logo',logo),backURL:k=>memo('back:'+k,()=>backTile(k)),iconURL:k=>memo('i:'+k,()=>icon(k))};
+ cardURL:k=>memo('c:'+k,()=>cardArt(k)),bossURL:n=>memo('b:'+n,()=>boss(n)),shipURL:k=>memo('ship:'+k,()=>ship(k)),moveURL:k=>memo('m:'+k,()=>k==='cash'?cashArt():patrolArt()),heroURL:()=>memo('hero',hero),logoURL:()=>memo('logo',logo),factionURL:id=>memo('fac:'+id,()=>factionIcon(id)),backURL:k=>memo('back:'+k,()=>backTile(k)),iconURL:k=>memo('i:'+k,()=>icon(k))};
 })();
 if(typeof module!=='undefined')module.exports=Sprites;
 const Music=(function(){
@@ -1752,7 +1832,7 @@ let s=null,screen='setup',scrollPos=0,handX=0;
 let ME=null;
 const myTurn=()=>!!s&&s.phase==='action'&&!s.over&&(ME===null?!s.players[s.current].bot&&!(typeof playingBack==='function'&&playingBack()):s.current===ME);
 const viewer=()=>ME===null?s.current:ME;
-const cfg={order:'listed',humans:1,bots:2,threats:1,market:'standard',cpuSpeed:'normal',winMode:'rounds',rounds:16,actionLimit:2,target:80,boardSize:4,ships:['hauler','courier','corvette','explorer','miner','clipper'],names:['Captain 1','Captain 2','Captain 3','Captain 4','Captain 5','Captain 6']};
+const cfg={factions:0,facs:['covenant','lumen','gilded','union','ember','ghost'],order:'listed',humans:1,bots:2,threats:1,market:'standard',cpuSpeed:'normal',winMode:'rounds',rounds:16,actionLimit:2,target:80,boardSize:4,ships:['hauler','courier','corvette','explorer','miner','clipper'],names:['Captain 1','Captain 2','Captain 3','Captain 4','Captain 5','Captain 6']};
 const BOTS=['Nova Syndicate','Orion Freight','Vesta Lines','Kestrel Haulage','Pallas Combine'];
 const MUS='gtl-mobile-music-v1';
 const SCALE=1.5,AW=Math.round(88*SCALE),AH=Math.round(52*SCALE);
@@ -1785,18 +1865,19 @@ function renderSetup(){
  +field('winMode','Victory',[['rounds','Highest favor after set rounds'],['profit','Race to a favor target']])
  +(cfg.winMode==='rounds'?field('rounds','Run length',[[10,'10 rounds'],[12,'12 rounds'],[16,'16 rounds (recommended)'],[20,'20 rounds']]):field('target','Favor target',[[50,'50 favor'],[80,'80 favor'],[120,'120 favor']]))
  +field('boardSize','Contract board',[[3,'3 contracts'],[4,'4 contracts'],[5,'5 contracts']])
+ +field('factions','Factions',[[0,'Off'],[1,'On: each captain picks a faction']])
  +field('order','Turn order',[['listed','As listed (captains first)'],['random','Random']])
  +field('market','Card market',[['standard','Standard: 6 core + 6 random specialists'],['full','Full: every card']])
  +field('threats','Pirate threats',[[1,'On: boss battles (recommended)'],[0,'Off']])
  +(cfg.bots?field('cpuSpeed','Computer turns',[['normal','Watch at normal speed'],['slow','Watch slowly'],['fast','Watch quickly'],['instant','Instant']]):'')
- +'</div><div class="capfields">'+Array.from({length:n},(_,i)=>'<div class="capf"><label for="nm'+i+'">Captain '+(i+1)+'</label><input id="nm'+i+'" data-name="'+i+'" maxlength="24" value="'+esc(cfg.names[i])+'">'+shipPicker(i,n)+'</div>').join('')+'</div>'
+ +'</div><div class="capfields">'+Array.from({length:n},(_,i)=>'<div class="capf"><label for="nm'+i+'">Captain '+(i+1)+'</label><input id="nm'+i+'" data-name="'+i+'" maxlength="24" value="'+esc(cfg.names[i])+'">'+shipPicker(i,n)+(cfg.factions?facPicker(i,n):'')+'</div>').join('')+'</div>'
  +'<div class="btns" style="margin-top:4px"><button class="primary" data-a="start">Launch run</button><button data-a="tutorial">Tutorial</button><button data-a="rules">How to play</button></div></div>'
  +'<div class="heroart">'+px(SP.heroURL(),576,256)+'<div class="feat"><div><b>BUILD</b> Bought cards land in your discard pile and arrive in later hands.</div><div><b>LOAD</b> Cargo space is per turn, so play Hold Rigs and Barges before you deliver.</div><div><b>CLAIM</b> The board is shared. First captain to pay a contract takes the favor.</div></div></div></section>';
 }
 function start(){collect();scrollPos=0;handX=0;
- const players=Array.from({length:cfg.humans},(_,i)=>({name:(cfg.names[i]||'').trim()||'Captain '+(i+1),ship:cfg.ships[i]}));
+ const players=Array.from({length:cfg.humans},(_,i)=>({name:(cfg.names[i]||'').trim()||'Captain '+(i+1),ship:cfg.ships[i],faction:cfg.factions?cfg.facs[i]:null}));
  for(let i=0;i<cfg.bots;i++)players.push({name:BOTS[i],bot:true});
- stopPlayback();vicSeat=null;s=E.create({...cfg,threats:cfg.threats!==0,mode:cfg.humans>1?'local':'solo',players});s.cpuSpeed=cfg.cpuSpeed;seenBoss=0;screen='game';
+ stopPlayback();vicSeat=null;s=E.create({...cfg,factions:!!cfg.factions,threats:cfg.threats!==0,mode:cfg.humans>1?'local':'solo',players});s.cpuSpeed=cfg.cpuSpeed;seenBoss=0;screen='game';
  if(s.order==='random')notify('Random turn order: '+s.players.map(p=>p.name).join(' → ')+'. '+s.players[0].name+' goes first.');settle();
 }
 const SPEEDS={slow:1100,normal:620,fast:260,instant:0},SPEED_NAMES={slow:'Slow',normal:'Normal',fast:'Fast',instant:'Instant'};
@@ -1900,7 +1981,7 @@ function bossPanel(compact){const b=s.boss,p=E.me(s),on=myTurn();
 function cardEl(k,idx,market){const c=E.CARDS[k],p=E.me(s),on=myTurn();
  if(market&&s.market[k]<1)return backEl('market',{cls:'soldout',label:'Sold out · '+c.n,attrs:' data-mk="'+k+'"'});
  let h='<article class="pc '+c.cat+(k==='buyout'&&!market?' bo':'')+(market&&on&&p.buys>0&&s.market[k]>0&&E.canAfford(s,k)?' can':'')+' notch"'+(market?' data-mk="'+k+'"':' data-hand="'+idx+'"')+'><div class="art">'+px(SP.cardURL(k),AW,AH)+gainBadge(k)
- +(market?'<span class="badge tl'+(c.pay?' adv':'')+'">'+costIcons(k)+'</span><span class="badge tr">×'+s.market[k]+'</span>'+(isSpec(k)&&s.marketMode!=='full'?'<span class="spectag">Specialist</span>':''):'')+'</div>'
+ +(c.fac&&FAC(c.fac)?'<span class="factag" style="--fc:'+FAC(c.fac).color+'"><img class="px" src="'+SP.factionURL(c.fac)+'" width="14" height="14" alt="">Faction</span>':'')+(market?'<span class="badge tl'+(c.pay?' adv':'')+'">'+costIcons(k)+'</span><span class="badge tr">×'+s.market[k]+'</span>'+(isSpec(k)&&s.marketMode!=='full'?'<span class="spectag">Specialist</span>':''):'')+'</div>'
  +'<div class="pb"><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><h3>'+c.n+'</h3>'+(market?'<div class="fx">'+shortFx(k)+'</div>':'')+'<p>'+c.t+'</p>';
  if(market)h+='<button data-a="buy" data-key="'+k+'"'+(!on||p.buys<1||s.market[k]<1||!E.canAfford(s,k)?' disabled':'')+'>Buy · '+costText(k,true)+'</button>';
  else{
@@ -2041,7 +2122,7 @@ function feedLine(e){const c=e.k&&E.CARDS[e.k],nm=c?'<b>'+c.n+'</b>':'';
   case 'raid':return {i:icon('combat',1.6),x:'<b class="down">'+esc(e.boss)+' raided everyone</b>',cls:'hit'};
  }return {i:'',x:'',cls:''}}
 function feedPanel(){const all=(s.events||[]).slice().reverse(),now=e=>e.n>(s.feedFrom||0)&&e.who===s.current&&e.r===s.round;let last=null,rows='';
- all.forEach(e=>{const k=e.r+':'+e.who;if(k!==last){last=k;const who=s.players[e.who]||{name:'?'};rows+='<li class="sep'+(now(e)?' now':'')+'">'+ava(who,18)+'<span>Round '+e.r+' · '+esc(who.name)+'</span></li>'}
+ all.forEach(e=>{const k=e.r+':'+e.who;if(k!==last){last=k;const who=s.players[e.who]||{name:'?'};rows+='<li class="sep'+(now(e)?' now':'')+'">'+ava(who,18)+'<span>Round '+e.r+' · '+esc(who.name)+facIcon(who,14)+'</span></li>'}
   const f=feedLine(e);rows+='<li class="'+f.cls+(now(e)?' now':'')+'" data-ev="'+e.n+'">'+f.i+'<span>'+f.x+'</span></li>'});
  return '<section class="panel feed notch"><div class="eyebrow"><span>Captain\'s log</span><span>'+(all.length?all.length+' moves':'')+'</span></div>'
   +(rows?'<ol id="feedlog">'+rows+'</ol>':'<p class="mute">Every move by every captain appears here.</p>')+'</section>'}
@@ -2050,7 +2131,7 @@ function tableCard(k,i){const c=E.CARDS[k];return '<article class="pc '+c.cat+' 
 function watchBand(p){const tp=p.turnPlayed||[],nb=p.hand.length,cpu=playingBack();
  return '<section class="band hband watch"><div class="hmain"><div class="bhead2"><h2>'+esc(p.name).toUpperCase()+'\'S TABLE</h2><span class="eyebrow">'+tp.length+' played · '+nb+' in hand</span>'+poolStrip(p)+'</div>'
   +'<div class="hwrap"><div class="hgrid" style="--n:'+Math.max(5,tp.length+nb)+'">'+tp.map(tableCard).join('')+backs(p.hand.length)+'</div></div></div>'
-  +'<div class="hside3 watchside"><div class="whois">'+ava(p,96)+'<span class="eyebrow">Now playing</span><b>'+esc(p.name)+'</b><span class="mute">'+esc(shipName(p.ship))+'</span><span class="mute">'+(p.bot?'Computer captain':'Watch their moves in the feed on the left.')+'</span></div>'
+  +'<div class="hside3 watchside"><div class="whois">'+ava(p,96)+'<span class="eyebrow">Now playing</span><b>'+esc(p.name)+facIcon(p,24)+'</b><span class="mute">'+(p.faction?esc(FAC(p.faction).name)+' · ':'')+esc(shipName(p.ship))+'</span><span class="mute">'+(p.bot?'Computer captain':'Watch their moves in the feed on the left.')+'</span></div>'
   +(cpu?'<button data-a="cpuspeed">Speed: '+SPEED_NAMES[s.cpuSpeed||'normal']+'</button><button class="primary" data-a="cpuskip">Skip to my turn</button>':'')+'</div></section>'}
 function poolStrip(p){return '<div class="pstrip" aria-label="Pool">'+E.RES.map(r=>'<span class="ps'+(p.pool[r]?'':' zero')+'" style="--rc:var(--c-'+r+')" title="'+E.RLABEL[r]+'">'+icon(r,2.6)+'<b>'+p.pool[r]+'</b><i>'+E.RLABEL[r]+'</i></span>').join('')+'</div>'}
 /* ---------- victory screen: score breakdown and delivered contracts per captain ---------- */
@@ -2070,10 +2151,10 @@ function victory(seat){
  const legend='<table class="vleg"><tbody>'+pos.map(x=>'<tr'+(x.v?'':' class="zero"')+'><td><i style="background:'+x.c+'"></i>'+icon(x.ic,1.6)+x.l+'</td><td class="mute">'+(counts[x.k]||'')+'</td><td><b>'+(x.v?'+'+x.v:'0')+'</b></td></tr>').join('')
   +lossItems.map(x=>'<tr class="neg"><td><i></i>⚠ '+x.l+'</td><td></td><td><b>−'+x.v+'</b></td></tr>').join('')+'<tr class="tot"><td>Final favor</td><td></td><td><b>'+t.profit+'</b></td></tr></tbody></table>';
  const cards=mine.length?mine.map((d,j)=>'<article class="pc ctr notch vcard" data-did="'+j+'" style="animation-delay:'+(j*70)+'ms"><div class="art">'+px(SP.sceneURL(d.dest,d.id),AW,AH)+'<span class="badge profit">'+icon('star',1.6)+'+'+d.profit+'</span><div class="go">ROUND '+(d.boughtRound||d.round)+(d.fromName?' · BOUGHT OUT':'')+'</div></div><div class="pb"><h3>'+esc(d.name)+'</h3><div class="dest">To '+esc(d.dest)+'</div></div></article>').join(''):'<p class="mute vnone">'+esc(t.name)+' did not deliver a contract this run.</p>';
- const tabs=order.map((i,r)=>'<button class="vtab'+(i===seat?' on':'')+'" data-a="vic" data-id="'+i+'"><em>#'+(r+1)+'</em>'+ava(s.players[i],30)+esc(s.players[i].name)+'<b>'+s.players[i].profit+'</b></button>').join('');
+ const tabs=order.map((i,r)=>'<button class="vtab'+(i===seat?' on':'')+'" data-a="vic" data-id="'+i+'"><em>#'+(r+1)+'</em>'+ava(s.players[i],30)+esc(s.players[i].name)+facIcon(s.players[i],18)+'<b>'+s.players[i].profit+'</b></button>').join('');
  modal('<div class="vic"><div class="vhead">'+ava(s.players[win[0]],144,'vship')+'<div><div class="eyebrow">Run complete · round '+s.round+(s.winMode==='profit'?' · race to '+s.target:'')+'</div><h2>'+win.map(i=>esc(s.players[i].name)).join(' & ')+(win.length>1?' share the win!':' wins!')+'</h2><p class="mute">Only favor counts. Click a captain to see how they earned it.</p></div><div class="vbig">'+icon('star',3.6)+'<b>'+hi+'</b><span class="eyebrow">winning favor</span></div></div>'
   +'<div class="vtabs">'+tabs+'</div>'
-  +'<div class="vbody"><section class="vscore"><div class="vsh">'+ava(t,64)+'<div><h3>'+esc(t.name)+'</h3><span class="mute">'+esc(shipName(t.ship))+'</span></div></div><div class="vsh2"><span class="eyebrow">'+(rank===1?'Winner':'#'+rank)+' · '+t.profit+' favor · '+t.completed+' deliveries · '+E.deckSize(t)+' cards</span></div><h4>Score breakdown</h4>'+bar+legend+'</section>'
+  +'<div class="vbody"><section class="vscore"><div class="vsh">'+ava(t,64)+'<div><h3>'+esc(t.name)+facIcon(t,26)+'</h3><span class="mute">'+esc(shipName(t.ship))+'</span></div></div><div class="vsh2"><span class="eyebrow">'+(rank===1?'Winner':'#'+rank)+' · '+t.profit+' favor · '+t.completed+' deliveries · '+E.deckSize(t)+' cards</span></div><h4>Score breakdown</h4>'+bar+legend+'</section>'
   +'<section class="vcons"><h4>Contracts delivered · '+mine.length+'</h4><div class="vgrid">'+cards+'</div></section></div>'
   +'<div class="btns"><button class="primary" data-a="setup">New run</button><button data-a="decks" data-id="'+seat+'">Captains\' decks</button><button data-a="review">Review board</button></div></div>',true);
  $('dialog').classList.add('vicdlg');
@@ -2081,9 +2162,15 @@ function victory(seat){
 /* ---------- captain ships ---------- */
 const shipName=id=>(E.SHIPS.find(x=>x.id===id)||{name:''}).name;
 function ava(p,size,cls){return p&&p.ship?'<img class="px ava'+(cls?' '+cls:'')+'" src="'+SP.shipURL(p.ship)+'" width="'+size+'" height="'+size+'" alt="'+esc(shipName(p.ship))+'" title="'+esc(shipName(p.ship))+'">':''}
+/* ---------- factions ---------- */
+const FAC=id=>E.FACTIONS.find(f=>f.id===id);
+const facIcon=(p,size,cls)=>p&&p.faction&&FAC(p.faction)?'<img class="px facico'+(cls?' '+cls:'')+'" src="'+SP.factionURL(p.faction)+'" width="'+(size||20)+'" height="'+(size||20)+'" alt="'+esc(FAC(p.faction).name)+'" title="'+esc(FAC(p.faction).name)+'">':'';
+function facPicker(i,n){const taken=new Set(cfg.facs.slice(0,n).filter((x,j)=>j!==i)),mine=cfg.facs[i],f=FAC(mine);
+ return '<div class="facpick" role="radiogroup" aria-label="Faction for captain '+(i+1)+'">'+E.FACTIONS.map(x=>'<button type="button" class="'+(x.id===mine?'on':'')+'" role="radio" aria-checked="'+(x.id===mine)+'" data-a="pickfac" data-id="'+i+'" data-fac="'+x.id+'" style="--fc:'+x.color+'"'+(taken.has(x.id)?' disabled title="Taken by another captain"':' title="'+esc(x.name)+'"')+'><img class="px" src="'+SP.factionURL(x.id)+'" width="34" height="34" alt="'+esc(x.name)+'"></button>').join('')
+  +'<span class="facname" style="--fc:'+(f?f.color:'#888')+'">'+(f?esc(f.name)+' <small>'+esc(E.CARDS[f.card].n)+': '+esc(E.CARDS[f.card].t)+'</small>':'')+'</span></div>'}
 function shipPicker(i,n){const taken=new Set(cfg.ships.slice(0,n).filter((x,j)=>j!==i)),mine=cfg.ships[i];
  return '<div class="shippick" role="radiogroup" aria-label="Ship for captain '+(i+1)+'">'+E.SHIPS.map(x=>'<button type="button" class="'+(x.id===mine?'on':'')+'" role="radio" aria-checked="'+(x.id===mine)+'" data-a="pickship" data-id="'+i+'" data-ship="'+x.id+'"'+(taken.has(x.id)?' disabled title="Taken by another captain"':' title="'+x.name+'"')+'><img class="px" src="'+SP.shipURL(x.id)+'" width="40" height="40" alt="'+x.name+'"></button>').join('')+'<span class="shipname">'+esc(shipName(mine))+'</span></div>'}
-function standings(){return s.players.map((t,i)=>({t,i})).sort((a,b)=>b.t.profit-a.t.profit).map(({t,i},rank)=>'<div class="stand'+(i===s.current&&!s.over?' cur':'')+'" data-seat="'+i+'"><i>'+(rank+1)+'</i>'+ava(t,30)+'<div><span>'+esc(t.name)+'</span><small>'+(t.bot?'CPU · ':'')+t.completed+' deliv · '+E.deckSize(t)+' cards</small>'+(i===s.current&&!s.over?'<em class="playing">playing</em>':'')+'</div><strong>'+t.profit+'</strong></div>').join('')}
+function standings(){return s.players.map((t,i)=>({t,i})).sort((a,b)=>b.t.profit-a.t.profit).map(({t,i},rank)=>'<div class="stand'+(i===s.current&&!s.over?' cur':'')+'" data-seat="'+i+'"><i>'+(rank+1)+'</i>'+ava(t,30)+'<div><span>'+esc(t.name)+facIcon(t,20)+'</span><small>'+(t.bot?'CPU · ':'')+t.completed+' deliv · '+E.deckSize(t)+' cards</small>'+(i===s.current&&!s.over?'<em class="playing">playing</em>':'')+'</div><strong>'+t.profit+'</strong></div>').join('')}
 function gains(k){const c=E.CARDS[k],out=Object.entries(c.g).map(([r,n])=>'<span class="g" style="--rc:var(--c-'+r+')">'+icon(r,1.4)+'+'+n+'</span>');
  if(c.draw)out.push('<span class="g">+'+c.draw+' draw</span>');if(c.refund)out.push('<span class="g">+'+c.refund+' order</span>');if(c.buys)out.push('<span class="g">+'+c.buys+' buy</span>');if(k==='buyout')out.push('<span class="g" style="--rc:var(--c-combat)">took a contract</span>');if(c.vp)out.push('<span class="g" style="--rc:var(--amber)">'+icon('star',1.4)+'+'+c.vp+' favor</span>');return out.join('')}
 function played(p,hidden){const list=hidden?[]:(p.turnPlayed||[]);
@@ -2097,7 +2184,7 @@ function render(){
  $('status').innerHTML=(s.over?'Run complete':'Round <b>'+s.round+(s.winMode==='rounds'?' / '+s.maxRounds:'')+'</b> · <b>'+esc(p.name)+'</b>')+(s.finalRound&&!s.over?' · <b class="acc">target reached: ends after this round if still held</b>':'')+(s.winMode==='profit'?' · first to '+s.target:'');
  const watching=hidden&&!s.over&&s.phase==='action'&&(ME!==null||p.bot);
  const hasRes=p.hand.some(k=>E.CARDS[k]&&E.CARDS[k].cat==='res'),playable=!hidden&&p.hand.some((k,i)=>E.canPlay(s,i)),backsUp=hidden&&!watching&&!s.over&&p.hand.length>0,mode=watching||playable||backsUp?'play':'shop';
- const rail='<aside class="rail"><section class="panel plate notch"><div class="plateid">'+ava(p,64)+'<div><div class="eyebrow">'+(p.bot?'Computer captain':'Active captain')+'</div><h2>'+esc(p.name)+'</h2></div></div><div class="profit">'+icon('star',2.4)+'<b>'+p.profit+'</b><span class="eyebrow">Favor</span></div>'
+ const rail='<aside class="rail"><section class="panel plate notch"><div class="plateid">'+ava(p,64)+'<div><div class="eyebrow">'+(p.bot?'Computer captain':'Active captain')+'</div><h2>'+esc(p.name)+facIcon(p,26)+'</h2>'+(p.faction?'<div class="facline" style="--fc:'+FAC(p.faction).color+'">'+esc(FAC(p.faction).name)+'</div>':'')+'</div></div><div class="profit">'+icon('star',2.4)+'<b>'+p.profit+'</b><span class="eyebrow">Favor</span></div>'
   +'<div class="chips"><div class="chip"><span class="eyebrow">Deals</span><b>'+p.buys+'</b></div><div class="chip"><span class="eyebrow">Orders</span><b>'+(s.actionLimit?p.actions:'∞')+'</b></div></div></section>'
   +feedPanel()+moveTiles(p,on)
   +'<section class="panel notch"><div class="eyebrow">Standings</div>'+standings()+'</section>'
@@ -2136,7 +2223,7 @@ function bossReport(){
 function phase(){
  if(screen!=='game')return;if(s.undoReq&&!s.over){undoDialog();return}bossNews();if(bossReport())return;const p=E.me(s);
  if(s.over){victory(vicSeat);return}
- if(s.phase==='handoff'){if(!p.bot){const alarm=s.boss&&!s.boss.alerted;if(alarm)s.boss.alerted=true;Music.sfx(alarm?'boss':'turn')};modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Target reached · could be the last round':'Next captain')+'</div><h2 class="upname">'+ava(p,56)+esc(p.name)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' favor</p>'+(s.boss?'<div class="threat soon">'+icon('combat',1.6)+'<span><b>'+esc(s.boss.name)+'</b> is blockading the lanes: '+s.boss.hp+' / '+s.boss.max+' hull left, '+(s.boss.until-s.round+1)+' round(s) to beat it.</span></div>':'')+((p.news||[]).length&&!p.bot?'<div class="hnews">'+p.news.map(n=>'<div class="threat bonews">'+icon('star',1.6)+'<span><b>'+esc((s.players[n.by]||{}).name||'A rival')+'</b> bought out your <b>'+esc(n.name)+'</b> in round '+n.round+': <b class="down">−'+n.amt+' favor</b>.</span></div>').join('')+'</div>':'')
+ if(s.phase==='handoff'){if(!p.bot){const alarm=s.boss&&!s.boss.alerted;if(alarm)s.boss.alerted=true;Music.sfx(alarm?'boss':'turn')};modal('<div class="eyebrow">Round '+s.round+' · '+(s.finalRound?'Target reached · could be the last round':'Next captain')+'</div><h2 class="upname">'+ava(p,56)+esc(p.name)+facIcon(p,30)+', you are up.</h2><p class="mute">'+(s.mode==='local'?'Pass the device to this captain. Their hand stays hidden until they begin.':'The board is shared. Build a hand that claims it first.')+'</p><p>5-card hand · '+E.deckSize(p)+' cards in deck · '+p.profit+' favor</p>'+(s.boss?'<div class="threat soon">'+icon('combat',1.6)+'<span><b>'+esc(s.boss.name)+'</b> is blockading the lanes: '+s.boss.hp+' / '+s.boss.max+' hull left, '+(s.boss.until-s.round+1)+' round(s) to beat it.</span></div>':'')+((p.news||[]).length&&!p.bot?'<div class="hnews">'+p.news.map(n=>'<div class="threat bonews">'+icon('star',1.6)+'<span><b>'+esc((s.players[n.by]||{}).name||'A rival')+'</b> bought out your <b>'+esc(n.name)+'</b> in round '+n.round+': <b class="down">−'+n.amt+' favor</b>.</span></div>').join('')+'</div>':'')
   +'<div class="handfan" aria-hidden="true">'+backs(Math.min(5,p.hand.length))+'</div><div class="btns"><button class="primary" data-a="begin">Begin turn</button></div>');return}
  hide();
 }
@@ -2147,6 +2234,7 @@ function rules(){modal('<div class="eyebrow">How Smugglers Run works</div><h2>Ev
  +'<p><b class="acc">Market.</b> Six core cards are in every game. A Standard market adds 6 random specialists (always one costing 5 or more and one extra combat card); a Full market offers all 16.</p>'
  +'<p><b class="acc">Taking back.</b> Back takes back your last card play, one step at a time, until you buy, deliver, patrol, cash in, scrap, hit a boss or end your turn. A card that drew cards cannot be taken back, since you have seen the new cards. With other human captains in the game, every one of them must agree; against computer captains it is instant.</p>'
  +'<p><b class="acc">Advanced cards.</b> Fusion Reactor, Hidden Compartments, Quantum Core and Deep-Core Drill are specialists bought with credits <i>plus</i> 2 of the resource they upgrade (fuel, cargo space, tech or ore), paid from your pool that turn. They are free-to-play resource cards: +4 fuel, 1 cargo and 1 credit; +3 cargo and 2 credits; +4 tech; +3 ore and 1 cargo.</p>'
+ +'<p><b class="acc">Factions.</b> An optional setup rule. Each captain picks one of six factions (one each at a table) and adds its signature card to their starting deck: Iron Covenant (Covenant Broadside: +3 combat, +1 fuel, order), Lumen Syndicate (Lumen Datacore: +2 tech), Gilded Exchange (Gilded Ledger: +5 credits and an extra deal), Drift Haulers\' Union (Union Ore Hauler: +1 ore, +2 cargo, +1 credit), Ember Cartel (Ember Tanker: +3 fuel, +2 cargo, +2 credits) and Ghost Runners (Ghost Contacts: draw 2, +1 cargo).</p>'
  +'<p><b class="acc">Deals.</b> One deal (purchase) per turn; Brokerage adds one. Bought cards go to your discard pile and have no immediate effect.</p>'
  +'<p><b class="acc">Combat.</b> Combat covers escort requirements. Or spend 3 combat and 1 fuel for a pirate patrol worth +5 favor, once per turn. There are no dice.</p>'
  +'<p><b class="acc">Buyout Contract.</b> Costs 7. An order card: take a contract another captain already delivered. Pay its resources and cargo space, as if delivering it; its favor moves from them to you, and the card is scrapped.</p>'
@@ -2167,9 +2255,9 @@ function deckTile(k,n,where,gone){const c=E.CARDS[k];
   +'<div class="pb"><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+(c.cost?c.kind:'Starter')+'</div><h3>'+c.n+'</h3><p>'+c.t+'</p>'+(where?'<small class="where">'+where+'</small>':'')+'</div></article>'}
 // where each card is right now, for the captain's own deck (draw order stays hidden)
 function whereText(p,k){const pl=[['draw',p.deck],['in hand',p.hand],['played',p.played],['discard',p.discard]].map(([l,a])=>[l,a.filter(x=>x===k).length]).filter(([,n])=>n);return pl.map(([l,n])=>n+' '+l).join(' · ')}
-function deckGroups(p,own){const rows=Object.entries(deckCounts(p)).sort(deckSort),bought=rows.filter(([k])=>E.CARDS[k].cost>0),start=rows.filter(([k])=>E.CARDS[k].cost===0),sum=r=>r.reduce((a,x)=>a+x[1],0);
+function deckGroups(p,own){const rows=Object.entries(deckCounts(p)).sort(deckSort),bought=rows.filter(([k])=>E.CARDS[k].cost>0),start=rows.filter(([k])=>E.CARDS[k].cost===0&&!E.CARDS[k].fac),sig=rows.filter(([k])=>E.CARDS[k].fac),sum=r=>r.reduce((a,x)=>a+x[1],0);
  const grid=(title,r)=>r.length?'<h3 class="dsub">'+title+' · '+sum(r)+'</h3><div class="dtiles">'+r.map(([k,n])=>deckTile(k,n,own?whereText(p,k):'')).join('')+'</div>':'';
- return grid('Bought',bought)+grid('Starter cards',start)}
+ return grid('Faction card',sig)+grid('Bought',bought)+grid('Starter cards',start)}
 function scrapTiles(p){const sc=p.scrappedCards||[],c={};sc.forEach(k=>c[k]=(c[k]||0)+1);if(!sc.length)return '';
  return '<h3 class="dsub">Scrapped · '+sc.length+'</h3><p class="mute">Removed from the deck for good (scrapped from hand, by Salvage Crew, or a Buyout Contract used up when played).</p><div class="dtiles">'
   +Object.entries(c).sort(deckSort).map(([k,n])=>deckTile(k,n,'',true)).join('')+'</div>'}
@@ -2193,10 +2281,11 @@ function viewDecks(i){
 function encyclopedia(sec){sec=sec||'cards';
  const card=k=>{const c=E.CARDS[k];return '<li class="'+c.cat+'"><img class="px" src="'+SP.cardURL(k)+'" width="88" height="52" alt=""><div><div class="kind">'+(c.cat==='res'?'Resource':'Order')+' · '+c.kind+'</div><b>'+c.n+'</b><span>'+c.t+'</span><small class="mute">'+(c.cat==='res'?'Free to play: does not use an order.':c.refund?'Needs 1 free order and gives it back.':'Uses 1 order (2 per turn by default).')+'</small></div><strong>'+(c.cost?costIcons(k):'Start')+'</strong></li>'};
  const req=t=>Object.entries(t.req).map(([r,n])=>'<span class="tok met" style="--rc:var(--c-'+r+')">'+icon(r,1.6)+n+'</span>').join('')+(E.need(t)?'<span class="tok met" style="--rc:var(--c-cargo)">'+icon('cargo',1.6)+E.need(t)+'</span>':'');
- const tabs=[['cards','Market cards'],['start','Starter cards'],['contracts','Contracts'],['threats','Pirate threats'],['moves','Other moves']];
+ const tabs=[['cards','Market cards'],['start','Starter cards'],['factions','Factions'],['contracts','Contracts'],['threats','Pirate threats'],['moves','Other moves']];
  let h='';
  if(sec==='cards')h='<p class="mute">Every card you can buy. The 6 <b>core</b> cards are in every game; in a Standard market, 6 random <b>specialists</b> join them (always one costing 5+ and one extra combat card). Bought cards go to your discard pile and show up in later hands.</p><ul class="enc">'+marketList(E.MARKET.slice()).map(k=>card(k).replace('<div class="kind">','<div class="kind">'+(isSpec(k)?'<span class="enctag spec">Specialist</span>':'<span class="enctag">Core</span>')+(s&&screen==='game'&&E.offered(s).includes(k)&&isSpec(k)?'<span class="enctag on">In this game</span>':''))).join('')+'</ul>';
  else if(sec==='start')h='<p class="mute">Every captain starts with these 10 cards: 4 Scrip, 3 Fuel Drums, 2 Ore Samples and 1 Hold Rig.</p><ul class="enc">'+['scrip','drum','sample','rig'].map(card).join('')+'</ul>';
+ else if(sec==='factions')h='<p class="mute">With <b>Factions</b> on (setup option), each captain picks a faction, one per faction at a table; computer captains get a random one. Your faction adds its signature card to your starting deck (11 cards). Signature cards are never in the market.</p><ul class="enc facenc">'+E.FACTIONS.map(f=>{const c=E.CARDS[f.card];return '<li style="--fc:'+f.color+'"><img class="px" src="'+SP.factionURL(f.id)+'" width="56" height="56" alt=""><div><div class="kind">Faction</div><b>'+esc(f.name)+'</b><span>'+esc(f.about)+'</span></div><div class="facsig"><img class="px" src="'+SP.cardURL(f.card)+'" width="88" height="52" alt=""><div><b>'+esc(c.n)+'</b><span>'+(c.cat==='res'?'Resource · free to play':'Order')+'. '+esc(c.t)+'</span></div></div></li>'}).join('')+'</ul>';
  else if(sec==='contracts')h='<p class="mute">The '+E.TEMPLATES.length+' contract types (most appear 3 times in the contract deck; the four worth 30+ favor appear twice). Pay the listed resources plus cargo space equal to ore + tech. Contracts worth over 13 favor appear from round 5, and over 20 from round 9.</p><ul class="enc">'+E.TEMPLATES.map((t,i)=>'<li><img class="px" src="'+SP.sceneURL(t.dest,i)+'" width="88" height="52" alt=""><div><div class="kind">To '+esc(t.dest)+' · '+(t.req.combat?'Armed':'Freight')+'</div><b>'+esc(t.name)+'</b><div class="reqs">'+req(t)+'</div></div><strong>'+icon('star',1.6)+'+'+t.profit+'</strong></li>').join('')+'</ul>';
  else if(sec==='threats')h='<p class="mute">With threats on, a boss arrives every '+E.BOSS_EVERY+' rounds, starting in round '+E.BOSS_EVERY+', drawn at random from the six below. Each pirate patrol pushes the next boss back '+E.PATROL_DELAY+' round, at most '+E.MAX_DELAY+' rounds per boss. While one is active no contracts can be delivered. Spend combat (1 damage each, double with a Weapons Officer) or hire mercenaries (usually '+E.MERC+' credits per damage). Beaten: +1 favor per damage dealt, +'+E.FINAL_BLOW+' for the final blow. Survives its deadline (usually '+E.BOSS_ROUNDS+' rounds): raids every captain for '+E.RAID+' favor, double for whoever dealt the least damage.</p><ul class="enc">'+E.BOSS_KEYS.map(k=>{const b=E.BOSSES[k];return '<li><img class="px" src="'+SP.bossURL(k)+'" width="88" height="52" alt=""><div><div class="kind">Pirate boss</div><b>'+b.name+'</b><span>'+b.trait+'</span></div></li>'}).join('')+'</ul>';
  else h='<ul class="enc moves">'
@@ -2299,6 +2388,7 @@ document.addEventListener('click',e=>{
  else if(a==='deck')viewDeck();
  else if(a==='enc')encyclopedia(b.dataset.sec);
  else if(a==='decks')viewDecks(Number.isInteger(id)?id:null);
+ else if(a==='pickfac'){collect();const i=id,k=b.dataset.fac;if(!cfg.facs.slice(0,cfg.humans).some((x,j)=>j!==i&&x===k)){cfg.facs[i]=k;renderSetup()}}
  else if(a==='pickship'){collect();const i=id,k=b.dataset.ship;if(!cfg.ships.slice(0,cfg.humans).some((x,j)=>j!==i&&x===k)){cfg.ships[i]=k;renderSetup()}}
  else if(a==='vic'){Music.sfx('tab');victory(id)}
  else if(a==='done')viewDone();
