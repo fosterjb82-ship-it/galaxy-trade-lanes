@@ -190,6 +190,28 @@ const EMB={
   L.poly([[32,27],[29,36],[32,34],[34,28]],PAL.steel[4]);L.poly([[44,27],[47,36],[44,34],[42,28]],PAL.steel[4]);
   L.poly([[34,30],[37,26],[42,31],[38,35]],PAL.rust[4]);L.set(37,29,PAL.amber[6]);
   [[24,30],[52,32],[46,26]].forEach(([x,y])=>{L.set(x,y,PAL.amber[6]);L.set(x+1,y,PAL.amber[4])})},
+ // advanced cards
+ reactor(L){[[3,22],[75,22]].forEach(([x,y])=>{cyl(L,x,y,10,24,PAL.amber);L.rect(x+2,y+10,6,2,PAL.amber[6])});L.rect(13,32,9,3,PAL.steel[4]);L.rect(66,32,9,3,PAL.steel[4]);
+  L.ellipse(44,26,23,22,PAL.steel[1]);L.ellipse(44,26,21,20,PAL.steel[3]);L.ellipse(44,25,20,18,PAL.steel[4]);
+  for(let i=0;i<8;i++){const a=i/8*Math.PI*2;L.rect(Math.round(44+Math.cos(a)*19)-1,Math.round(26+Math.sin(a)*18)-1,3,3,PAL.steel[2])}
+  L.ellipse(44,26,13,12,PAL.space[0]);glow(L,44,26,12,PAL.amber);sph(L,44,26,7,PAL.amber,-.35,-.4);L.circle(44,26,3,PAL.amber[6]);
+  [[30,16,36,20],[58,16,52,20],[30,36,36,32],[58,36,52,32]].forEach(([a,b,c,d])=>L.line(a,b,c,d,PAL.amber[5]))},
+ hidden(L){box3d(L,12,8,52,38,PAL.rust);for(let y=16;y<44;y+=9)L.rect(13,y,50,1,PAL.rust[2]);L.rect(36,9,2,36,PAL.rust[2]);
+  L.rect(18,22,26,18,PAL.space[0]);L.rect(18,22,26,2,PAL.space[1]);coins(L,26,38,3,5);coins(L,37,38,4,5);L.set(30,26,PAL.amber[6]);L.set(40,24,PAL.amber[6]);
+  L.poly([[46,20],[62,14],[62,40],[46,44]],PAL.steel[3]);L.poly([[46,20],[62,14],[62,16],[46,22]],PAL.steel[5]);L.rect(56,26,3,5,PAL.amber[4]);L.set(57,28,PAL.space[0]);
+  L.line(66,8,72,4,PAL.green[5]);L.line(68,14,76,12,PAL.green[4]);L.set(74,6,PAL.green[6])},
+ quantum(L){box3d(L,28,40,32,9,PAL.steel);L.rect(32,42,24,2,PAL.blue[4]);
+  const orbit=(front)=>{for(let i=0;i<120;i++){const a=i/120*Math.PI*2,x=44+Math.cos(a)*31,y=23+Math.sin(a)*7;if((Math.sin(a)>0)===front)L.set(x,y,PAL.teal[front?5:3])}};
+  orbit(false);L.poly([[44,2],[57,21],[44,38],[31,21]],PAL.blue[3]);L.poly([[44,2],[44,38],[31,21]],PAL.blue[2]);L.poly([[44,2],[57,21],[44,21]],PAL.blue[4]);
+  L.line(44,2,44,38,PAL.blue[5]);L.line(31,21,57,21,PAL.blue[1]);glow(L,44,21,7,PAL.blue);L.circle(44,21,2,PAL.blue[6]);L.set(40,10,PAL.blue[6]);L.set(39,12,PAL.blue[6]);orbit(true);
+  [[10,14],[78,30],[16,36]].forEach(([x,y])=>{L.set(x,y,PAL.teal[6]);L.set(x+1,y,PAL.teal[4]);L.set(x-1,y,PAL.teal[4]);L.set(x,y+1,PAL.teal[4]);L.set(x,y-1,PAL.teal[4])})},
+ drill(L){L.ellipse(68,28,20,23,PAL.rust[1]);L.ellipse(66,26,18,21,PAL.rust[3]);L.ellipse(62,20,7,6,PAL.rust[4]);L.ellipse(74,38,5,4,PAL.rust[2]);L.ellipse(70,14,3,2,PAL.rust[2]);
+  [[60,30,66,34],[70,22,78,26],[62,40,68,44]].forEach(([a,b,c,d])=>L.line(a,b,c,d,PAL.amber[5]));
+  box3d(L,4,14,26,18,PAL.steel);L.rect(8,18,18,3,PAL.amber[4]);L.rect(8,24,6,4,PAL.teal[4]);
+  L.poly([[30,15],[30,31],[52,23]],PAL.steel[4]);for(let i=0;i<4;i++){const x=32+i*5;L.line(x,16+i*2,x+3,30-i*2,PAL.steel[6])}
+  [[52,18,PAL.amber[6]],[54,27,PAL.amber[5]],[50,30,PAL.amber[6]],[55,22,PAL.amber[4]]].forEach(([x,y,c])=>L.set(x,y,c));
+  [[40,36],[46,40],[34,42]].forEach(([x,y])=>{L.rect(x,y,3,3,PAL.rust[4]);L.set(x,y,PAL.rust[5])});
+  box3d(L,6,36,20,12,PAL.green);L.rect(9,38,14,2,PAL.green[5]);L.rect(9,41,3,3,PAL.rust[4]);L.rect(14,42,3,3,PAL.rust[3])},
  charter(L){cyl(L,14,4,8,44,PAL.amber);cyl(L,62,4,8,44,PAL.amber);
   L.rect(22,6,40,40,PAL.rust[6]);L.rect(22,6,40,2,PAL.rust[5]);L.rect(22,44,40,2,PAL.rust[5]);
   L.rect(27,11,30,3,PAL.violet[3]);for(let i=0;i<4;i++)L.rect(27,18+i*5,i===3?14:24,2,PAL.steel[3]);
@@ -199,7 +221,7 @@ const EMB={
   L.poly([[65,30],[66.6,34],[71,34],[67.4,36.6],[68.8,41],[65,38.4],[61.2,41],[62.6,36.6],[59,34],[63.4,34]],PAL.amber[6]);
   [[78,8],[82,20],[76,24]].forEach(([x,y],i)=>{L.set(x,y,PAL.amber[6]);L.set(x-1,y,PAL.amber[5-i%2]);L.set(x+1,y,PAL.amber[5-i%2]);L.set(x,y-1,PAL.amber[5]);L.set(x,y+1,PAL.amber[5])})}
 };
-const TINT={scrip:PAL.amber,drum:PAL.amber,sample:PAL.rust,rig:PAL.teal,deal:PAL.amber,house:PAL.blue,pack:PAL.teal,borer:PAL.rust,vault:PAL.blue,quarter:PAL.teal,barge:PAL.teal,gunship:PAL.red,probe:PAL.violet,broker:PAL.blue,deck:PAL.amber,wing:PAL.red,buyout:PAL.red,salvage:PAL.rust,weapons:PAL.red,charter:PAL.violet};
+const TINT={scrip:PAL.amber,drum:PAL.amber,sample:PAL.rust,rig:PAL.teal,deal:PAL.amber,house:PAL.blue,pack:PAL.teal,borer:PAL.rust,vault:PAL.blue,quarter:PAL.teal,barge:PAL.teal,gunship:PAL.red,probe:PAL.violet,broker:PAL.blue,deck:PAL.amber,wing:PAL.red,buyout:PAL.red,salvage:PAL.rust,weapons:PAL.red,charter:PAL.violet,reactor:PAL.amber,hidden:PAL.green,quantum:PAL.blue,drill:PAL.rust};
 function cardArt(k){const s=cardBg(TINT[k]||PAL.teal,k.length*7+k.charCodeAt(0));const L=new S(88,52);EMB[k](L);L.outline(OUT);s.blit(L);return s}
 
 /* ---- hero freighter (144x64) ---- */

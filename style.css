@@ -708,3 +708,7 @@ img.ava{flex:none;border-radius:50%;image-rendering:pixelated}
 .pc.ttile .go{top:auto;bottom:10px;left:10px;right:10px;transform:none;text-align:center}
 .pc.ttile .dest{letter-spacing:.06em}
 .pc.ttile .go{position:absolute;left:0;right:0;bottom:0;top:auto;background:#6a1a1acc;color:#ffd6c4;font:600 13px var(--mono);letter-spacing:.16em;text-align:center;padding:4px 0}
+/* advanced cards: price in credits plus a resource */
+.badge.tl.adv{display:flex;align-items:center;gap:3px;border-color:var(--amber)}
+.badge .plus,.mpop .plus,.enc .plus,.cdetail .plus{font-style:normal;opacity:.7;margin:0 1px}
+.mband.mini .badge.tl.adv{gap:1px}

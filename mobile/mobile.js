@@ -16,7 +16,7 @@ render=function(){
   +'<div class="mpool">'+E.RES.map(r=>'<span class="mp'+(p.pool[r]?'':' zero')+'" style="--rc:var(--c-'+r+')" title="'+E.RLABEL[r]+'">'+icon(r,1.8)+'<b>'+p.pool[r]+'</b><i>'+SHORT[r]+'</i></span>').join('')+'</div></div>';
 
  const ready=on?s.board.filter(c=>E.canComplete(s,c)).length:0;
- const afford=on&&p.buys>0?E.offered(s).filter(k=>s.market[k]>0&&p.pool.cr>=E.CARDS[k].cost).length:0;
+ const afford=on&&p.buys>0?E.offered(s).filter(k=>s.market[k]>0&&E.canAfford(s,k)).length:0;
  let h='';
  if(tab==='hand'){
   const hasRes=p.hand.some(k=>E.CARDS[k]&&E.CARDS[k].cat==='res');

@@ -22,7 +22,12 @@ const CARDS={
  buyout:{n:'Buyout Contract',cat:'act',kind:'Tactics',g:{},cost:7,t:'Take a contract a rival delivered: pay its resources and cargo space, and its favor moves to you. Scrap this card.'},
  weapons:{n:'Weapons Officer',cat:'act',kind:'Crew',g:{combat:2},draw:1,dbl:1,cost:5,t:'Gain 2 combat and draw 1 card. This turn, combat you spend on a pirate boss deals double damage.'},
  salvage:{n:'Salvage Crew',cat:'act',kind:'Crew',g:{},draw:2,junk:1,cost:5,t:'Scrap 1 other card from your hand for free, then draw 2 cards.'},
- charter:{n:'Trade Charter',cat:'res',kind:'Economy',g:{cr:2},vp:2,cost:8,t:'Gain 2 credits and 2 favor.'}
+ charter:{n:'Trade Charter',cat:'res',kind:'Economy',g:{cr:2},vp:2,cost:8,t:'Gain 2 credits and 2 favor.'},
+ // advanced cards: bought with credits plus some of the resource they upgrade (paid from this turn's pool)
+ reactor:{n:'Fusion Reactor',cat:'res',kind:'Propulsion',g:{fuel:4,cargo:1,cr:1},cost:4,pay:{fuel:2},t:'Gain 4 fuel, 1 cargo space and 1 credit.'},
+ hidden:{n:'Hidden Compartments',cat:'res',kind:'Storage',g:{cargo:3,cr:2},cost:4,pay:{cargo:2},t:'Gain 3 cargo space and 2 credits.'},
+ quantum:{n:'Quantum Core',cat:'res',kind:'Research',g:{tech:4},cost:5,pay:{tech:2},t:'Gain 4 tech.'},
+ drill:{n:'Deep-Core Drill',cat:'res',kind:'Mining',g:{ore:3,cargo:1},cost:4,pay:{ore:2},t:'Gain 3 ore and 1 cargo space.'}
 };
 const CASH=4; // credits per 1 profit when cashing in
 const MERC=2; // credits per 1 boss damage when hiring mercenaries
@@ -46,8 +51,8 @@ function assignShips(players){const used=new Set();players.forEach(p=>{if(SHIP_I
 const BOSS_KEYS=Object.keys(BOSSES),STAGE_HP=[2.4,5.2,6.2];
 const BOSS_EVERY=5,PATROL_DELAY=1,MAX_DELAY=2; // a boss every 5 rounds; each pirate patrol pushes the next one back 1 round, at most 2 rounds per boss
 const BOSS_ROUNDS=3,RAID=5,FINAL_BLOW=5;
-const MARKET=['deal','house','pack','borer','vault','quarter','barge','gunship','probe','broker','deck','wing','buyout','salvage','weapons','charter'];
-// Standard market: these 6 core cards every game, plus 6 random specialists (at least one costing 5+ and one extra combat card). 'full' offers all 16.
+const MARKET=['deal','house','pack','borer','vault','quarter','barge','gunship','probe','broker','deck','wing','buyout','salvage','weapons','charter','reactor','hidden','quantum','drill'];
+// Standard market: these 6 core cards every game, plus 6 random specialists (at least one costing 5+ and one extra combat card). 'full' offers every card.
 const CORE=['deal','pack','barge','vault','borer','gunship'],SPECIALISTS=MARKET.filter(k=>!CORE.includes(k)),SPECIAL_COUNT=6;
 function pickSpecialists(s){const pool=shuffle(s,SPECIALISTS.slice()),pick=pool.slice(0,SPECIAL_COUNT);
  // guarantees: one card costing 5+ (something to save for) and one extra combat card (bosses need combat)
@@ -201,10 +206,12 @@ function complete(s,id){
  log(s,p.name+' delivered '+c.name+' for +'+c.profit+'.');ev(s,{t:'deliver',name:c.name,profit:c.profit,id:c.id});
  checkTarget(s);return true;
 }
+// can the active captain pay for card k right now (credits, plus resources for advanced cards)?
+function canAfford(s,k){const p=me(s),c=CARDS[k];return !!c&&p.pool.cr>=c.cost&&Object.entries(c.pay||{}).every(([r,n])=>p.pool[r]>=n)}
 function buy(s,k){
  const p=me(s),c=CARDS[k];
- if(!live(s)||!offered(s).includes(k)||s.market[k]<=0||p.buys<1||p.pool.cr<c.cost)return false;
- p.pool.cr-=c.cost;p.buys--;p.discard.push(k);s.market[k]--;
+ if(!live(s)||!offered(s).includes(k)||s.market[k]<=0||p.buys<1||!canAfford(s,k))return false;
+ p.pool.cr-=c.cost;Object.entries(c.pay||{}).forEach(([r,n])=>p.pool[r]-=n);p.buys--;p.discard.push(k);s.market[k]--;
  log(s,p.name+' bought '+c.n+'.');ev(s,{t:'buy',k});return true;
 }
 function patrol(s){const p=me(s);if(!live(s)||p.patrolled||p.pool.combat<3||p.pool.fuel<1)return false;
@@ -270,7 +277,7 @@ function end(s){
  s.phase='handoff';return true;
 }
 function migrate(s){if(!s.offer){s.offer=MARKET.slice();s.marketMode='full'}if(s.players.some(p=>!p.ship))assignShips(s.players);(s.bossDone||[]).forEach(r=>{if(!r.seen)r.seen=s.players.map((t,i)=>i)});if(!s.bossOrder)s.bossOrder=BOSS_KEYS.slice();if(s.threats&&s.nextBoss===undefined)s.nextBoss=s.boss?null:Math.max(s.round+1,BOSS_EVERY);if(s.boss&&!s.boss.key){s.boss.key='dread';s.boss.merc=MERC;s.boss.raid=RAID;s.boss.bounty=1;s.boss.regen=0}if(s.threats===undefined){s.threats=false;s.bossNo=0;s.boss=null;s.bossDone=[]}MARKET.forEach(k=>{if(!(k in s.market))s.market[k]=Math.max(10,4+2*s.players.length)});s.players.forEach(p=>{p.scrappedCards=p.scrappedCards||[]});return s}
-const W={deal:7,house:8,quarter:6,pack:5,borer:4,barge:3.5,vault:4,gunship:3.5,probe:4,deck:4.5,broker:2,wing:4,buyout:2.5,charter:6,salvage:3.5,weapons:3.5};
+const W={deal:7,house:8,quarter:6,pack:5,borer:4,barge:3.5,vault:4,gunship:3.5,probe:4,deck:4.5,broker:2,wing:4,buyout:2.5,charter:6,salvage:3.5,weapons:3.5,reactor:5.5,hidden:5.5,quantum:7,drill:6.5};
 const bestBuyout=s=>buyoutTargets(s).sort((a,b)=>b.profit-a.profit)[0];
 function buyoutWorth(s){const t=bestBuyout(s);if(!t)return false;const board=s.board.filter(c=>canComplete(s,c)).map(c=>c.profit);return !board.length||t.profit>Math.max(...board)}
 function* playAllSteps(s){
@@ -301,7 +308,7 @@ function* botSteps(s){
  for(let n=0;n<10;n++){const ch=s.board.filter(c=>canComplete(s,c)).sort((a,b)=>b.profit-a.profit);if(!ch.length)break;complete(s,ch[0].id);yield}
  const owned=()=>{const a=[...p.deck,...p.discard,...p.hand,...p.played];return Object.fromEntries(MARKET.map(k=>[k,a.filter(t=>t===k).length]))};
  while(p.buys>0){
-  const o=owned(),ch=offered(s).filter(k=>s.market[k]>0&&CARDS[k].cost<=p.pool.cr);
+  const o=owned(),ch=offered(s).filter(k=>s.market[k]>0&&canAfford(s,k));
   if(!ch.length)break;
   const war=s.boss||(nextThreat(s)&&nextThreat(s)-s.round<=2),cb=k=>war&&CARDS[k].g.combat?2:1;
   const v=k=>W[k]*cb(k)/(o[k]+1)+rnd(s)*.25;
@@ -316,6 +323,6 @@ function botTurn(s){if(s.over||!me(s).bot)return false;for(const _ of botSteps(s
 const commit=f=>function(s,...a){const r=f(s,...a);if(r)clearUndo(s);return r};
 return {canUndo,requestUndo,voteUndo,cancelUndo,undoLabel,undoVoters,
  begin:commit(begin),buy:commit(buy),complete:commit(complete),patrol:commit(patrol),cashIn:commit(cashIn),scrap:commit(scrap),attack:commit(attack),mercs:commit(mercs),
- buyoutTargets,RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
+ buyoutTargets,canAfford,RES,RLABEL,CARDS,MARKET,CORE,SPECIALISTS,offered,TEMPLATES,create,me,live,canPlay,play,playResources,playAll,canComplete,CASH,end,botTurn,botSteps,deckSize,need,migrate,delayLeft,SHIPS,SHIP_IDS,assignShips,MAX_DELAY,mercCost,BOSSES,BOSS_KEYS,bossClock,BOSS_EVERY,PATROL_DELAY,unseen,confirmBoss,nextThreat,MERC,RAID,FINAL_BLOW,BOSS_ROUNDS};
 })();
 if(typeof module!=='undefined')module.exports=Engine;
